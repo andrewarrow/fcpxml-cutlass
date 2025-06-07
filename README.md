@@ -5,20 +5,21 @@
 
 ## 🎯 Overview
 
-Cutalyst is a command-line tool that converts video files into Final Cut Pro XML (FCPXML) format, making it easy to import media into Final Cut Pro for editing. It supports both local video files and YouTube videos, automatically downloading them with subtitles when needed.
+Cutalyst is a powerful command-line tool that converts video files into Final Cut Pro XML (FCPXML) format, making it effortless to import media into Final Cut Pro for editing. It supports both local video files and YouTube videos, automatically downloading them with subtitles when needed.
 
-Perfect for content creators who want to quickly get YouTube videos or local media files into Final Cut Pro without manual import processes.
+Built with a modular architecture, Cutalyst offers intelligent video segmentation that can automatically break YouTube videos into logical clips with title cards based on subtitle timing - perfect for creating short-form content from longer videos.
 
 ## ✨ Features
 
-- **Local Video Conversion**: Convert any local video file to FCPXML format
-- **YouTube Integration**: Automatically download YouTube videos by providing just the video ID
-- **Subtitle Support**: Downloads English auto-generated subtitles from YouTube when available
-- **Auto-detection**: Automatically detects whether input is a local file or YouTube ID
-- **Flexible Output**: Specify custom output filename or use default naming
-- **🆕 Segment Mode**: Intelligently break YouTube videos into logical clips (6-18 seconds) with title cards
-- **Smart Clip Detection**: Uses subtitle timing and natural speech breaks to create meaningful segments
-- **Title Cards**: Automatically generates title cards between clips for easy navigation
+- **🎬 Local Video Conversion**: Convert any local video file to FCPXML format
+- **📺 YouTube Integration**: Automatically download YouTube videos by providing just the video ID
+- **📝 Subtitle Support**: Downloads English auto-generated subtitles from YouTube when available
+- **🔍 Smart Auto-detection**: Automatically detects whether input is a local file or YouTube ID
+- **📁 Flexible Output**: Specify custom output filename or use intelligent default naming
+- **✂️ Segment Mode**: Intelligently break YouTube videos into logical clips (6-18 seconds) with title cards
+- **🧠 Smart Clip Detection**: Uses subtitle timing and natural speech breaks to create meaningful segments
+- **🏷️ Title Cards**: Automatically generates title cards between clips for easy navigation
+- **⚡ Modular Architecture**: Clean package separation for maintainability and extensibility
 
 ## 🚀 Installation
 
@@ -57,7 +58,7 @@ go run .
 
 ## 📖 Usage
 
-### Basic Usage
+### Basic Commands
 
 #### Standard Mode (Single Video)
 ```bash
@@ -99,7 +100,7 @@ cutalyst -i dQw4w9WgXcQ
 cutalyst -i dQw4w9WgXcQ rick_roll_project.fcpxml
 ```
 
-#### 🆕 Segment Mode: Smart Clip Generation
+#### ✂️ Segment Mode: Smart Clip Generation
 
 ```bash
 # Break YouTube video into intelligent clips with title cards
@@ -110,11 +111,12 @@ cutalyst -i dQw4w9WgXcQ -s my_clips.fcpxml
 ```
 
 **Segment Mode Features:**
-- Automatically downloads video and subtitles
-- Creates 6-18 second clips based on natural speech breaks
-- Adds 2-second title cards between clips
-- Generates frame-accurate timing for smooth editing
-- Perfect for creating short-form content from longer videos
+- 📺 Automatically downloads video and subtitles
+- ✂️ Creates 6-18 second clips based on natural speech breaks
+- 🏷️ Adds title cards between clips showing preview text
+- ⏱️ Generates frame-accurate timing for smooth editing
+- 🎯 Perfect for creating short-form content from longer videos
+- 🧠 Uses AI-like intelligence to find natural breaking points
 
 ### YouTube Video ID
 
@@ -148,22 +150,33 @@ The tool generates FCPXML files with the following specifications:
 - **Color Space**: Rec. 709
 - **Audio**: Stereo, 48kHz
 - **Timeline**: Multiple video clips with title cards
-- **Clip Duration**: 6-18 seconds each
-- **Title Cards**: 2 seconds between clips
+- **Clip Duration**: 6-18 seconds each (intelligently determined)
+- **Title Cards**: 10 seconds between clips
 - **Timing**: Frame-accurate for seamless editing
 
-### Project Structure
+### Project Architecture
+
+The project is organized into modular packages for clean separation of concerns:
 
 ```
 cutalyst/
-├── main.go              # Main CLI application
-├── fcpxml.go           # FCPXML generation logic
+├── main.go              # Main CLI application and orchestration
 ├── go.mod              # Go module definition
 ├── CLAUDE.md           # AI assistant context
 ├── README.md           # This file
+├── vtt/                # VTT subtitle processing package
+│   └── vtt.go          # Parsing, segmentation, types
+├── youtube/            # YouTube integration package
+│   └── youtube.go      # Download, ID detection
+├── fcp/                # Final Cut Pro XML generation
+│   ├── types.go        # FCPXML data structures
+│   └── generator.go    # Generation functions
+├── wikipedia/          # Future feature (placeholder)
+│   └── parse.go        # Wikipedia integration (TBD)
+├── foo/                # Sample/test files
 └── generated files:
     ├── *.fcpxml        # Generated Final Cut Pro projects
-    ├── *.mp4           # Downloaded YouTube videos
+    ├── *.mov           # Downloaded YouTube videos
     └── *.vtt           # Downloaded subtitle files
 ```
 
@@ -180,6 +193,23 @@ GOOS=windows GOARCH=amd64 go build -o cutalyst.exe
 GOOS=darwin GOARCH=amd64 go build -o cutalyst-mac
 GOOS=linux GOARCH=amd64 go build -o cutalyst-linux
 ```
+
+### Package Functions
+
+#### VTT Package (`vtt/`)
+- `ParseFile(vttPath)`: Parse WebVTT subtitle files
+- `ParseTime(timeStr)`: Convert VTT timestamps to Go time.Duration
+- `SegmentIntoClips(segments, min, max)`: Intelligently segment into clips
+
+#### YouTube Package (`youtube/`)
+- `IsYouTubeID(input)`: Detect if string is YouTube video ID
+- `DownloadVideo(youtubeID)`: Download video using yt-dlp
+- `DownloadSubtitles(youtubeID)`: Download subtitles using yt-dlp
+
+#### FCP Package (`fcp/`)
+- `GenerateStandard(input, output)`: Create basic FCPXML
+- `GenerateClipFCPXML(clips, video, output)`: Create segmented FCPXML
+- `FormatDurationForFCPXML(duration)`: Frame-accurate duration formatting
 
 ### Testing
 
@@ -229,13 +259,28 @@ go run . -i dQw4w9WgXcQ -s
    - Based on natural speech breaks and subtitle timing
    - Currently not customizable
 
+7. **Compilation errors**
+   - Ensure Go 1.23.5 or later is installed
+   - Check that all package dependencies are correct
+   - Run `go mod tidy` to clean up dependencies
+
 ### Debug Mode
 
 Add print statements in the code for debugging:
 
 ```go
-fmt.Printf("Debug: Processing input: %s\\n", inputFile)
+fmt.Printf("Debug: Processing input: %s\n", inputFile)
 ```
+
+### Package Development
+
+When adding new features:
+
+1. **Determine the appropriate package**: vtt/, youtube/, fcp/, or main.go
+2. **Follow Go conventions**: Exported functions start with capital letters
+3. **Update imports**: Add new package imports where needed
+4. **Test compilation**: Always run `go build` to verify changes
+5. **Test functionality**: Use manual testing approach above
 
 ## 📝 License
 
@@ -246,19 +291,44 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and test them
-4. Commit your changes: `git commit -am 'Add feature'`
-5. Push to the branch: `git push origin feature-name`
-6. Submit a pull request
+4. Ensure code compiles: `go build`
+5. Commit your changes: `git commit -am 'Add feature'`
+6. Push to the branch: `git push origin feature-name`
+7. Submit a pull request
+
+### Development Guidelines
+
+- Follow the modular package structure
+- Add functions to the appropriate package
+- Export functions (capitalize) if they need to be used by other packages
+- Keep packages focused on single responsibilities
+- Avoid circular dependencies between packages
 
 ## 📋 Roadmap
 
+### Near Term
 - [ ] Support for custom video formats and resolutions
 - [ ] Dynamic duration detection instead of hardcoded 3600s in standard mode
 - [ ] Customizable clip duration ranges for segment mode
+- [ ] Better error handling and user feedback
+
+### Medium Term
 - [ ] Batch processing for multiple files
 - [ ] Support for other subtitle languages in segment mode
 - [ ] Segment mode for local video files with subtitle tracks
 - [ ] Integration with other video platforms
-- [ ] GUI version for non-technical users
 - [ ] Automated testing framework
+
+### Long Term
+- [ ] GUI version for non-technical users
 - [ ] Clip preview generation for segment mode
+- [ ] Wikipedia integration (parse.go functionality)
+- [ ] Advanced clip analysis and optimization
+- [ ] Plugin system for custom processors
+- [ ] Cloud-based processing options
+
+## 🔗 Related Tools
+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - YouTube video downloader
+- [Final Cut Pro](https://www.apple.com/final-cut-pro/) - Video editing software
+- [FCPXML](https://developer.apple.com/documentation/professional_video_applications/fcpxml_reference) - Final Cut Pro XML format documentation
