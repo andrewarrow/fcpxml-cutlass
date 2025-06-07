@@ -153,28 +153,15 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		fmt.Printf("DEBUG: Vertical line %d at X=%.3f\n", j, xPos)
 	}
 	
-	// Create stacked horizontal lines using nested structure like table.fcpxml
-	fmt.Printf("DEBUG: Creating stacked horizontal lines using nested structure\n")
-	fmt.Printf("DEBUG: Will create main video with %d nested lines inside\n", len(tableHorizontalPositions))
-	
-	// Create nested videos for all horizontal lines
-	var nestedHorizontalVideos []Video
+	// Create all horizontal lines as separate spine elements (they appear horizontally)
+	fmt.Printf("DEBUG: Creating %d horizontal lines as separate spine elements\n", len(tableHorizontalPositions))
 	for i, yPos := range tableHorizontalPositions {
-		if i == 0 {
-			continue // Skip first one as it will be the main video
-		}
-		
-		// Calculate position offset relative to main line
-		mainYPos := tableHorizontalPositions[0] // First line position
-		offsetY := (yPos - mainYPos) * 1000 // Scale up the offset for visibility
-		
-		nestedVideo := Video{
+		horizontalLine := Video{
 			Ref:      "r2",
-			Lane:     "1",
-			Offset:   FormatDurationForFCPXML(currentOffset + time.Duration(i)*time.Second),
-			Name:     fmt.Sprintf("H-Line %d Nested", i),
+			Offset:   FormatDurationForFCPXML(currentOffset),
+			Name:     fmt.Sprintf("H-Line %d", i),
 			Start:    FormatDurationForFCPXML(currentOffset),
-			Duration: FormatDurationForFCPXML(totalDuration - time.Duration(i)*time.Second),
+			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
@@ -184,63 +171,25 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.2f", mainYPos)},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", yPos)},
 			},
-			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("0 %.1f", offsetY), Scale: "1 0.0394"},
+			AdjustTransform: &AdjustTransform{Scale: "1 0.0394"},
 		}
 		
-		fmt.Printf("DEBUG: Created nested H-Line %d - Position offset: 0 %.1f, Center: 0.5 %.2f\n", i, offsetY, mainYPos)
-		nestedHorizontalVideos = append(nestedHorizontalVideos, nestedVideo)
+		fmt.Printf("DEBUG: Created H-Line %d at Y=%.3f\n", i, yPos)
+		spineElements = append(spineElements, horizontalLine)
 	}
 	
-	// Create main horizontal video with all nested lines
-	mainYPos := tableHorizontalPositions[0]
-	mainHorizontalVideo := Video{
-		Ref:      "r2",
-		Offset:   FormatDurationForFCPXML(currentOffset),
-		Name:     "H-Lines Main Container",
-		Start:    FormatDurationForFCPXML(currentOffset),
-		Duration: FormatDurationForFCPXML(totalDuration),
-		Params: []Param{
-			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
-			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
-			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.2f", mainYPos)},
-		},
-		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
-		NestedVideos:    nestedHorizontalVideos,
-	}
-	
-	fmt.Printf("DEBUG: Created main H-Lines container with %d nested lines\n", len(nestedHorizontalVideos))
-	spineElements = append(spineElements, mainHorizontalVideo)
-
-	// Create stacked vertical lines using nested structure
-	fmt.Printf("DEBUG: Creating stacked vertical lines using nested structure\n")
-	fmt.Printf("DEBUG: Will create main video with %d nested vertical lines inside\n", len(tableVerticalPositions))
-	
-	// Create nested videos for all vertical lines
-	var nestedVerticalVideos []Video
+	// Create all vertical lines using lane="1" for vertical stacking
+	fmt.Printf("DEBUG: Creating %d vertical lines using lane=1 for vertical stacking\n", len(tableVerticalPositions))
 	for j, xPos := range tableVerticalPositions {
-		if j == 0 {
-			continue // Skip first one as it will be the main video
-		}
-		
-		// Calculate position offset relative to main line
-		mainXPos := tableVerticalPositions[0] // First line position
-		offsetX := (xPos - mainXPos) * 1000 // Scale up the offset for visibility
-		
-		nestedVideo := Video{
+		verticalLine := Video{
 			Ref:      "r2",
-			Lane:     "2",
-			Offset:   FormatDurationForFCPXML(currentOffset + time.Duration(j)*time.Second),
-			Name:     fmt.Sprintf("V-Line %d Nested", j),
+			Lane:     "1", // All vertical lines use same lane to stack vertically
+			Offset:   FormatDurationForFCPXML(currentOffset),
+			Name:     fmt.Sprintf("V-Line %d", j),
 			Start:    FormatDurationForFCPXML(currentOffset),
-			Duration: FormatDurationForFCPXML(totalDuration - time.Duration(j)*time.Second),
+			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
@@ -250,41 +199,14 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.2f 0.5", mainXPos)},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", xPos)},
 			},
-			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("%.1f 0", offsetX), Scale: "0.0394 1"},
+			AdjustTransform: &AdjustTransform{Scale: "0.0394 1"},
 		}
 		
-		fmt.Printf("DEBUG: Created nested V-Line %d - Position offset: %.1f 0, Center: %.2f 0.5\n", j, offsetX, mainXPos)
-		nestedVerticalVideos = append(nestedVerticalVideos, nestedVideo)
+		fmt.Printf("DEBUG: Created V-Line %d at X=%.3f (lane=1 for vertical stacking)\n", j, xPos)
+		spineElements = append(spineElements, verticalLine)
 	}
-	
-	// Create main vertical video with all nested lines
-	mainXPos := tableVerticalPositions[0]
-	mainVerticalVideo := Video{
-		Ref:      "r2",
-		Lane:     "1",
-		Offset:   FormatDurationForFCPXML(currentOffset),
-		Name:     "V-Lines Main Container",
-		Start:    FormatDurationForFCPXML(currentOffset),
-		Duration: FormatDurationForFCPXML(totalDuration),
-		Params: []Param{
-			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
-			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
-			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.2f 0.5", mainXPos)},
-		},
-		AdjustTransform: &AdjustTransform{Scale: "0.0395 1"},
-		NestedVideos:    nestedVerticalVideos,
-	}
-	
-	fmt.Printf("DEBUG: Created main V-Lines container with %d nested lines\n", len(nestedVerticalVideos))
-	spineElements = append(spineElements, mainVerticalVideo)
 
 	// Header - left column
 	spineElements = append(spineElements, Title{
