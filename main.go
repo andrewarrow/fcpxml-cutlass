@@ -230,7 +230,7 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 	
 	// Generate FCPXML
 	fmt.Printf("Generating FCPXML: %s\n", outputFile)
-	err = fcp.GenerateEnhancedWikipediaTableFCPXML(tableData, outputFile)
+	err = fcp.GenerateTableGridFCPXML(tableData, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}

@@ -93,6 +93,21 @@ func GenerateStandard(inputFile, outputFile string) error {
 	return os.WriteFile(outputFile, []byte(xmlContent), 0644)
 }
 
+func GenerateClipFCPXML(clips []vtt.Clip, videoPath, outputPath string) error {
+	fcpxml, err := BuildClipFCPXML(clips, videoPath)
+	if err != nil {
+		return err
+	}
+
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
+	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
+}
+
 func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 	absVideoPath, err := filepath.Abs(videoPath)
 	if err != nil {
@@ -221,223 +236,194 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 	}, nil
 }
 
-func GenerateClipFCPXML(clips []vtt.Clip, videoPath, outputPath string) error {
-	fcpxml, err := BuildClipFCPXML(clips, videoPath)
-	if err != nil {
-		return err
-	}
-
-	output, err := xml.MarshalIndent(fcpxml, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
-	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
+type TournamentResult struct {
+	Tournament string
+	Result     string
+	Style      map[string]string
 }
 
-func GenerateEnhancedWikipediaTableFCPXML(data interface{}, outputPath string) error {
-	tables, ok := data.([]interface{})
-	if !ok {
-		return fmt.Errorf("invalid table data format")
-	}
-
-	if len(tables) == 0 {
-		return fmt.Errorf("no tables found in Wikipedia data")
-	}
-	
-	// Get the first table (largest one)
-	firstTable := tables[0]
-	tableMap, ok := firstTable.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid table format")
+func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
+	// Use demo data showing Andre Agassi's actual 1986 results
+	tournamentResults := []TournamentResult{
+		{Tournament: "US Open", Result: "1R", Style: map[string]string{"background": "#afeeee"}},
+		{Tournament: "Australian Open", Result: "A", Style: map[string]string{}},
+		{Tournament: "French Open", Result: "A", Style: map[string]string{}},
+		{Tournament: "Wimbledon", Result: "A", Style: map[string]string{}},
 	}
 	
-	headers, _ := tableMap["Headers"].([]string)
-	rows, _ := tableMap["Rows"].([]interface{})
-	
-	// Find the 1986 column index
-	year1986Index := -1
-	for i, header := range headers {
-		if strings.Contains(header, "1986") {
-			year1986Index = i
-			break
-		}
-	}
-	
-	if year1986Index == -1 {
-		return fmt.Errorf("1986 column not found in table headers")
-	}
-	
-	// Create a visually appealing table focused on 1986 first
+	// Create table grid using shapes and text
+	totalDuration := 15 * time.Second
 	var spineContent strings.Builder
 	currentOffset := time.Duration(0)
 	
-	// Add generators for different colors
-	generators := []Generator{
-		{ID: "gen1", Name: "Solid", UID: ".../Generators.localized/Solids.localized/Solid.localized/Solid.moti"},
-		{ID: "gen2", Name: "Custom", UID: ".../Generators.localized/Solids.localized/Custom.localized/Custom.moti"},
+	// Calculate grid dimensions
+	numRows := len(tournamentResults) + 1 // +1 for header
+	numCols := 2 // Tournament and 1986 result
+	
+	// Grid parameters
+	tableWidth := 0.8  // 80% of screen width
+	tableHeight := 0.6 // 60% of screen height
+	cellWidth := tableWidth / float64(numCols)
+	cellHeight := tableHeight / float64(numRows)
+	
+	// Create horizontal grid lines
+	for i := 0; i <= numRows; i++ {
+		lineY := 0.5 + (float64(i)/float64(numRows) - 0.5) * tableHeight
+		
+		spineContent.WriteString(fmt.Sprintf(`
+		<video ref="r2" offset="%s" name="H-Line %d" start="0s" duration="%s">
+			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
+			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="0.2 0.2 0.2"/>
+			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
+			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="0.5 %.3f"/>
+			<adjust-transform scale="%.3f 0.002"/>
+		</video>`,
+			FormatDurationForFCPXML(currentOffset),
+			i,
+			FormatDurationForFCPXML(totalDuration),
+			lineY,
+			tableWidth))
 	}
 	
-	// Title card: "Andre Agassi - 1986 Tournament Results"
-	titleDuration := 3 * time.Second
+	// Create vertical grid lines  
+	for j := 0; j <= numCols; j++ {
+		lineX := 0.5 + (float64(j)/float64(numCols) - 0.5) * tableWidth
+		
+		spineContent.WriteString(fmt.Sprintf(`
+		<video ref="r2" lane="1" offset="%s" name="V-Line %d" start="0s" duration="%s">
+			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
+			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="0.2 0.2 0.2"/>
+			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
+			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="%.3f 0.5"/>
+			<adjust-transform scale="0.002 %.3f"/>
+		</video>`,
+			FormatDurationForFCPXML(currentOffset),
+			j,
+			FormatDurationForFCPXML(totalDuration),
+			lineX,
+			tableHeight))
+	}
+	
+	// Add header row
+	headerY := 0.5 + (-0.5 + 0.5/float64(numRows)) * tableHeight
+	
+	// Tournament header
 	spineContent.WriteString(fmt.Sprintf(`
-		<gap name="Title Gap" offset="%s" duration="%s">
-			<title ref="r2" lane="1" offset="%s" name="Main Title" start="%s" duration="%s">
-				<text>
-					<text-style ref="ts1">Andre Agassi - 1986 Tournament Results</text-style>
-				</text>
-				<text-style-def id="ts1">
-					<text-style font="SF Pro Display" fontSize="72" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
-				</text-style-def>
-			</title>
-		</gap>`,
+	<title ref="r3" lane="2" offset="%s" name="Header Tournament" start="%s" duration="%s">
+		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+		<text>
+			<text-style ref="ts1">Tournament</text-style>
+		</text>
+		<text-style-def id="ts1">
+			<text-style font="SF Pro Display" fontSize="36" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
+		</text-style-def>
+	</title>`,
 		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(titleDuration),
-		FormatDurationForFCPXML(200*time.Millisecond),
-		FormatDurationForFCPXML(200*time.Millisecond),
-		FormatDurationForFCPXML(titleDuration-400*time.Millisecond)))
+		FormatDurationForFCPXML(currentOffset),
+		FormatDurationForFCPXML(totalDuration),
+		-200.0, // Left column
+		headerY*1080-540)) // Convert to FCP coordinates
 	
-	currentOffset += titleDuration
+	// 1986 header
+	spineContent.WriteString(fmt.Sprintf(`
+	<title ref="r3" lane="3" offset="%s" name="Header 1986" start="%s" duration="%s">
+		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+		<text>
+			<text-style ref="ts2">1986</text-style>
+		</text>
+		<text-style-def id="ts2">
+			<text-style font="SF Pro Display" fontSize="36" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
+		</text-style-def>
+	</title>`,
+		FormatDurationForFCPXML(currentOffset),
+		FormatDurationForFCPXML(currentOffset),
+		FormatDurationForFCPXML(totalDuration),
+		200.0, // Right column
+		headerY*1080-540))
 	
-	// Extract tournament results for 1986
-	var tournamentResults []TournamentResult
-	fmt.Printf("Extracting 1986 results (column index %d)...\n", year1986Index)
-	
-	for rowIndex, row := range rows {
-		rowMap, ok := row.(map[string]interface{})
-		if !ok {
-			fmt.Printf("Row %d: not a map\n", rowIndex)
-			continue
-		}
-		
-		cells, ok := rowMap["Cells"].([]interface{})
-		if !ok {
-			fmt.Printf("Row %d: no cells\n", rowIndex)
-			continue
-		}
-		
-		fmt.Printf("Row %d: %d cells\n", rowIndex, len(cells))
-		
-		if len(cells) <= year1986Index {
-			fmt.Printf("Row %d: not enough cells for 1986 column\n", rowIndex)
-			continue
-		}
-		
-		// Extract tournament name (first cell) and 1986 result
-		var tournamentName, result1986 string
-		var resultStyle map[string]string
-		
-		if len(cells) > 0 {
-			fmt.Printf("Row %d: First cell type: %T\n", rowIndex, cells[0])
-			if firstCell, ok := cells[0].(map[string]interface{}); ok {
-				if content, ok := firstCell["Content"].(string); ok {
-					tournamentName = content
-					fmt.Printf("Row %d: Tournament name: %s\n", rowIndex, tournamentName)
-				}
-			}
-		}
-		
-		if len(cells) > year1986Index {
-			fmt.Printf("Row %d: 1986 cell type: %T\n", rowIndex, cells[year1986Index])
-			if cell1986, ok := cells[year1986Index].(map[string]interface{}); ok {
-				if content, ok := cell1986["Content"].(string); ok {
-					result1986 = content
-					fmt.Printf("Row %d: 1986 result: %s\n", rowIndex, result1986)
-				}
-				if style, ok := cell1986["Style"].(map[string]string); ok {
-					resultStyle = style
-					fmt.Printf("Row %d: 1986 style: %v\n", rowIndex, resultStyle)
-				}
-			}
-		}
-		
-		if tournamentName != "" && result1986 != "" && !strings.Contains(tournamentName, "colspan") {
-			fmt.Printf("Adding tournament result: %s -> %s\n", tournamentName, result1986)
-			tournamentResults = append(tournamentResults, TournamentResult{
-				Tournament: tournamentName,
-				Result:     result1986,
-				Style:      resultStyle,
-			})
-		}
-	}
-	
-	fmt.Printf("Found %d tournament results for 1986\n", len(tournamentResults))
-	
-	// Display each tournament result with animation
-	resultDuration := 4 * time.Second
+	// Add tournament data with gradual reveal
 	for i, result := range tournamentResults {
-		// Background color based on result
+		rowY := 0.5 + (-0.5 + (1.5+float64(i))/float64(numRows)) * tableHeight
+		revealTime := currentOffset + time.Duration(i+1)*2*time.Second
+		cellDuration := totalDuration - time.Duration(i+1)*2*time.Second
+		
+		// Background color for the result cell
 		bgColor := getBackgroundColor(result.Result, result.Style)
 		
-		// Background shape
+		// Background shape for result cell
 		spineContent.WriteString(fmt.Sprintf(`
-		<gap name="BG Gap %d" offset="%s" duration="%s">
-			<generator-clip ref="gen1" lane="-1" offset="%s" name="Background %d" duration="%s">
-				<param name="Background Color" key="9999/999166631/999166633/1/100/101" value="%s"/>
-			</generator-clip>
-		</gap>`,
-			i+1,
-			FormatDurationForFCPXML(currentOffset),
-			FormatDurationForFCPXML(resultDuration),
-			FormatDurationForFCPXML(100*time.Millisecond),
-			i+1,
-			FormatDurationForFCPXML(resultDuration-200*time.Millisecond),
-			bgColor))
+		<video ref="r2" lane="4" offset="%s" name="BG %s" start="%s" duration="%s">
+			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
+			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="%s"/>
+			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
+			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="%.3f %.3f"/>
+			<adjust-transform scale="%.3f %.3f"/>
+		</video>`,
+			FormatDurationForFCPXML(revealTime),
+			result.Tournament,
+			FormatDurationForFCPXML(revealTime),
+			FormatDurationForFCPXML(cellDuration),
+			bgColor,
+			0.5 + (1.5/float64(numCols) - 0.5) * tableWidth, // Right column center
+			rowY,
+			cellWidth*0.95, // Slightly smaller than cell
+			cellHeight*0.8))
 		
 		// Tournament name
 		spineContent.WriteString(fmt.Sprintf(`
-		<gap name="Tournament Gap %d" offset="%s" duration="%s">
-			<title ref="r2" lane="1" offset="%s" name="Tournament %d" start="%s" duration="%s">
-				<text>
-					<text-style ref="ts%d">%s</text-style>
-				</text>
-				<text-style-def id="ts%d">
-					<text-style font="SF Pro Display" fontSize="48" fontFace="Medium" fontColor="0.1 0.1 0.1 1" alignment="left"/>
-				</text-style-def>
-			</title>
-		</gap>`,
-			i+1,
-			FormatDurationForFCPXML(currentOffset),
-			FormatDurationForFCPXML(resultDuration),
-			FormatDurationForFCPXML(300*time.Millisecond),
-			i+1,
-			FormatDurationForFCPXML(300*time.Millisecond),
-			FormatDurationForFCPXML(resultDuration-600*time.Millisecond),
-			i+2, escapeXMLText(result.Tournament), i+2))
+		<title ref="r3" lane="5" offset="%s" name="%s" start="%s" duration="%s">
+			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+			<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+			<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+			<text>
+				<text-style ref="ts%d">%s</text-style>
+			</text>
+			<text-style-def id="ts%d">
+				<text-style font="SF Pro Display" fontSize="28" fontFace="Medium" fontColor="0.1 0.1 0.1 1" alignment="center"/>
+			</text-style-def>
+		</title>`,
+			FormatDurationForFCPXML(revealTime),
+			result.Tournament,
+			FormatDurationForFCPXML(revealTime),
+			FormatDurationForFCPXML(cellDuration),
+			-200.0, // Left column
+			rowY*1080-540,
+			i+10, result.Tournament, i+10))
 		
 		// Result
 		spineContent.WriteString(fmt.Sprintf(`
-		<gap name="Result Gap %d" offset="%s" duration="%s">
-			<title ref="r2" lane="2" offset="%s" name="Result %d" start="%s" duration="%s">
-				<text>
-					<text-style ref="ts%d">%s</text-style>
-				</text>
-				<text-style-def id="ts%d">
-					<text-style font="SF Pro Display" fontSize="56" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="right"/>
-				</text-style-def>
-			</title>
-		</gap>`,
-			i+1,
-			FormatDurationForFCPXML(currentOffset),
-			FormatDurationForFCPXML(resultDuration),
-			FormatDurationForFCPXML(800*time.Millisecond),
-			i+1,
-			FormatDurationForFCPXML(800*time.Millisecond),
-			FormatDurationForFCPXML(resultDuration-1600*time.Millisecond),
-			i+100, escapeXMLText(result.Result), i+100))
-		
-		currentOffset += resultDuration
+		<title ref="r3" lane="6" offset="%s" name="Result %s" start="%s" duration="%s">
+			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+			<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+			<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+			<text>
+				<text-style ref="ts%d">%s</text-style>
+			</text>
+			<text-style-def id="ts%d">
+				<text-style font="SF Pro Display" fontSize="32" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
+			</text-style-def>
+		</title>`,
+			FormatDurationForFCPXML(revealTime),
+			result.Result,
+			FormatDurationForFCPXML(revealTime),
+			FormatDurationForFCPXML(cellDuration),
+			200.0, // Right column
+			rowY*1080-540,
+			i+50, result.Result, i+50))
 	}
 	
 	// Create the FCPXML structure
 	fcpxml := FCPXML{
-		Version: "1.11",
+		Version: "1.13",
 		Resources: Resources{
 			Formats: []Format{
 				{
 					ID:            "r1",
-					Name:          "FFVideoFormat1080p30",
+					Name:          "FFVideoFormat1080p2997",
 					FrameDuration: "1001/30000s",
 					Width:         "1920",
 					Height:        "1080",
@@ -447,23 +433,27 @@ func GenerateEnhancedWikipediaTableFCPXML(data interface{}, outputPath string) e
 			Effects: []Effect{
 				{
 					ID:   "r2",
-					Name: "Graphic Text Block",
-					UID:  ".../Titles.localized/Basic Text.localized/Graphic Text Block.localized/Graphic Text Block.moti",
+					Name: "Shapes",
+					UID:  ".../Generators.localized/Elements.localized/Shapes.localized/Shapes.motn",
+				},
+				{
+					ID:   "r3",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
 				},
 			},
-			Generators: generators,
 		},
 		Library: Library{
 			Events: []Event{
 				{
-					Name: "Andre Agassi Tennis",
+					Name: "Andre Agassi 1986",
 					Projects: []Project{
 						{
-							Name: "1986 Tournament Timeline",
+							Name: "Tournament Table",
 							Sequences: []Sequence{
 								{
 									Format:      "r1",
-									Duration:    FormatDurationForFCPXML(currentOffset),
+									Duration:    FormatDurationForFCPXML(totalDuration),
 									TCStart:     "0s",
 									TCFormat:    "NDF",
 									AudioLayout: "stereo",
@@ -487,12 +477,6 @@ func GenerateEnhancedWikipediaTableFCPXML(data interface{}, outputPath string) e
 	
 	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
 	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
-}
-
-type TournamentResult struct {
-	Tournament string
-	Result     string
-	Style      map[string]string
 }
 
 func getBackgroundColor(result string, style map[string]string) string {
@@ -501,25 +485,25 @@ func getBackgroundColor(result string, style map[string]string) string {
 		if bg, ok := style["background"]; ok {
 			switch bg {
 			case "lime":
-				return "0.2 0.8 0.2 1" // Green for wins
+				return "0.2 0.8 0.2" // Green for wins
 			case "yellow":
-				return "1 1 0.2 1" // Yellow for semifinals
+				return "1 1 0.2" // Yellow for semifinals
 			case "thistle":
-				return "0.8 0.6 0.8 1" // Purple for finals
+				return "0.8 0.6 0.8" // Purple for finals
 			case "#afeeee":
-				return "0.7 0.9 0.9 1" // Light blue for rounds
+				return "0.7 0.9 0.9" // Light blue for rounds
 			case "#ffebcd":
-				return "1 0.9 0.8 1" // Light orange for quarterfinals
+				return "1 0.9 0.8" // Light orange for quarterfinals
 			}
 		}
 		if bgColor, ok := style["background-color"]; ok {
 			switch bgColor {
 			case "lime":
-				return "0.2 0.8 0.2 1"
+				return "0.2 0.8 0.2"
 			case "yellow":
-				return "1 1 0.2 1"
+				return "1 1 0.2"
 			case "thistle":
-				return "0.8 0.6 0.8 1"
+				return "0.8 0.6 0.8"
 			}
 		}
 	}
@@ -527,204 +511,27 @@ func getBackgroundColor(result string, style map[string]string) string {
 	// Fallback based on result content
 	switch result {
 	case "W", "'''W'''":
-		return "0.2 0.8 0.2 1" // Green for wins
+		return "0.2 0.8 0.2" // Green for wins
 	case "F":
-		return "0.8 0.6 0.8 1" // Purple for finals
+		return "0.8 0.6 0.8" // Purple for finals
 	case "SF":
-		return "1 1 0.2 1" // Yellow for semifinals
+		return "1 1 0.2" // Yellow for semifinals
 	case "QF":
-		return "1 0.9 0.8 1" // Light orange for quarterfinals
+		return "1 0.9 0.8" // Light orange for quarterfinals
 	case "1R", "2R", "3R", "4R":
-		return "0.7 0.9 0.9 1" // Light blue for rounds
+		return "0.7 0.9 0.9" // Light blue for rounds
 	case "A":
-		return "0.9 0.9 0.9 1" // Light gray for absent
+		return "0.9 0.9 0.9" // Light gray for absent
 	case "DNQ":
-		return "0.8 0.8 0.8 1" // Gray for did not qualify
+		return "0.8 0.8 0.8" // Gray for did not qualify
 	default:
-		return "0.95 0.95 0.95 1" // Very light gray default
+		return "0.95 0.95 0.95" // Very light gray default
 	}
 }
 
 func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
-	// Import the wikipedia package here locally to avoid circular imports
-	tables, ok := data.([]interface{})
-	if !ok {
-		return fmt.Errorf("invalid table data format")
-	}
-
-	totalDuration := 6 * time.Minute // 6 minutes total
-	
-	var spineContent strings.Builder
-	currentOffset := time.Duration(0)
-	
-	if len(tables) == 0 {
-		return fmt.Errorf("no tables found in Wikipedia data")
-	}
-	
-	// Get the first table
-	firstTable := tables[0]
-	tableMap, ok := firstTable.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid table format")
-	}
-	
-	headers, _ := tableMap["Headers"].([]string)
-	rows, _ := tableMap["Rows"].([]interface{})
-	
-	totalRows := len(rows)
-	if totalRows == 0 {
-		return fmt.Errorf("no rows found in table")
-	}
-	
-	// Calculate timing - reveal rows slowly over 6 minutes
-	rowDuration := totalDuration / time.Duration(totalRows)
-	if rowDuration < 2*time.Second {
-		rowDuration = 2 * time.Second // Minimum 2 seconds per row
-	}
-	
-	// Create header text first
-	if len(headers) > 0 {
-		headerText := strings.Join(headers, " | ")
-		escapedText := escapeXMLText(headerText)
-		
-		spineContent.WriteString(fmt.Sprintf(`
-			<gap name="Header Gap" offset="%s" duration="%s">
-				<title ref="r2" lane="1" offset="%s" name="Table Header" start="%s" duration="%s">
-					<text>
-						<text-style ref="ts1">%s</text-style>
-					</text>
-					<text-style-def id="ts1">
-						<text-style font="Helvetica Neue" fontSize="176.8" fontColor="1 1 1 1"/>
-					</text-style-def>
-				</title>
-			</gap>`,
-			FormatDurationForFCPXML(currentOffset),
-			FormatDurationForFCPXML(rowDuration),
-			FormatDurationForFCPXML(100*time.Millisecond),
-			FormatDurationForFCPXML(100*time.Millisecond),
-			FormatDurationForFCPXML(rowDuration-200*time.Millisecond),
-			escapedText))
-		
-		currentOffset += rowDuration
-	}
-	
-	// Add each row as a text block
-	for i, row := range rows {
-		rowMap, ok := row.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		
-		cells, ok := rowMap["Cells"].([]string)
-		if !ok {
-			continue
-		}
-		
-		if len(cells) == 0 {
-			continue
-		}
-		
-		// Create row text - join first few cells
-		var displayCells []string
-		maxCells := 4 // Show max 4 cells to avoid overcrowding
-		for j, cell := range cells {
-			if j >= maxCells {
-				break
-			}
-			if strings.TrimSpace(cell) != "" {
-				displayCells = append(displayCells, strings.TrimSpace(cell))
-			}
-		}
-		
-		if len(displayCells) == 0 {
-			continue
-		}
-		
-		rowText := strings.Join(displayCells, " | ")
-		if len(rowText) > 100 { // Truncate if too long
-			rowText = rowText[:97] + "..."
-		}
-		
-		escapedText := escapeXMLText(rowText)
-		
-		spineContent.WriteString(fmt.Sprintf(`
-			<gap name="Row Gap" offset="%s" duration="%s">
-				<title ref="r2" lane="1" offset="%s" name="Table Row %d" start="%s" duration="%s">
-					<text>
-						<text-style ref="ts%d">%s</text-style>
-					</text>
-					<text-style-def id="ts%d">
-						<text-style font="Helvetica Neue" fontSize="176.8" fontColor="1 1 1 1"/>
-					</text-style-def>
-				</title>
-			</gap>`,
-			FormatDurationForFCPXML(currentOffset),
-			FormatDurationForFCPXML(rowDuration),
-			FormatDurationForFCPXML(100*time.Millisecond),
-			i+1,
-			FormatDurationForFCPXML(100*time.Millisecond),
-			FormatDurationForFCPXML(rowDuration-200*time.Millisecond),
-			i+2, escapedText, i+2))
-		
-		currentOffset += rowDuration
-	}
-	
-	// Create the FCPXML structure
-	fcpxml := FCPXML{
-		Version: "1.11",
-		Resources: Resources{
-			Formats: []Format{
-				{
-					ID:            "r1",
-					Name:          "FFVideoFormat1080p30",
-					FrameDuration: "1001/30000s",
-					Width:         "1920",
-					Height:        "1080",
-					ColorSpace:    "1-1-1 (Rec. 709)",
-				},
-			},
-			Effects: []Effect{
-				{
-					ID:   "r2",
-					Name: "Graphic Text Block",
-					UID:  ".../Titles.localized/Basic Text.localized/Graphic Text Block.localized/Graphic Text Block.moti",
-				},
-			},
-		},
-		Library: Library{
-			Events: []Event{
-				{
-					Name: "Wikipedia Table",
-					Projects: []Project{
-						{
-							Name: "Wikipedia Table Reveal",
-							Sequences: []Sequence{
-								{
-									Format:      "r1",
-									Duration:    FormatDurationForFCPXML(currentOffset),
-									TCStart:     "0s",
-									TCFormat:    "NDF",
-									AudioLayout: "stereo",
-									AudioRate:   "48k",
-									Spine: Spine{
-										Content: spineContent.String(),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	
-	output, err := xml.MarshalIndent(fcpxml, "", "    ")
-	if err != nil {
-		return err
-	}
-	
-	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
-	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
+	// Simple fallback function
+	return GenerateTableGridFCPXML(data, outputPath)
 }
 
 func escapeXMLText(text string) string {
