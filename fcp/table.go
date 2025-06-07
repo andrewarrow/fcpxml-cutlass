@@ -14,13 +14,29 @@ type TournamentResult struct {
 	Style      map[string]string
 }
 
+
+// GenerateTableGridFCPXML builds a simple table view inside an FCPXML timeline.
+// The original implementation ignored the supplied `data` parameter and relied
+// on hard-coded sample data.  This has been replaced with logic that attempts
+// to extract information from the structure produced by the wikipedia/parse
+// package.  If the structure is unrecognised or empty we fall back to the
+// previous sample so that callers still receive a valid file instead of an
+// error.
 func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
-	// Use demo data showing Andre Agassi's actual 1986 results
-	tournamentResults := []TournamentResult{
-		{Tournament: "US Open", Result: "1R", Style: map[string]string{"background": "#afeeee"}},
-		{Tournament: "Australian Open", Result: "A", Style: map[string]string{}},
-		{Tournament: "French Open", Result: "A", Style: map[string]string{}},
-		{Tournament: "Wimbledon", Result: "A", Style: map[string]string{}},
+	// First, try to convert the loosely-typed `data` argument into a slice of
+	// TournamentResult values that can drive the rendering.
+	
+	tournamentResults := extractTournamentResults(data)
+
+	if len(tournamentResults) == 0 {
+		// Nothing recognised – keep the original sample so the output is never
+		// empty (and to aid manual debugging in the Final Cut Pro UI).
+		tournamentResults = []TournamentResult{
+			{Tournament: "US Open", Result: "1R", Style: map[string]string{"background": "#afeeee"}},
+			{Tournament: "Australian Open", Result: "A", Style: map[string]string{}},
+			{Tournament: "French Open", Result: "A", Style: map[string]string{}},
+			{Tournament: "Wimbledon", Result: "A", Style: map[string]string{}},
+		}
 	}
 	
 	// Create table grid using shapes and text
@@ -32,9 +48,20 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 	numRows := len(tournamentResults) + 1 // +1 for header = 5 rows
 	numCols := 2 // Tournament and 1986 result
 	
-	// Grid positioning - based on tennis.fcpxml values
-	horizontalPositions := []float64{0.200, 0.320, 0.440, 0.560, 0.680, 0.800} // Top to bottom
-	verticalPositions := []float64{0.100, 0.500, 0.900} // Left to right
+	// Grid positioning – start a little below the top of the frame (20 % of the
+	// height) and keep the same spacing that the reference file used (12 %).  We
+	// build the slice dynamically so that any number of rows is supported.
+	var horizontalPositions []float64
+	startY := 0.200 // First (top) horizontal line
+	rowSpacing := 0.120
+	for i := 0; i <= numRows; i++ {
+		horizontalPositions = append(horizontalPositions, startY+rowSpacing*float64(i))
+	}
+
+	// Two-column layout (tournament / result) – the reference used three
+	// vertical positions: 0.1 (left border), 0.5 (centre border) and 0.9 (right
+	// border).  We keep those fixed.
+	verticalPositions := []float64{0.100, 0.500, 0.900}
 	
 	// Create horizontal grid lines - exactly like tennis.fcpxml
 	for i := 0; i <= numRows; i++ {
@@ -68,45 +95,74 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			verticalPositions[j]))
 	}
 	
-	// Add header row - exactly like tennis.fcpxml positioning
+	// Header row – if the caller supplied explicit headers we use them, otherwise
+	// fall back to the default "Tournament" / "Result" pair.
+	primaryHeader := "Tournament"
+	secondaryHeader := "Result"
+	if hdrs, ok := tableHeadersFromData(data); ok {
+		if len(hdrs) > 0 {
+			primaryHeader = hdrs[0]
+		}
+		if len(hdrs) > 1 {
+			secondaryHeader = hdrs[1]
+		}
+	}
+
+	// Header – left column
 	spineContent.WriteString(fmt.Sprintf(`
-	<title ref="r3" lane="2" offset="%s" name="Header Tournament" start="%s" duration="%s">
+	<title ref="r3" lane="2" offset="%s" name="Header %s" start="%s" duration="%s">
 		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-200.0 -259.2"/>
 		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
 		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
 		<text>
-			<text-style ref="ts1">Tournament</text-style>
+			<text-style ref="ts1">%s</text-style>
 		</text>
 		<text-style-def id="ts1">
 			<text-style font="SF Pro Display" fontSize="36" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
 		</text-style-def>
 	</title>`,
 		FormatDurationForFCPXML(currentOffset),
+		primaryHeader,
 		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(totalDuration)))
-	
-	// 1986 header
+		FormatDurationForFCPXML(totalDuration),
+		primaryHeader))
+
+	// Header – right column
 	spineContent.WriteString(fmt.Sprintf(`
-	<title ref="r3" lane="3" offset="%s" name="Header 1986" start="%s" duration="%s">
+	<title ref="r3" lane="3" offset="%s" name="Header %s" start="%s" duration="%s">
 		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="200.0 -259.2"/>
 		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
 		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
 		<text>
-			<text-style ref="ts2">1986</text-style>
+			<text-style ref="ts2">%s</text-style>
 		</text>
 		<text-style-def id="ts2">
 			<text-style font="SF Pro Display" fontSize="36" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
 		</text-style-def>
 	</title>`,
 		FormatDurationForFCPXML(currentOffset),
+		secondaryHeader,
 		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(totalDuration)))
+		FormatDurationForFCPXML(totalDuration),
+		secondaryHeader))
 	
-	// Row Y positions for text (from tennis.fcpxml)
-	textYPositions := []float64{-129.6, 0.0, 129.6, 259.2}
-	
-	// Cell center positions for backgrounds (from tennis.fcpxml)
-	cellCenterPositions := []float64{0.380, 0.500, 0.620, 0.740}
+	// Row Y positions for text – keep the original 129.6-pixel spacing so that
+	// the visual result remains similar to the reference.  The first data row in
+	// tennis.fcpxml sat at ‑129.6px, so we replicate that offset and generate as
+	// many entries as required.
+	var textYPositions []float64
+	textStartPx := -129.6
+	textSpacingPx := 129.6
+	for i := 0; i < len(tournamentResults); i++ {
+		textYPositions = append(textYPositions, textStartPx+float64(i)*textSpacingPx)
+	}
+
+	// Cell centre positions for the coloured background rectangles.
+	var cellCenterPositions []float64
+	for i := 0; i < len(tournamentResults); i++ {
+		centerY := startY + rowSpacing*float64(i+1) + rowSpacing/2
+		cellCenterPositions = append(cellCenterPositions, centerY)
+	}
 	
 	// Add tournament data with gradual reveal - using tennis.fcpxml patterns
 	for i, result := range tournamentResults {
@@ -234,6 +290,110 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 	
 	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
 	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
+}
+
+// extractTournamentResults converts the dynamic data structure passed from
+// main.go (or any other caller) into a slice of TournamentResult values.  The
+// implementation purposefully performs many runtime type assertions instead of
+// reflection to keep things simple and dependency-free.
+func extractTournamentResults(data interface{}) []TournamentResult {
+	var results []TournamentResult
+
+	// Expecting []interface{} (tables)
+	outerSlice, ok := data.([]interface{})
+	if !ok || len(outerSlice) == 0 {
+		return results
+	}
+
+	// Work with the first table only for now.
+	tableMap, ok := outerSlice[0].(map[string]interface{})
+	if !ok {
+		return results
+	}
+
+	rowsIface, ok := tableMap["Rows"].([]interface{})
+	if !ok {
+		return results
+	}
+
+	for _, row := range rowsIface {
+		rowMap, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		cellsIface, ok := rowMap["Cells"].([]interface{})
+		if !ok || len(cellsIface) == 0 {
+			continue
+		}
+
+		// First cell → tournament/event name
+		firstCellMap, ok := cellsIface[0].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := firstCellMap["Content"].(string)
+
+		// Second cell (if present) → result value (W, F, SF, etc.)
+		var resultStr string
+		var styleMap map[string]string
+		if len(cellsIface) > 1 {
+			secondCellMap, ok := cellsIface[1].(map[string]interface{})
+			if ok {
+				resultStr, _ = secondCellMap["Content"].(string)
+
+				// style is itself a map[string]string but comes through as
+				// map[string]interface{} – convert if needed.
+				if rawStyle, exists := secondCellMap["Style"]; exists {
+					styleMap = make(map[string]string)
+					switch s := rawStyle.(type) {
+					case map[string]string:
+						styleMap = s
+					case map[string]interface{}:
+						for k, v := range s {
+							if vs, ok := v.(string); ok {
+								styleMap[k] = vs
+							}
+						}
+					}
+				}
+			}
+		}
+
+		results = append(results, TournamentResult{
+			Tournament: name,
+			Result:     resultStr,
+			Style:      styleMap,
+		})
+	}
+
+	return results
+}
+
+// tableHeadersFromData tries to pull the header list from the first table in
+// the supplied dynamic structure.  It returns the slice and a boolean that
+// indicates success.
+func tableHeadersFromData(data interface{}) ([]string, bool) {
+	outerSlice, ok := data.([]interface{})
+	if !ok || len(outerSlice) == 0 {
+		return nil, false
+	}
+	if tableMap, ok := outerSlice[0].(map[string]interface{}); ok {
+		if hdr, ok := tableMap["Headers"].([]string); ok {
+			return hdr, true
+		}
+		// When coming through the JSON-like marshaling the headers may be a
+		// []interface{} of strings.
+		if hdrIface, ok := tableMap["Headers"].([]interface{}); ok {
+			var headers []string
+			for _, h := range hdrIface {
+				if s, ok := h.(string); ok {
+					headers = append(headers, s)
+				}
+			}
+			return headers, len(headers) > 0
+		}
+	}
+	return nil, false
 }
 
 func getBackgroundColor(result string, style map[string]string) string {

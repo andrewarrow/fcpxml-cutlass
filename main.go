@@ -201,12 +201,16 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 	fmt.Printf("Table headers: %v\n", table.Headers)
 	fmt.Printf("Table has %d rows\n", len(table.Rows))
 	
-	// Convert to interface{} format for FCPXML generator
-	tableData := make([]interface{}, len(data.Tables))
-	for i, table := range data.Tables {
-		rows := make([]interface{}, len(table.Rows))
-		for j, row := range table.Rows {
-			// Convert TableCell structs to interface{} maps
+	// Convert ONLY the selected table to the loosely typed format expected by
+	// the generator.  Passing the whole slice previously meant that the
+	// generator always processed the first table instead of the best-scoring
+	// one.
+	var tableData []interface{}
+
+	{
+		t := table // the best table selected above
+		rows := make([]interface{}, len(t.Rows))
+		for j, row := range t.Rows {
 			cells := make([]interface{}, len(row.Cells))
 			for k, cell := range row.Cells {
 				cells[k] = map[string]interface{}{
@@ -218,14 +222,13 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 					"Attributes": cell.Attributes,
 				}
 			}
-			rows[j] = map[string]interface{}{
-				"Cells": cells,
-			}
+			rows[j] = map[string]interface{}{"Cells": cells}
 		}
-		tableData[i] = map[string]interface{}{
-			"Headers": table.Headers,
+
+		tableData = append(tableData, map[string]interface{}{
+			"Headers": t.Headers,
 			"Rows":    rows,
-		}
+		})
 	}
 	
 	// Generate FCPXML
