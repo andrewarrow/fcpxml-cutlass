@@ -116,13 +116,13 @@ type Gap struct {
 }
 
 type Title struct {
-	Lane      string         `xml:"lane,attr"`
-	Offset    string         `xml:"offset,attr"`
-	Name      string         `xml:"name,attr"`
-	Duration  string         `xml:"duration,attr"`
-	Params    []Param        `xml:"param"`
-	Text      TitleText      `xml:"text"`
-	TextStyle TextStyleDef   `xml:"text-style-def"`
+	Lane         string         `xml:"lane,attr"`
+	Offset       string         `xml:"offset,attr"`
+	Name         string         `xml:"name,attr"`
+	Duration     string         `xml:"duration,attr"`
+	Params       []Param        `xml:"param"`
+	Text         TitleText      `xml:"text"`
+	TextStyleDef TextStyleDef   `xml:"text-style-def"`
 }
 
 type Param struct {
@@ -361,7 +361,7 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 							Text: fmt.Sprintf("Clip %d", clip.ClipNum),
 						},
 					},
-					TextStyle: TextStyleDef{
+					TextStyleDef: TextStyleDef{
 						ID: fmt.Sprintf("ts%d", clip.ClipNum),
 						TextStyle: TextStyle{
 							Font:      "Helvetica",
