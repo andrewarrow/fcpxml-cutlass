@@ -15,12 +15,15 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
-	if inputFile == "" || len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "Usage: %s -i <input_file> <output_file>\n", os.Args[0])
+	if inputFile == "" {
+		fmt.Fprintf(os.Stderr, "Usage: %s -i <input_file> [output_file]\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	outputFile := args[0]
+	outputFile := "test.fcpxml"
+	if len(args) > 0 {
+		outputFile = args[0]
+	}
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
 	}
@@ -30,10 +33,22 @@ func main() {
 		fmt.Printf("Detected YouTube ID: %s, downloading...\n", inputFile)
 		videoFile := inputFile + ".mp4"
 		cmd := exec.Command("yt-dlp", "-o", videoFile, inputFile)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
 			os.Exit(1)
 		}
+
+		fmt.Printf("Downloading subtitles...\n")
+		youtubeURL := "https://www.youtube.com/watch?v=" + inputFile
+		subCmd := exec.Command("yt-dlp", "-o", inputFile, "--skip-download", "--write-auto-sub", "--sub-lang", "en", youtubeURL)
+		subCmd.Stdout = os.Stdout
+		subCmd.Stderr = os.Stderr
+		if err := subCmd.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Could not download subtitles: %v\n", err)
+		}
+
 		inputFile = videoFile
 	}
 
