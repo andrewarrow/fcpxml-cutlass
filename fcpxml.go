@@ -37,6 +37,14 @@ type FCPXML struct {
 type Resources struct {
 	Formats []Format `xml:"format"`
 	Assets  []Asset  `xml:"asset"`
+    Effects []Effect `xml:"effect,omitempty"`
+}
+
+// Effect represents a Motion or standard FCP title effect referenced by <title ref="…"> elements.
+type Effect struct {
+    ID   string `xml:"id,attr"`
+    Name string `xml:"name,attr"`
+    UID  string `xml:"uid,attr,omitempty"`
 }
 
 type Format struct {
@@ -116,10 +124,12 @@ type Gap struct {
 }
 
 type Title struct {
+    Ref           string         `xml:"ref,attr"`
 	Lane         string         `xml:"lane,attr"`
 	Offset       string         `xml:"offset,attr"`
 	Name         string         `xml:"name,attr"`
 	Duration     string         `xml:"duration,attr"`
+    Start        string         `xml:"start,attr,omitempty"`
 	Params       []Param        `xml:"param"`
 	Text         TitleText      `xml:"text"`
 	TextStyleDef TextStyleDef   `xml:"text-style-def"`
@@ -344,35 +354,37 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 			Name:     "Gap",
 			Offset:   formatDurationForFCPXML(currentOffset),
 			Duration: formatDurationForFCPXML(2 * time.Second),
-			Titles: []Title{
-				{
-					Lane:     "1",
-					Offset:   "0s",
-					Name:     fmt.Sprintf("Clip %d Title", clip.ClipNum),
-					Duration: formatDurationForFCPXML(2 * time.Second),
-					Params: []Param{
-						{Name: "Position", Key: "9999/999166631/999166633/1/100/101", Value: "0 0"},
-						{Name: "Flat", Key: "9999/999166631/999166633/1/999166650/999166651", Value: "1"},
-						{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
-					},
-					Text: TitleText{
-						TextStyle: TextStyleRef{
-							Ref:  fmt.Sprintf("ts%d", clip.ClipNum),
-							Text: fmt.Sprintf("Clip %d", clip.ClipNum),
-						},
-					},
-					TextStyleDef: TextStyleDef{
-						ID: fmt.Sprintf("ts%d", clip.ClipNum),
-						TextStyle: TextStyle{
-							Font:      "Helvetica",
-							FontSize:  "72",
-							FontFace:  "Bold",
-							FontColor: "1 1 1 1",
-							Alignment: "center",
-						},
-					},
-				},
-			},
+            Titles: []Title{
+                {
+                    Ref:      "r3",
+                    Lane:     "1",
+                    Offset:   "0s",
+                    Name:     fmt.Sprintf("Clip %d Title", clip.ClipNum),
+                    Duration: formatDurationForFCPXML(2 * time.Second),
+                    Start:    "0s",
+                    Params: []Param{
+                        {Name: "Position", Key: "9999/999166631/999166633/1/100/101", Value: "0 0"},
+                        {Name: "Flat", Key: "9999/999166631/999166633/1/999166650/999166651", Value: "1"},
+                        {Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
+                    },
+                    Text: TitleText{
+                        TextStyle: TextStyleRef{
+                            Ref:  fmt.Sprintf("ts%d", clip.ClipNum),
+                            Text: fmt.Sprintf("Clip %d", clip.ClipNum),
+                        },
+                    },
+                    TextStyleDef: TextStyleDef{
+                        ID: fmt.Sprintf("ts%d", clip.ClipNum),
+                        TextStyle: TextStyle{
+                            Font:      "Helvetica",
+                            FontSize:  "72",
+                            FontFace:  "Bold",
+                            FontColor: "1 1 1 1",
+                            Alignment: "center",
+                        },
+                    },
+                },
+            },
 		})
 		
 		currentOffset += 2 * time.Second
@@ -380,37 +392,44 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 	
 	return FCPXML{
 		Version: "1.11",
-		Resources: Resources{
-			Formats: []Format{
-				{
-					ID:            "r1",
-					Name:          "FFVideoFormat1080p30",
-					FrameDuration: "1001/30000s",
-					Width:         "1920",
-					Height:        "1080",
-					ColorSpace:    "1-1-1 (Rec. 709)",
-				},
-			},
-			Assets: []Asset{
-				{
-					ID:           "r2",
-					Name:         nameWithoutExt,
-					UID:          absVideoPath,
-					Start:        "0s",
-					HasVideo:     "1",
-					Format:       "r1",
-					HasAudio:     "1",
-					AudioSources: "1",
-					AudioChannels: "2",
-					Duration:     formatDurationForFCPXML(totalDuration),
-					MediaRep: MediaRep{
-						Kind: "original-media",
-						Sig:  absVideoPath,
-						Src:  "file://" + absVideoPath,
-					},
-				},
-			},
-		},
+        Resources: Resources{
+            Formats: []Format{
+                {
+                    ID:            "r1",
+                    Name:          "FFVideoFormat1080p30",
+                    FrameDuration: "1001/30000s",
+                    Width:         "1920",
+                    Height:        "1080",
+                    ColorSpace:    "1-1-1 (Rec. 709)",
+                },
+            },
+            Assets: []Asset{
+                {
+                    ID:           "r2",
+                    Name:         nameWithoutExt,
+                    UID:          absVideoPath,
+                    Start:        "0s",
+                    HasVideo:     "1",
+                    Format:       "r1",
+                    HasAudio:     "1",
+                    AudioSources: "1",
+                    AudioChannels: "2",
+                    Duration:     formatDurationForFCPXML(totalDuration),
+                    MediaRep: MediaRep{
+                        Kind: "original-media",
+                        Sig:  absVideoPath,
+                        Src:  "file://" + absVideoPath,
+                    },
+                },
+            },
+            Effects: []Effect{
+                {
+                    ID:   "r3",
+                    Name: "Basic Title",
+                    UID:  "BasicTitle",
+                },
+            },
+        },
 		Library: Library{
 			Events: []Event{
 				{
