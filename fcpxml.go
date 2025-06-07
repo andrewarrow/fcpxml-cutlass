@@ -425,8 +425,8 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
             Effects: []Effect{
                 {
                     ID:   "r3",
-                    Name: "Basic Title",
-                    UID:  ".../Titles.localized/Basic.localized/Basic Title.localized/Basic Title.moti",
+                    Name: "Typewriter",
+                    UID:  ".../Titles.localized/Build In:Out.localized/Typewriter.localized/Typewriter.moti",
                 },
             },
         },
