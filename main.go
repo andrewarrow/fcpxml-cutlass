@@ -20,6 +20,9 @@ func main() {
 	}
 
 	outputFile := args[0]
+	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
+		outputFile += ".fcpxml"
+	}
 
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error: Input file '%s' does not exist\n", inputFile)
