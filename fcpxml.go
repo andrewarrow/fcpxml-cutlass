@@ -426,7 +426,7 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
                 {
                     ID:   "r3",
                     Name: "Basic Title",
-                    UID:  "BasicTitle",
+                    UID:  ".../Titles.localized/Basic.localized/Basic Title.localized/Basic Title.moti",
                 },
             },
         },
