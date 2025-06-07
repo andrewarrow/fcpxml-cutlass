@@ -13,13 +13,16 @@ func buildSpineContent(elements []interface{}) string {
 	for _, elem := range elements {
 		switch e := elem.(type) {
 		case Video:
-			xml, _ := xml.Marshal(e)
+			xml, _ := xml.MarshalIndent(e, "                        ", "    ")
+			content.WriteString("\n                        ")
 			content.Write(xml)
 		case Title:
-			xml, _ := xml.Marshal(e)
+			xml, _ := xml.MarshalIndent(e, "                        ", "    ")
+			content.WriteString("\n                        ")
 			content.Write(xml)
 		}
 	}
+	content.WriteString("\n                    ")
 	return content.String()
 }
 
