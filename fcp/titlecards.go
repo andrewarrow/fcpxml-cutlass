@@ -51,33 +51,61 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 
 		escapedText := escapeXMLText(clipText)
 
-		spineContent.WriteString(fmt.Sprintf(`
-			<gap name="Gap" offset="%s" duration="%s">
-				<title ref="r2" lane="1" offset="%s" name="Graphic Text Block" start="%s" duration="%s">
-					<text>
-						<text-style ref="ts%d">%s</text-style>
-					</text>
-					<text-style-def id="ts%d">
-						<text-style font="Helvetica Neue" fontSize="176.8" fontColor="1 1 1 1"/>
-					</text-style-def>
-				</title>
-			</gap>`,
-			FormatDurationForFCPXML(currentOffset),
-			FormatDurationForFCPXML(10*time.Second),
-			FormatDurationForFCPXML(360*time.Millisecond),
-			FormatDurationForFCPXML(360*time.Millisecond),
-			FormatDurationForFCPXML(10*time.Second-133*time.Millisecond),
-			i+1, escapedText, i+1))
+		// Create gap with title element
+		gap := Gap{
+			Name:     "Gap",
+			Offset:   FormatDurationForFCPXML(currentOffset),
+			Duration: FormatDurationForFCPXML(10 * time.Second),
+			Titles: []Title{
+				{
+					Ref:      "r2",
+					Lane:     "1",
+					Offset:   FormatDurationForFCPXML(360 * time.Millisecond),
+					Name:     "Graphic Text Block",
+					Start:    FormatDurationForFCPXML(360 * time.Millisecond),
+					Duration: FormatDurationForFCPXML(10*time.Second - 133*time.Millisecond),
+					Text: TitleText{
+						TextStyle: TextStyleRef{
+							Ref:  fmt.Sprintf("ts%d", i+1),
+							Text: escapedText,
+						},
+					},
+					TextStyleDef: TextStyleDef{
+						ID: fmt.Sprintf("ts%d", i+1),
+						TextStyle: TextStyle{
+							Font:      "Helvetica Neue",
+							FontSize:  "176.8",
+							FontColor: "1 1 1 1",
+						},
+					},
+				},
+			},
+		}
+		
+		gapXML, err := xml.Marshal(gap)
+		if err != nil {
+			return FCPXML{}, fmt.Errorf("error marshaling gap XML: %v", err)
+		}
+		spineContent.Write(gapXML)
 
 		currentOffset += 10 * time.Second
 
 		// Video clip
-		spineContent.WriteString(fmt.Sprintf(`
-			<asset-clip ref="r3" offset="%s" name="%s Clip %d" start="%s" duration="%s" tcFormat="NDF" audioRole="dialogue"/>`,
-			FormatDurationForFCPXML(currentOffset),
-			nameWithoutExt, clip.ClipNum,
-			FormatDurationForFCPXML(clip.StartTime),
-			FormatDurationForFCPXML(clip.Duration)))
+		assetClip := AssetClip{
+			Ref:       "r3",
+			Offset:    FormatDurationForFCPXML(currentOffset),
+			Name:      fmt.Sprintf("%s Clip %d", nameWithoutExt, clip.ClipNum),
+			Start:     FormatDurationForFCPXML(clip.StartTime),
+			Duration:  FormatDurationForFCPXML(clip.Duration),
+			TCFormat:  "NDF",
+			AudioRole: "dialogue",
+		}
+		
+		clipXML, err := xml.Marshal(assetClip)
+		if err != nil {
+			return FCPXML{}, fmt.Errorf("error marshaling asset clip XML: %v", err)
+		}
+		spineContent.Write(clipXML)
 
 		currentOffset += clip.Duration
 	}

@@ -30,7 +30,37 @@ type TableResult struct {
 }
 
 func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
-	tableResults := extractTableResults(data)
+	// Convert interface{} data to structured TableData
+	var tableData *TableData
+	if dataSlice, ok := data.([]interface{}); ok {
+		tableData = ConvertToTableData(dataSlice)
+	} else {
+		tableData = &TableData{
+			Headers: []string{"Column 1", "Column 2"},
+			Rows: []TableRow{
+				{Cells: []TableCell{{Content: "Sample Item", Style: map[string]string{"background": "#f0f0f0"}}, {Content: "Sample Value"}}},
+				{Cells: []TableCell{{Content: "Another Item"}, {Content: "Another Value"}}},
+			},
+		}
+	}
+
+	// Convert TableData to the format expected by the rest of the function
+	var tableResults []TableResult
+	for _, row := range tableData.Rows {
+		if len(row.Cells) >= 2 {
+			tableResults = append(tableResults, TableResult{
+				Column1: row.Cells[0].Content,
+				Column2: row.Cells[1].Content,
+				Style:   row.Cells[1].Style,
+			})
+		} else if len(row.Cells) == 1 {
+			tableResults = append(tableResults, TableResult{
+				Column1: row.Cells[0].Content,
+				Column2: "",
+				Style:   row.Cells[0].Style,
+			})
+		}
+	}
 
 	if len(tableResults) == 0 {
 		tableResults = []TableResult{
@@ -56,13 +86,11 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 
 	primaryHeader := "Column 1"
 	secondaryHeader := "Column 2"
-	if hdrs, ok := tableHeadersFromData(data); ok {
-		if len(hdrs) > 0 {
-			primaryHeader = hdrs[0]
-		}
-		if len(hdrs) > 1 {
-			secondaryHeader = hdrs[1]
-		}
+	if len(tableData.Headers) > 0 {
+		primaryHeader = tableData.Headers[0]
+	}
+	if len(tableData.Headers) > 1 {
+		secondaryHeader = tableData.Headers[1]
 	}
 
 	var spineElements []interface{}
@@ -335,94 +363,6 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
 }
 
-func extractTableResults(data interface{}) []TableResult {
-	var results []TableResult
-
-	outerSlice, ok := data.([]interface{})
-	if !ok || len(outerSlice) == 0 {
-		return results
-	}
-
-	tableMap, ok := outerSlice[0].(map[string]interface{})
-	if !ok {
-		return results
-	}
-
-	rowsIface, ok := tableMap["Rows"].([]interface{})
-	if !ok {
-		return results
-	}
-
-	for _, row := range rowsIface {
-		rowMap, ok := row.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		cellsIface, ok := rowMap["Cells"].([]interface{})
-		if !ok || len(cellsIface) == 0 {
-			continue
-		}
-
-		firstCellMap, ok := cellsIface[0].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		col1Content, _ := firstCellMap["Content"].(string)
-
-		var col2Content string
-		var styleMap map[string]string
-		if len(cellsIface) > 1 {
-			secondCellMap, ok := cellsIface[1].(map[string]interface{})
-			if ok {
-				col2Content, _ = secondCellMap["Content"].(string)
-
-				if rawStyle, exists := secondCellMap["Style"]; exists {
-					styleMap = make(map[string]string)
-					switch s := rawStyle.(type) {
-					case map[string]string:
-						styleMap = s
-					case map[string]interface{}:
-						for k, v := range s {
-							if vs, ok := v.(string); ok {
-								styleMap[k] = vs
-							}
-						}
-					}
-				}
-			}
-		}
-
-		results = append(results, TableResult{
-			Column1: col1Content,
-			Column2: col2Content,
-			Style:   styleMap,
-		})
-	}
-
-	return results
-}
-
-func tableHeadersFromData(data interface{}) ([]string, bool) {
-	outerSlice, ok := data.([]interface{})
-	if !ok || len(outerSlice) == 0 {
-		return nil, false
-	}
-	if tableMap, ok := outerSlice[0].(map[string]interface{}); ok {
-		if hdr, ok := tableMap["Headers"].([]string); ok {
-			return hdr, true
-		}
-		if hdrIface, ok := tableMap["Headers"].([]interface{}); ok {
-			var headers []string
-			for _, h := range hdrIface {
-				if s, ok := h.(string); ok {
-					headers = append(headers, s)
-				}
-			}
-			return headers, len(headers) > 0
-		}
-	}
-	return nil, false
-}
 
 func getBackgroundColor(content string, style map[string]string) string {
 	if style != nil {
