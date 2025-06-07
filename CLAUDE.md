@@ -1,5 +1,7 @@
 # Project Context for AI Assistance
 
+Never run the program, only edit code make sure it compiles.
+
 ## Project Overview
 
 Cutalyst is a Go-based command-line tool that converts video files into Final Cut Pro XML (FCPXML) format. It supports both local video files and YouTube videos (by downloading them first using yt-dlp). The tool generates FCPXML files that can be imported into Final Cut Pro for video editing.

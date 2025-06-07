@@ -11,12 +11,15 @@ import (
 
 func main() {
 	var inputFile string
+	var segmentMode bool
 	flag.StringVar(&inputFile, "i", "", "Input file (required)")
+	flag.BoolVar(&segmentMode, "s", false, "Segment mode: break into logical clips with title cards")
 	flag.Parse()
 
 	args := flag.Args()
 	if inputFile == "" {
 		fmt.Fprintf(os.Stderr, "Usage: %s -i <input_file> [output_file]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  -s: Segment mode - break video into logical clips with title cards\n")
 		os.Exit(1)
 	}
 
@@ -29,9 +32,11 @@ func main() {
 	}
 
 	// Check if input looks like a YouTube ID
+	youtubeID := ""
 	if len(inputFile) == 11 && !strings.Contains(inputFile, ".") {
+		youtubeID = inputFile
 		fmt.Printf("Detected YouTube ID: %s, downloading...\n", inputFile)
-		videoFile := inputFile + ".mp4"
+		videoFile := inputFile + ".mov"
 		cmd := exec.Command("yt-dlp", "-o", videoFile, inputFile)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -57,6 +62,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Use segment mode if requested
+	if segmentMode {
+		fmt.Printf("Using segment mode to break video into logical clips...\n")
+		if youtubeID != "" {
+			if err := breakIntoLogicalParts(youtubeID); err != nil {
+				fmt.Fprintf(os.Stderr, "Error breaking into logical parts: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			// Handle local files in segment mode
+			baseID := strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
+			if err := breakIntoLogicalParts(baseID); err != nil {
+				fmt.Fprintf(os.Stderr, "Error breaking into logical parts: %v\n", err)
+				os.Exit(1)
+			}
+		}
+		return
+	}
+
+	// Standard mode - generate simple FCPXML
 	if err := generateFCPXML(inputFile, outputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating FCPXML: %v\n", err)
 		os.Exit(1)
