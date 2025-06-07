@@ -115,33 +115,60 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 
 	var spineElements []interface{}
 
-	// Create horizontal grid lines
-	fmt.Printf("DEBUG: Creating horizontal grid lines for %d positions\n", len(horizontalPositions))
-	fmt.Printf("DEBUG: Horizontal positions: %v\n", horizontalPositions)
-	fmt.Printf("DEBUG: startY=%.3f, rowSpacing=%.3f\n", startY, rowSpacing)
+	// Create horizontal grid lines using nested structure like table.fcpxml
+	fmt.Printf("DEBUG: Creating horizontal grid lines using nested structure like table.fcpxml\n")
+	fmt.Printf("DEBUG: Reference table.fcpxml uses nested video elements with position offsets\n")
 	
-	for i := 0; i < len(horizontalPositions); i++ {
-		yPos := horizontalPositions[i]
-		fmt.Printf("DEBUG: Creating H-Line %d at Y position %.3f\n", i, yPos)
-		
-		hLine := Video{
-			Ref:      "r2",
-			Offset:   FormatDurationForFCPXML(currentOffset),
-			Name:     fmt.Sprintf("H-Line %d", i),
-			Start:    "0s",
-			Duration: FormatDurationForFCPXML(totalDuration),
-			Params: []Param{
-				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", yPos)},
-			},
-			AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
-		}
-		
-		fmt.Printf("DEBUG: H-Line %d - Center: 0.5 %.3f, Scale: 1 0.0395\n", i, yPos)
-		spineElements = append(spineElements, hLine)
+	// Create main horizontal line at center position (like table.fcpxml)
+	mainYPos := 0.59  // Same as reference table.fcpxml
+	fmt.Printf("DEBUG: Creating main H-Line at Y position %.3f\n", mainYPos)
+	
+	// Create nested video element for second line (like in table.fcpxml)
+	nestedVideo := Video{
+		Ref:      "r2",
+		Lane:     "1",
+		Offset:   FormatDurationForFCPXML(currentOffset + 3*time.Second),  // Start slightly later like reference
+		Name:     "Shapes Nested",
+		Start:    FormatDurationForFCPXML(currentOffset),
+		Duration: FormatDurationForFCPXML(totalDuration - 3*time.Second),
+		Params: []Param{
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.2f", mainYPos)},
+		},
+		AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "1 0.0394"},  // Position offset like reference
 	}
+	
+	mainVideo := Video{
+		Ref:      "r2",
+		Offset:   FormatDurationForFCPXML(currentOffset),
+		Name:     "Shapes Main",
+		Start:    FormatDurationForFCPXML(currentOffset + 1*time.Second),
+		Duration: FormatDurationForFCPXML(5 * time.Second),  // Shorter duration like reference
+		Params: []Param{
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.2f", mainYPos)},
+		},
+		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
+		NestedVideos:    []Video{nestedVideo},  // Include nested video
+	}
+	
+	fmt.Printf("DEBUG: Main H-Line - Center: 0.5 %.2f, Scale: 1 0.0395\n", mainYPos)
+	fmt.Printf("DEBUG: Nested H-Line - Center: 0.5 %.2f, Position: 0 8.33333, Scale: 1 0.0394\n", mainYPos)
+	spineElements = append(spineElements, mainVideo)
 
 	// Create vertical grid lines
 	fmt.Printf("DEBUG: Creating vertical grid lines for %d columns (0 to %d)\n", numCols, numCols)
