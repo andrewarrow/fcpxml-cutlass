@@ -208,6 +208,11 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	for i, result := range tableResults {
 		revealTime := currentOffset + time.Duration(i+1)*2*time.Second
 		cellDuration := totalDuration - time.Duration(i+1)*2*time.Second
+		
+		// Ensure duration is never negative
+		if cellDuration <= 0 {
+			cellDuration = time.Second // Minimum 1 second duration
+		}
 
 		col1EscAttr := escapeXMLText(result.Column1)
 		col2EscAttr := escapeXMLText(result.Column2)
