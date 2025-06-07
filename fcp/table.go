@@ -28,61 +28,50 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 	var spineContent strings.Builder
 	currentOffset := time.Duration(0)
 	
-	// Calculate grid dimensions
-	numRows := len(tournamentResults) + 1 // +1 for header
+	// Calculate grid dimensions - exactly like tennis.fcpxml
+	numRows := len(tournamentResults) + 1 // +1 for header = 5 rows
 	numCols := 2 // Tournament and 1986 result
 	
-	// Grid parameters
-	tableWidth := 0.8  // 80% of screen width
-	tableHeight := 0.6 // 60% of screen height
-	cellWidth := tableWidth / float64(numCols)
-	cellHeight := tableHeight / float64(numRows)
+	// Grid positioning - based on tennis.fcpxml values
+	horizontalPositions := []float64{0.200, 0.320, 0.440, 0.560, 0.680, 0.800} // Top to bottom
+	verticalPositions := []float64{0.100, 0.500, 0.900} // Left to right
 	
-	// Create horizontal grid lines
+	// Create horizontal grid lines - exactly like tennis.fcpxml
 	for i := 0; i <= numRows; i++ {
-		lineY := 0.5 + (float64(i)/float64(numRows) - 0.5) * tableHeight
-		
 		spineContent.WriteString(fmt.Sprintf(`
 		<video ref="r2" offset="%s" name="H-Line %d" start="0s" duration="%s">
 			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
 			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="0.2 0.2 0.2"/>
 			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
 			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="0.5 %.3f"/>
-			<adjust-transform scale="%.3f 0.002"/>
+			<adjust-transform scale="0.800 0.002"/>
 		</video>`,
 			FormatDurationForFCPXML(currentOffset),
 			i,
 			FormatDurationForFCPXML(totalDuration),
-			lineY,
-			tableWidth))
+			horizontalPositions[i]))
 	}
 	
-	// Create vertical grid lines  
+	// Create vertical grid lines - exactly like tennis.fcpxml  
 	for j := 0; j <= numCols; j++ {
-		lineX := 0.5 + (float64(j)/float64(numCols) - 0.5) * tableWidth
-		
 		spineContent.WriteString(fmt.Sprintf(`
 		<video ref="r2" lane="1" offset="%s" name="V-Line %d" start="0s" duration="%s">
 			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
 			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="0.2 0.2 0.2"/>
 			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
 			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="%.3f 0.5"/>
-			<adjust-transform scale="0.002 %.3f"/>
+			<adjust-transform scale="0.002 0.600"/>
 		</video>`,
 			FormatDurationForFCPXML(currentOffset),
 			j,
 			FormatDurationForFCPXML(totalDuration),
-			lineX,
-			tableHeight))
+			verticalPositions[j]))
 	}
 	
-	// Add header row
-	headerY := 0.5 + (-0.5 + 0.5/float64(numRows)) * tableHeight
-	
-	// Tournament header
+	// Add header row - exactly like tennis.fcpxml positioning
 	spineContent.WriteString(fmt.Sprintf(`
 	<title ref="r3" lane="2" offset="%s" name="Header Tournament" start="%s" duration="%s">
-		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-200.0 -259.2"/>
 		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
 		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
 		<text>
@@ -94,14 +83,12 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 	</title>`,
 		FormatDurationForFCPXML(currentOffset),
 		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(totalDuration),
-		-200.0, // Left column
-		headerY*1080-540)) // Convert to FCP coordinates
+		FormatDurationForFCPXML(totalDuration)))
 	
 	// 1986 header
 	spineContent.WriteString(fmt.Sprintf(`
 	<title ref="r3" lane="3" offset="%s" name="Header 1986" start="%s" duration="%s">
-		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="200.0 -259.2"/>
 		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
 		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
 		<text>
@@ -113,42 +100,42 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 	</title>`,
 		FormatDurationForFCPXML(currentOffset),
 		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(totalDuration),
-		200.0, // Right column
-		headerY*1080-540))
+		FormatDurationForFCPXML(totalDuration)))
 	
-	// Add tournament data with gradual reveal
+	// Row Y positions for text (from tennis.fcpxml)
+	textYPositions := []float64{-129.6, 0.0, 129.6, 259.2}
+	
+	// Cell center positions for backgrounds (from tennis.fcpxml)
+	cellCenterPositions := []float64{0.380, 0.500, 0.620, 0.740}
+	
+	// Add tournament data with gradual reveal - using tennis.fcpxml patterns
 	for i, result := range tournamentResults {
-		rowY := 0.5 + (-0.5 + (1.5+float64(i))/float64(numRows)) * tableHeight
 		revealTime := currentOffset + time.Duration(i+1)*2*time.Second
 		cellDuration := totalDuration - time.Duration(i+1)*2*time.Second
 		
 		// Background color for the result cell
 		bgColor := getBackgroundColor(result.Result, result.Style)
 		
-		// Background shape for result cell
+		// Background shape for result cell - exactly like tennis.fcpxml
 		spineContent.WriteString(fmt.Sprintf(`
 		<video ref="r2" lane="4" offset="%s" name="BG %s" start="%s" duration="%s">
 			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
 			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="%s"/>
 			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
-			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="%.3f %.3f"/>
-			<adjust-transform scale="%.3f %.3f"/>
+			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="0.700 %.3f"/>
+			<adjust-transform scale="0.380 0.096"/>
 		</video>`,
 			FormatDurationForFCPXML(revealTime),
 			result.Tournament,
 			FormatDurationForFCPXML(revealTime),
 			FormatDurationForFCPXML(cellDuration),
 			bgColor,
-			0.5 + (1.5/float64(numCols) - 0.5) * tableWidth, // Right column center
-			rowY,
-			cellWidth*0.95, // Slightly smaller than cell
-			cellHeight*0.8))
+			cellCenterPositions[i]))
 		
-		// Tournament name
+		// Tournament name - exactly like tennis.fcpxml
 		spineContent.WriteString(fmt.Sprintf(`
 		<title ref="r3" lane="5" offset="%s" name="%s" start="%s" duration="%s">
-			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-200.0 %.1f"/>
 			<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
 			<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
 			<text>
@@ -162,14 +149,13 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			result.Tournament,
 			FormatDurationForFCPXML(revealTime),
 			FormatDurationForFCPXML(cellDuration),
-			-200.0, // Left column
-			rowY*1080-540,
+			textYPositions[i],
 			i+10, result.Tournament, i+10))
 		
-		// Result
+		// Result - exactly like tennis.fcpxml
 		spineContent.WriteString(fmt.Sprintf(`
 		<title ref="r3" lane="6" offset="%s" name="Result %s" start="%s" duration="%s">
-			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="%.1f %.1f"/>
+			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="200.0 %.1f"/>
 			<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
 			<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
 			<text>
@@ -183,8 +169,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			result.Result,
 			FormatDurationForFCPXML(revealTime),
 			FormatDurationForFCPXML(cellDuration),
-			200.0, // Right column
-			rowY*1080-540,
+			textYPositions[i],
 			i+50, result.Result, i+50))
 	}
 	
