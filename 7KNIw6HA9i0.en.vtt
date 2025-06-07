@@ -1,0 +1,1976 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.160 --> 00:00:02.350 align:start position:0%
+ 
+Okay,<00:00:00.560><c> that</c><00:00:00.800><c> is</c><00:00:01.199><c> crazy,</c>
+
+00:00:02.350 --> 00:00:02.360 align:start position:0%
+Okay, that is crazy,
+ 
+
+00:00:02.360 --> 00:00:05.430 align:start position:0%
+Okay, that is crazy,
+dude.<00:00:03.360><c> That</c><00:00:03.600><c> looks</c><00:00:03.840><c> so</c><00:00:04.160><c> good,</c><00:00:04.480><c> man.</c><00:00:04.880><c> Hey</c><00:00:05.120><c> guys,</c>
+
+00:00:05.430 --> 00:00:05.440 align:start position:0%
+dude. That looks so good, man. Hey guys,
+ 
+
+00:00:05.440 --> 00:00:07.269 align:start position:0%
+dude. That looks so good, man. Hey guys,
+today<00:00:05.600><c> we're</c><00:00:05.839><c> going</c><00:00:05.920><c> to</c><00:00:06.000><c> be</c><00:00:06.160><c> vi</c><00:00:06.480><c> coding</c><00:00:06.799><c> a</c>
+
+00:00:07.269 --> 00:00:07.279 align:start position:0%
+today we're going to be vi coding a
+ 
+
+00:00:07.279 --> 00:00:09.830 align:start position:0%
+today we're going to be vi coding a
+fitness<00:00:07.759><c> app</c><00:00:08.160><c> from</c><00:00:08.480><c> scratch.</c><00:00:09.360><c> So,</c><00:00:09.599><c> today</c>
+
+00:00:09.830 --> 00:00:09.840 align:start position:0%
+fitness app from scratch. So, today
+ 
+
+00:00:09.840 --> 00:00:11.390 align:start position:0%
+fitness app from scratch. So, today
+we're<00:00:10.080><c> going</c><00:00:10.160><c> to</c><00:00:10.240><c> be</c><00:00:10.320><c> using</c><00:00:10.559><c> an</c><00:00:10.719><c> app</c><00:00:10.960><c> called</c>
+
+00:00:11.390 --> 00:00:11.400 align:start position:0%
+we're going to be using an app called
+ 
+
+00:00:11.400 --> 00:00:14.150 align:start position:0%
+we're going to be using an app called
+Hypership.<00:00:12.400><c> You</c><00:00:12.639><c> can</c><00:00:12.719><c> go</c><00:00:12.880><c> to</c><00:00:13.160><c> hikership.dev</c>
+
+00:00:14.150 --> 00:00:14.160 align:start position:0%
+Hypership. You can go to hikership.dev
+ 
+
+00:00:14.160 --> 00:00:16.230 align:start position:0%
+Hypership. You can go to hikership.dev
+and<00:00:14.400><c> sign</c><00:00:14.559><c> up</c><00:00:14.799><c> for</c><00:00:15.040><c> free.</c><00:00:15.599><c> I'm</c><00:00:15.839><c> actually</c><00:00:16.080><c> one</c>
+
+00:00:16.230 --> 00:00:16.240 align:start position:0%
+and sign up for free. I'm actually one
+ 
+
+00:00:16.240 --> 00:00:17.910 align:start position:0%
+and sign up for free. I'm actually one
+of<00:00:16.320><c> the</c><00:00:16.400><c> co-founders</c><00:00:16.880><c> of</c><00:00:16.960><c> Hypership.</c><00:00:17.760><c> And</c>
+
+00:00:17.910 --> 00:00:17.920 align:start position:0%
+of the co-founders of Hypership. And
+ 
+
+00:00:17.920 --> 00:00:19.590 align:start position:0%
+of the co-founders of Hypership. And
+it's<00:00:18.160><c> different</c><00:00:18.400><c> than</c><00:00:18.640><c> other</c><00:00:18.880><c> Vibe</c><00:00:19.279><c> coding</c>
+
+00:00:19.590 --> 00:00:19.600 align:start position:0%
+it's different than other Vibe coding
+ 
+
+00:00:19.600 --> 00:00:21.109 align:start position:0%
+it's different than other Vibe coding
+platforms<00:00:20.240><c> because</c><00:00:20.480><c> it</c><00:00:20.720><c> gives</c><00:00:20.880><c> you</c>
+
+00:00:21.109 --> 00:00:21.119 align:start position:0%
+platforms because it gives you
+ 
+
+00:00:21.119 --> 00:00:22.950 align:start position:0%
+platforms because it gives you
+everything<00:00:21.439><c> that</c><00:00:21.680><c> you</c><00:00:21.840><c> need</c><00:00:22.080><c> to</c><00:00:22.400><c> launch</c><00:00:22.640><c> your</c>
+
+00:00:22.950 --> 00:00:22.960 align:start position:0%
+everything that you need to launch your
+ 
+
+00:00:22.960 --> 00:00:25.429 align:start position:0%
+everything that you need to launch your
+app.<00:00:23.519><c> So</c><00:00:23.760><c> it</c><00:00:23.920><c> gives</c><00:00:24.080><c> you</c><00:00:24.240><c> hosting,</c><00:00:25.039><c> it</c><00:00:25.279><c> gives</c>
+
+00:00:25.429 --> 00:00:25.439 align:start position:0%
+app. So it gives you hosting, it gives
+ 
+
+00:00:25.439 --> 00:00:27.830 align:start position:0%
+app. So it gives you hosting, it gives
+you<00:00:25.600><c> user</c><00:00:26.119><c> authentication,</c><00:00:27.119><c> it</c><00:00:27.279><c> gives</c><00:00:27.439><c> you</c><00:00:27.599><c> a</c>
+
+00:00:27.830 --> 00:00:27.840 align:start position:0%
+you user authentication, it gives you a
+ 
+
+00:00:27.840 --> 00:00:30.230 align:start position:0%
+you user authentication, it gives you a
+database,<00:00:28.480><c> page</c><00:00:28.800><c> view</c><00:00:29.039><c> analytics,</c><00:00:29.760><c> and</c><00:00:30.000><c> so</c>
+
+00:00:30.230 --> 00:00:30.240 align:start position:0%
+database, page view analytics, and so
+ 
+
+00:00:30.240 --> 00:00:32.790 align:start position:0%
+database, page view analytics, and so
+much<00:00:30.480><c> more.</c><00:00:31.199><c> So</c><00:00:31.439><c> let's</c><00:00:31.679><c> get</c><00:00:31.920><c> started.</c><00:00:32.399><c> So</c><00:00:32.559><c> all</c>
+
+00:00:32.790 --> 00:00:32.800 align:start position:0%
+much more. So let's get started. So all
+ 
+
+00:00:32.800 --> 00:00:34.790 align:start position:0%
+much more. So let's get started. So all
+I<00:00:32.960><c> have</c><00:00:33.040><c> to</c><00:00:33.120><c> do</c><00:00:33.200><c> with</c><00:00:33.360><c> Hypership</c><00:00:34.000><c> is</c><00:00:34.320><c> type</c><00:00:34.640><c> in</c>
+
+00:00:34.790 --> 00:00:34.800 align:start position:0%
+I have to do with Hypership is type in
+ 
+
+00:00:34.800 --> 00:00:37.270 align:start position:0%
+I have to do with Hypership is type in
+my<00:00:35.040><c> first</c><00:00:35.280><c> prompt</c><00:00:35.840><c> and</c><00:00:36.079><c> then</c><00:00:36.320><c> hit</c><00:00:36.559><c> go</c><00:00:36.960><c> and</c><00:00:37.120><c> it</c>
+
+00:00:37.270 --> 00:00:37.280 align:start position:0%
+my first prompt and then hit go and it
+ 
+
+00:00:37.280 --> 00:00:40.150 align:start position:0%
+my first prompt and then hit go and it
+will<00:00:37.520><c> start</c><00:00:37.680><c> coding</c><00:00:38.079><c> it</c><00:00:38.239><c> up.</c><00:00:39.040><c> So</c><00:00:39.520><c> I</c><00:00:39.760><c> like</c><00:00:39.920><c> to</c>
+
+00:00:40.150 --> 00:00:40.160 align:start position:0%
+will start coding it up. So I like to
+ 
+
+00:00:40.160 --> 00:00:41.830 align:start position:0%
+will start coding it up. So I like to
+start<00:00:40.399><c> with</c><00:00:40.640><c> a</c><00:00:40.879><c> simple</c><00:00:41.200><c> prompt</c><00:00:41.520><c> to</c><00:00:41.680><c> begin</c>
+
+00:00:41.830 --> 00:00:41.840 align:start position:0%
+start with a simple prompt to begin
+ 
+
+00:00:41.840 --> 00:00:43.670 align:start position:0%
+start with a simple prompt to begin
+with.<00:00:42.399><c> Let's</c><00:00:42.640><c> just</c><00:00:42.800><c> build</c><00:00:43.040><c> the</c><00:00:43.200><c> landing</c><00:00:43.520><c> page</c>
+
+00:00:43.670 --> 00:00:43.680 align:start position:0%
+with. Let's just build the landing page
+ 
+
+00:00:43.680 --> 00:01:06.390 align:start position:0%
+with. Let's just build the landing page
+of<00:00:43.840><c> our</c><00:00:44.000><c> fitness</c><00:00:44.399><c> app</c><00:00:44.800><c> and</c><00:00:45.040><c> see</c><00:00:45.200><c> what</c><00:00:45.360><c> we</c><00:00:45.600><c> get.</c>
+
+00:01:06.390 --> 00:01:06.400 align:start position:0%
+ 
+ 
+
+00:01:06.400 --> 00:01:09.109 align:start position:0%
+ 
+All<00:01:06.479><c> right,</c><00:01:06.720><c> we're</c><00:01:06.960><c> in</c><00:01:07.119><c> Hypership</c><00:01:07.920><c> AI</c><00:01:08.400><c> Studio</c>
+
+00:01:09.109 --> 00:01:09.119 align:start position:0%
+All right, we're in Hypership AI Studio
+ 
+
+00:01:09.119 --> 00:01:11.750 align:start position:0%
+All right, we're in Hypership AI Studio
+and<00:01:09.360><c> you</c><00:01:09.600><c> can</c><00:01:09.680><c> see</c><00:01:09.920><c> that</c><00:01:10.799><c> AI</c><00:01:11.280><c> has</c><00:01:11.520><c> already</c>
+
+00:01:11.750 --> 00:01:11.760 align:start position:0%
+and you can see that AI has already
+ 
+
+00:01:11.760 --> 00:01:13.990 align:start position:0%
+and you can see that AI has already
+started<00:01:12.000><c> to</c><00:01:12.159><c> interpret</c><00:01:12.640><c> the</c><00:01:12.880><c> prompt</c><00:01:13.600><c> and</c>
+
+00:01:13.990 --> 00:01:14.000 align:start position:0%
+started to interpret the prompt and
+ 
+
+00:01:14.000 --> 00:01:15.830 align:start position:0%
+started to interpret the prompt and
+basically<00:01:14.560><c> give</c><00:01:14.720><c> us</c><00:01:14.960><c> instructions</c><00:01:15.439><c> on</c><00:01:15.600><c> what</c>
+
+00:01:15.830 --> 00:01:15.840 align:start position:0%
+basically give us instructions on what
+ 
+
+00:01:15.840 --> 00:01:17.749 align:start position:0%
+basically give us instructions on what
+it's<00:01:16.080><c> going</c><00:01:16.159><c> to</c><00:01:16.240><c> be</c><00:01:16.400><c> doing</c><00:01:16.560><c> next.</c><00:01:17.280><c> So,</c><00:01:17.520><c> let's</c>
+
+00:01:17.749 --> 00:01:17.759 align:start position:0%
+it's going to be doing next. So, let's
+ 
+
+00:01:17.759 --> 00:01:20.390 align:start position:0%
+it's going to be doing next. So, let's
+see<00:01:17.840><c> what</c><00:01:18.080><c> happens.</c><00:01:18.640><c> All</c>
+
+00:01:20.390 --> 00:01:20.400 align:start position:0%
+see what happens. All
+ 
+
+00:01:20.400 --> 00:01:21.830 align:start position:0%
+see what happens. All
+right,<00:01:20.720><c> cool.</c><00:01:20.960><c> So,</c><00:01:21.119><c> the</c><00:01:21.360><c> really</c><00:01:21.520><c> cool</c><00:01:21.759><c> thing</c>
+
+00:01:21.830 --> 00:01:21.840 align:start position:0%
+right, cool. So, the really cool thing
+ 
+
+00:01:21.840 --> 00:01:24.550 align:start position:0%
+right, cool. So, the really cool thing
+about<00:01:22.080><c> Hype</c><00:01:22.400><c> Ship</c><00:01:22.880><c> is</c><00:01:23.520><c> that</c><00:01:23.920><c> it</c><00:01:24.240><c> actually</c>
+
+00:01:24.550 --> 00:01:24.560 align:start position:0%
+about Hype Ship is that it actually
+ 
+
+00:01:24.560 --> 00:01:26.310 align:start position:0%
+about Hype Ship is that it actually
+writes<00:01:24.880><c> the</c><00:01:25.119><c> code</c><00:01:25.280><c> in</c><00:01:25.520><c> front</c><00:01:25.600><c> of</c><00:01:25.680><c> you.</c><00:01:25.920><c> So,</c><00:01:26.080><c> you</c>
+
+00:01:26.310 --> 00:01:26.320 align:start position:0%
+writes the code in front of you. So, you
+ 
+
+00:01:26.320 --> 00:01:29.030 align:start position:0%
+writes the code in front of you. So, you
+can<00:01:26.479><c> see</c><00:01:26.560><c> it</c><00:01:26.880><c> working</c><00:01:27.520><c> and</c><00:01:27.759><c> if</c><00:01:27.920><c> you're</c><00:01:28.080><c> a</c><00:01:28.320><c> dev,</c>
+
+00:01:29.030 --> 00:01:29.040 align:start position:0%
+can see it working and if you're a dev,
+ 
+
+00:01:29.040 --> 00:01:32.550 align:start position:0%
+can see it working and if you're a dev,
+you<00:01:29.280><c> can</c><00:01:29.439><c> start</c><00:01:29.759><c> to</c><00:01:30.200><c> see</c><00:01:31.200><c> that</c><00:01:31.439><c> code</c><00:01:32.000><c> and</c><00:01:32.240><c> start</c>
+
+00:01:32.550 --> 00:01:32.560 align:start position:0%
+you can start to see that code and start
+ 
+
+00:01:32.560 --> 00:01:34.870 align:start position:0%
+you can start to see that code and start
+to<00:01:32.799><c> spot</c><00:01:33.119><c> things</c><00:01:33.600><c> and</c><00:01:34.000><c> see</c><00:01:34.159><c> if</c><00:01:34.400><c> you</c><00:01:34.560><c> want</c><00:01:34.640><c> to</c>
+
+00:01:34.870 --> 00:01:34.880 align:start position:0%
+to spot things and see if you want to
+ 
+
+00:01:34.880 --> 00:01:37.830 align:start position:0%
+to spot things and see if you want to
+change<00:01:35.200><c> things</c><00:01:35.840><c> in</c><00:01:36.079><c> the</c><00:01:36.240><c> future</c><00:01:37.040><c> because</c><00:01:37.600><c> the</c>
+
+00:01:37.830 --> 00:01:37.840 align:start position:0%
+change things in the future because the
+ 
+
+00:01:37.840 --> 00:01:40.149 align:start position:0%
+change things in the future because the
+other<00:01:38.079><c> powerful</c><00:01:38.799><c> feature</c><00:01:39.040><c> of</c><00:01:39.200><c> Hypership</c><00:01:39.840><c> is</c>
+
+00:01:40.149 --> 00:01:40.159 align:start position:0%
+other powerful feature of Hypership is
+ 
+
+00:01:40.159 --> 00:01:42.870 align:start position:0%
+other powerful feature of Hypership is
+dev<00:01:40.560><c> mode.</c><00:01:41.119><c> And</c><00:01:41.280><c> we</c><00:01:41.439><c> give</c><00:01:41.600><c> you</c><00:01:41.840><c> that</c><00:01:42.479><c> with</c>
+
+00:01:42.870 --> 00:01:42.880 align:start position:0%
+dev mode. And we give you that with
+ 
+
+00:01:42.880 --> 00:01:45.590 align:start position:0%
+dev mode. And we give you that with
+every<00:01:43.200><c> plan,</c><00:01:43.680><c> even</c><00:01:43.920><c> free</c><00:01:44.240><c> plans.</c><00:01:44.880><c> So</c><00:01:45.119><c> with</c><00:01:45.280><c> dev</c>
+
+00:01:45.590 --> 00:01:45.600 align:start position:0%
+every plan, even free plans. So with dev
+ 
+
+00:01:45.600 --> 00:01:49.749 align:start position:0%
+every plan, even free plans. So with dev
+mode<00:01:46.040><c> activated,</c><00:01:47.040><c> I</c><00:01:47.360><c> can</c><00:01:47.759><c> click</c><00:01:48.079><c> on</c><00:01:48.399><c> my</c><00:01:48.960><c> files</c>
+
+00:01:49.749 --> 00:01:49.759 align:start position:0%
+mode activated, I can click on my files
+ 
+
+00:01:49.759 --> 00:01:52.469 align:start position:0%
+mode activated, I can click on my files
+here<00:01:50.399><c> that</c><00:01:50.640><c> the</c><00:01:50.880><c> AI</c><00:01:51.280><c> is</c><00:01:51.520><c> creating</c><00:01:52.000><c> for</c><00:01:52.240><c> my</c>
+
+00:01:52.469 --> 00:01:52.479 align:start position:0%
+here that the AI is creating for my
+ 
+
+00:01:52.479 --> 00:01:55.069 align:start position:0%
+here that the AI is creating for my
+project.<00:01:53.040><c> I</c><00:01:53.280><c> can</c><00:01:53.360><c> go</c><00:01:53.520><c> in</c><00:01:53.680><c> and</c><00:01:53.840><c> I</c><00:01:54.000><c> can</c><00:01:54.240><c> start</c>
+
+00:01:55.069 --> 00:01:55.079 align:start position:0%
+project. I can go in and I can start
+ 
+
+00:01:55.079 --> 00:01:57.749 align:start position:0%
+project. I can go in and I can start
+manually<00:01:56.079><c> modifying</c><00:01:56.720><c> those</c><00:01:57.040><c> files</c><00:01:57.360><c> and</c><00:01:57.520><c> that</c>
+
+00:01:57.749 --> 00:01:57.759 align:start position:0%
+manually modifying those files and that
+ 
+
+00:01:57.759 --> 00:02:00.350 align:start position:0%
+manually modifying those files and that
+code<00:01:58.159><c> and</c><00:01:58.479><c> adding</c><00:01:58.880><c> code.</c><00:01:59.439><c> So</c><00:01:59.600><c> it's</c><00:01:59.840><c> super</c>
+
+00:02:00.350 --> 00:02:00.360 align:start position:0%
+code and adding code. So it's super
+ 
+
+00:02:00.360 --> 00:02:07.389 align:start position:0%
+code and adding code. So it's super
+[Music]
+
+00:02:07.389 --> 00:02:07.399 align:start position:0%
+ 
+ 
+
+00:02:07.399 --> 00:02:09.669 align:start position:0%
+ 
+powerful.<00:02:08.399><c> All</c><00:02:08.479><c> right,</c><00:02:08.720><c> so</c><00:02:08.959><c> we</c><00:02:09.119><c> can</c><00:02:09.280><c> see</c><00:02:09.520><c> that</c>
+
+00:02:09.669 --> 00:02:09.679 align:start position:0%
+powerful. All right, so we can see that
+ 
+
+00:02:09.679 --> 00:02:11.550 align:start position:0%
+powerful. All right, so we can see that
+Hypership<00:02:10.239><c> is</c><00:02:10.399><c> finished.</c><00:02:10.800><c> The</c><00:02:10.959><c> task</c><00:02:11.200><c> is</c>
+
+00:02:11.550 --> 00:02:11.560 align:start position:0%
+Hypership is finished. The task is
+ 
+
+00:02:11.560 --> 00:02:13.510 align:start position:0%
+Hypership is finished. The task is
+completed.<00:02:12.560><c> So</c><00:02:12.800><c> let's</c><00:02:12.959><c> check</c><00:02:13.200><c> out</c><00:02:13.360><c> our</c>
+
+00:02:13.510 --> 00:02:13.520 align:start position:0%
+completed. So let's check out our
+ 
+
+00:02:13.520 --> 00:02:14.830 align:start position:0%
+completed. So let's check out our
+landing<00:02:13.840><c> page.</c>
+
+00:02:14.830 --> 00:02:14.840 align:start position:0%
+landing page.
+ 
+
+00:02:14.840 --> 00:02:17.030 align:start position:0%
+landing page.
+Pretty<00:02:15.840><c> cool.</c><00:02:16.319><c> All</c><00:02:16.319><c> right.</c><00:02:16.640><c> So,</c><00:02:16.720><c> we</c><00:02:16.879><c> can</c><00:02:16.959><c> see</c>
+
+00:02:17.030 --> 00:02:17.040 align:start position:0%
+Pretty cool. All right. So, we can see
+ 
+
+00:02:17.040 --> 00:02:18.390 align:start position:0%
+Pretty cool. All right. So, we can see
+that<00:02:17.200><c> we</c><00:02:17.360><c> need</c><00:02:17.440><c> to</c><00:02:17.520><c> add</c><00:02:17.680><c> an</c><00:02:17.840><c> image</c><00:02:18.000><c> here,</c><00:02:18.239><c> but</c>
+
+00:02:18.390 --> 00:02:18.400 align:start position:0%
+that we need to add an image here, but
+ 
+
+00:02:18.400 --> 00:02:21.030 align:start position:0%
+that we need to add an image here, but
+that's<00:02:18.640><c> okay.</c><00:02:19.200><c> So,</c><00:02:19.440><c> I'll</c><00:02:19.599><c> scroll</c><00:02:20.000><c> down.</c><00:02:20.800><c> We've</c>
+
+00:02:21.030 --> 00:02:21.040 align:start position:0%
+that's okay. So, I'll scroll down. We've
+ 
+
+00:02:21.040 --> 00:02:24.070 align:start position:0%
+that's okay. So, I'll scroll down. We've
+got<00:02:21.200><c> the</c><00:02:21.360><c> feature</c><00:02:21.760><c> grid</c><00:02:22.440><c> here.</c><00:02:23.440><c> Okay.</c><00:02:23.840><c> We've</c>
+
+00:02:24.070 --> 00:02:24.080 align:start position:0%
+got the feature grid here. Okay. We've
+ 
+
+00:02:24.080 --> 00:02:25.750 align:start position:0%
+got the feature grid here. Okay. We've
+got<00:02:24.239><c> some</c><00:02:24.480><c> testimonials,</c><00:02:25.200><c> and</c><00:02:25.360><c> we</c><00:02:25.440><c> can</c><00:02:25.599><c> add</c>
+
+00:02:25.750 --> 00:02:25.760 align:start position:0%
+got some testimonials, and we can add
+ 
+
+00:02:25.760 --> 00:02:27.589 align:start position:0%
+got some testimonials, and we can add
+some<00:02:26.000><c> images</c><00:02:26.239><c> there.</c><00:02:26.640><c> That's</c><00:02:26.800><c> no</c><00:02:26.959><c> problem.</c>
+
+00:02:27.589 --> 00:02:27.599 align:start position:0%
+some images there. That's no problem.
+ 
+
+00:02:27.599 --> 00:02:29.190 align:start position:0%
+some images there. That's no problem.
+And<00:02:27.760><c> then</c><00:02:28.000><c> a</c><00:02:28.160><c> call</c><00:02:28.319><c> to</c><00:02:28.480><c> action</c><00:02:28.720><c> on</c><00:02:28.879><c> the</c><00:02:28.959><c> bottom</c>
+
+00:02:29.190 --> 00:02:29.200 align:start position:0%
+And then a call to action on the bottom
+ 
+
+00:02:29.200 --> 00:02:32.229 align:start position:0%
+And then a call to action on the bottom
+and<00:02:29.360><c> a</c><00:02:29.560><c> footer.</c><00:02:30.560><c> So,</c><00:02:31.200><c> actually</c><00:02:31.599><c> not</c><00:02:31.760><c> a</c><00:02:31.920><c> bad</c>
+
+00:02:32.229 --> 00:02:32.239 align:start position:0%
+and a footer. So, actually not a bad
+ 
+
+00:02:32.239 --> 00:02:33.750 align:start position:0%
+and a footer. So, actually not a bad
+start.<00:02:32.879><c> The</c><00:02:33.040><c> other</c><00:02:33.200><c> thing</c><00:02:33.280><c> you</c><00:02:33.440><c> can</c><00:02:33.519><c> do</c><00:02:33.599><c> in</c>
+
+00:02:33.750 --> 00:02:33.760 align:start position:0%
+start. The other thing you can do in
+ 
+
+00:02:33.760 --> 00:02:37.030 align:start position:0%
+start. The other thing you can do in
+Hypership<00:02:34.239><c> is</c><00:02:34.400><c> preview</c><00:02:35.360><c> your</c><00:02:36.319><c> your</c><00:02:36.640><c> app</c><00:02:36.879><c> that</c>
+
+00:02:37.030 --> 00:02:37.040 align:start position:0%
+Hypership is preview your your app that
+ 
+
+00:02:37.040 --> 00:02:38.949 align:start position:0%
+Hypership is preview your your app that
+you're<00:02:37.280><c> building</c><00:02:37.440><c> in</c><00:02:37.680><c> a</c><00:02:37.920><c> new</c><00:02:38.080><c> tab.</c><00:02:38.400><c> So</c><00:02:38.640><c> in</c><00:02:38.800><c> case</c>
+
+00:02:38.949 --> 00:02:38.959 align:start position:0%
+you're building in a new tab. So in case
+ 
+
+00:02:38.959 --> 00:02:41.030 align:start position:0%
+you're building in a new tab. So in case
+you<00:02:39.120><c> wanted</c><00:02:39.360><c> to</c><00:02:39.440><c> see</c><00:02:39.680><c> it</c><00:02:39.760><c> on</c><00:02:39.920><c> a</c><00:02:40.080><c> bigger</c><00:02:40.400><c> screen</c>
+
+00:02:41.030 --> 00:02:41.040 align:start position:0%
+you wanted to see it on a bigger screen
+ 
+
+00:02:41.040 --> 00:02:44.470 align:start position:0%
+you wanted to see it on a bigger screen
+and<00:02:41.760><c> you</c><00:02:42.000><c> can</c><00:02:42.080><c> also</c><00:02:42.480><c> share</c><00:02:43.280><c> the</c><00:02:43.519><c> preview</c><00:02:44.080><c> with</c>
+
+00:02:44.470 --> 00:02:44.480 align:start position:0%
+and you can also share the preview with
+ 
+
+00:02:44.480 --> 00:02:46.790 align:start position:0%
+and you can also share the preview with
+anyone<00:02:45.120><c> so</c><00:02:45.280><c> they</c><00:02:45.519><c> can</c><00:02:46.000><c> basically</c><00:02:46.480><c> follow</c>
+
+00:02:46.790 --> 00:02:46.800 align:start position:0%
+anyone so they can basically follow
+ 
+
+00:02:46.800 --> 00:02:48.790 align:start position:0%
+anyone so they can basically follow
+along<00:02:47.120><c> and</c><00:02:47.360><c> if</c><00:02:47.519><c> you</c><00:02:47.680><c> make</c><00:02:47.920><c> changes</c><00:02:48.400><c> manually</c>
+
+00:02:48.790 --> 00:02:48.800 align:start position:0%
+along and if you make changes manually
+ 
+
+00:02:48.800 --> 00:02:51.270 align:start position:0%
+along and if you make changes manually
+or<00:02:49.040><c> using</c><00:02:49.360><c> the</c><00:02:49.599><c> AI</c><00:02:50.480><c> they</c><00:02:50.720><c> can</c><00:02:50.879><c> see</c><00:02:51.040><c> those</c>
+
+00:02:51.270 --> 00:02:51.280 align:start position:0%
+or using the AI they can see those
+ 
+
+00:02:51.280 --> 00:02:53.830 align:start position:0%
+or using the AI they can see those
+changes<00:02:51.680><c> happen</c><00:02:52.080><c> as</c><00:02:52.360><c> well.</c><00:02:53.360><c> All</c><00:02:53.360><c> right.</c><00:02:53.680><c> Now</c>
+
+00:02:53.830 --> 00:02:53.840 align:start position:0%
+changes happen as well. All right. Now
+ 
+
+00:02:53.840 --> 00:02:55.830 align:start position:0%
+changes happen as well. All right. Now
+that<00:02:54.000><c> we've</c><00:02:54.160><c> got</c><00:02:54.239><c> our</c><00:02:54.480><c> landing</c><00:02:54.800><c> page</c><00:02:55.519><c> let's</c><00:02:55.760><c> go</c>
+
+00:02:55.830 --> 00:02:55.840 align:start position:0%
+that we've got our landing page let's go
+ 
+
+00:02:55.840 --> 00:02:58.150 align:start position:0%
+that we've got our landing page let's go
+and<00:02:56.080><c> add</c><00:02:56.239><c> user</c><00:02:56.480><c> authentication</c><00:02:57.200><c> to</c><00:02:57.440><c> it.</c><00:02:57.920><c> So</c>
+
+00:02:58.150 --> 00:02:58.160 align:start position:0%
+and add user authentication to it. So
+ 
+
+00:02:58.160 --> 00:03:00.710 align:start position:0%
+and add user authentication to it. So
+with<00:02:58.400><c> Hypership</c><00:02:59.200><c> it's</c><00:02:59.519><c> super</c><00:02:59.920><c> easy</c><00:03:00.239><c> to</c><00:03:00.480><c> add</c>
+
+00:03:00.710 --> 00:03:00.720 align:start position:0%
+with Hypership it's super easy to add
+ 
+
+00:03:00.720 --> 00:03:03.509 align:start position:0%
+with Hypership it's super easy to add
+User<00:03:01.120><c> Wolf</c><00:03:01.599><c> to</c><00:03:02.000><c> your</c><00:03:02.239><c> app</c><00:03:02.720><c> because</c><00:03:03.040><c> we</c><00:03:03.280><c> give</c><00:03:03.360><c> it</c>
+
+00:03:03.509 --> 00:03:03.519 align:start position:0%
+User Wolf to your app because we give it
+ 
+
+00:03:03.519 --> 00:03:06.149 align:start position:0%
+User Wolf to your app because we give it
+to<00:03:03.599><c> you</c><00:03:03.840><c> out</c><00:03:04.000><c> of</c><00:03:04.080><c> the</c><00:03:04.239><c> box</c><00:03:04.480><c> for</c><00:03:04.800><c> free.</c><00:03:05.760><c> So</c><00:03:05.920><c> that</c>
+
+00:03:06.149 --> 00:03:06.159 align:start position:0%
+to you out of the box for free. So that
+ 
+
+00:03:06.159 --> 00:03:07.589 align:start position:0%
+to you out of the box for free. So that
+means<00:03:06.400><c> that</c><00:03:06.560><c> you</c><00:03:06.720><c> don't</c><00:03:06.879><c> need</c><00:03:06.959><c> to</c><00:03:07.120><c> go</c><00:03:07.200><c> and</c><00:03:07.440><c> sign</c>
+
+00:03:07.589 --> 00:03:07.599 align:start position:0%
+means that you don't need to go and sign
+ 
+
+00:03:07.599 --> 00:03:09.589 align:start position:0%
+means that you don't need to go and sign
+up<00:03:07.840><c> to</c><00:03:08.000><c> another</c><00:03:08.319><c> service</c><00:03:08.640><c> like</c><00:03:08.879><c> Superbase</c><00:03:09.440><c> or</c>
+
+00:03:09.589 --> 00:03:09.599 align:start position:0%
+up to another service like Superbase or
+ 
+
+00:03:09.599 --> 00:03:11.830 align:start position:0%
+up to another service like Superbase or
+Firebase<00:03:10.480><c> and</c><00:03:10.720><c> then</c><00:03:10.879><c> manage</c><00:03:11.120><c> your</c><00:03:11.360><c> data</c><00:03:11.599><c> in</c>
+
+00:03:11.830 --> 00:03:11.840 align:start position:0%
+Firebase and then manage your data in
+ 
+
+00:03:11.840 --> 00:03:14.550 align:start position:0%
+Firebase and then manage your data in
+another<00:03:12.159><c> service</c><00:03:13.040><c> with</c><00:03:13.360><c> every</c><00:03:13.680><c> app</c><00:03:14.239><c> created</c>
+
+00:03:14.550 --> 00:03:14.560 align:start position:0%
+another service with every app created
+ 
+
+00:03:14.560 --> 00:03:16.869 align:start position:0%
+another service with every app created
+in<00:03:14.720><c> Hypership.</c><00:03:15.440><c> You</c><00:03:15.519><c> get</c><00:03:15.680><c> user</c><00:03:16.080><c> warf</c><00:03:16.480><c> and</c><00:03:16.640><c> a</c>
+
+00:03:16.869 --> 00:03:16.879 align:start position:0%
+in Hypership. You get user warf and a
+ 
+
+00:03:16.879 --> 00:03:19.190 align:start position:0%
+in Hypership. You get user warf and a
+database<00:03:17.680><c> out</c><00:03:17.840><c> of</c><00:03:17.920><c> the</c><00:03:18.080><c> box.</c><00:03:18.640><c> So</c><00:03:18.800><c> you</c><00:03:19.040><c> can</c>
+
+00:03:19.190 --> 00:03:19.200 align:start position:0%
+database out of the box. So you can
+ 
+
+00:03:19.200 --> 00:03:21.910 align:start position:0%
+database out of the box. So you can
+actually<00:03:19.599><c> access</c><00:03:19.920><c> your</c><00:03:20.239><c> users</c><00:03:20.720><c> up</c><00:03:20.959><c> here</c><00:03:21.680><c> just</c>
+
+00:03:21.910 --> 00:03:21.920 align:start position:0%
+actually access your users up here just
+ 
+
+00:03:21.920 --> 00:03:23.670 align:start position:0%
+actually access your users up here just
+by<00:03:22.080><c> clicking</c><00:03:22.480><c> dashboard</c><00:03:22.879><c> and</c><00:03:23.040><c> then</c><00:03:23.280><c> users.</c>
+
+00:03:23.670 --> 00:03:23.680 align:start position:0%
+by clicking dashboard and then users.
+ 
+
+00:03:23.680 --> 00:03:25.830 align:start position:0%
+by clicking dashboard and then users.
+And<00:03:23.840><c> you</c><00:03:24.000><c> can</c><00:03:24.159><c> see</c><00:03:24.400><c> who</c><00:03:24.720><c> signed</c><00:03:25.040><c> up.</c><00:03:25.519><c> You</c><00:03:25.680><c> can</c>
+
+00:03:25.830 --> 00:03:25.840 align:start position:0%
+And you can see who signed up. You can
+ 
+
+00:03:25.840 --> 00:03:27.670 align:start position:0%
+And you can see who signed up. You can
+also<00:03:26.080><c> create</c><00:03:26.239><c> a</c><00:03:26.480><c> user</c><00:03:26.800><c> anytime</c><00:03:27.200><c> by</c><00:03:27.440><c> clicking</c>
+
+00:03:27.670 --> 00:03:27.680 align:start position:0%
+also create a user anytime by clicking
+ 
+
+00:03:27.680 --> 00:03:29.430 align:start position:0%
+also create a user anytime by clicking
+on<00:03:27.920><c> this</c><00:03:28.080><c> button</c><00:03:28.400><c> in</c><00:03:28.640><c> the</c><00:03:28.800><c> top</c><00:03:28.959><c> right</c><00:03:29.200><c> hand</c>
+
+00:03:29.430 --> 00:03:29.440 align:start position:0%
+on this button in the top right hand
+ 
+
+00:03:29.440 --> 00:03:32.229 align:start position:0%
+on this button in the top right hand
+corner.<00:03:30.159><c> But</c><00:03:30.319><c> to</c><00:03:30.560><c> add</c><00:03:30.799><c> user</c><00:03:31.280><c> or</c><00:03:31.519><c> to</c><00:03:31.760><c> your</c>
+
+00:03:32.229 --> 00:03:32.239 align:start position:0%
+corner. But to add user or to your
+ 
+
+00:03:32.239 --> 00:03:34.390 align:start position:0%
+corner. But to add user or to your
+hypership<00:03:32.799><c> app,</c><00:03:33.040><c> it's</c><00:03:33.280><c> so</c><00:03:33.519><c> easy.</c><00:03:33.920><c> You</c><00:03:34.159><c> just</c>
+
+00:03:34.390 --> 00:03:34.400 align:start position:0%
+hypership app, it's so easy. You just
+ 
+
+00:03:34.400 --> 00:03:37.670 align:start position:0%
+hypership app, it's so easy. You just
+ask<00:03:34.879><c> the</c><00:03:35.200><c> AI</c><00:03:35.680><c> to</c><00:03:36.000><c> add</c><00:03:36.239><c> it</c><00:03:36.400><c> for</c><00:03:36.640><c> you.</c><00:03:37.200><c> So,</c><00:03:37.440><c> let's</c>
+
+00:03:37.670 --> 00:03:37.680 align:start position:0%
+ask the AI to add it for you. So, let's
+ 
+
+00:03:37.680 --> 00:03:38.090 align:start position:0%
+ask the AI to add it for you. So, let's
+go<00:03:37.840><c> for</c>
+
+00:03:38.090 --> 00:03:38.100 align:start position:0%
+go for
+ 
+
+00:03:38.100 --> 00:03:48.750 align:start position:0%
+go for
+[Music]
+
+00:03:48.750 --> 00:03:48.760 align:start position:0%
+ 
+ 
+
+00:03:48.760 --> 00:03:51.309 align:start position:0%
+ 
+[Music]
+
+00:03:51.309 --> 00:03:51.319 align:start position:0%
+[Music]
+ 
+
+00:03:51.319 --> 00:04:00.470 align:start position:0%
+[Music]
+that.<00:03:52.319><c> So,</c><00:03:52.560><c> let's</c><00:03:52.799><c> see</c><00:03:52.959><c> how</c><00:03:53.120><c> long</c><00:03:53.200><c> it</c><00:03:53.440><c> takes.</c>
+
+00:04:00.470 --> 00:04:00.480 align:start position:0%
+ 
+ 
+
+00:04:00.480 --> 00:04:02.630 align:start position:0%
+ 
+Okay,<00:04:00.879><c> so</c><00:04:01.120><c> Hypership's</c><00:04:01.760><c> added</c><00:04:01.920><c> user</c><00:04:02.239><c> OR</c><00:04:02.480><c> to</c>
+
+00:04:02.630 --> 00:04:02.640 align:start position:0%
+Okay, so Hypership's added user OR to
+ 
+
+00:04:02.640 --> 00:04:05.030 align:start position:0%
+Okay, so Hypership's added user OR to
+our<00:04:02.720><c> HAB.</c><00:04:03.360><c> That</c><00:04:03.599><c> was</c><00:04:03.760><c> a</c><00:04:03.920><c> couple</c><00:04:04.080><c> of</c><00:04:04.319><c> minutes</c><00:04:04.799><c> at</c>
+
+00:04:05.030 --> 00:04:05.040 align:start position:0%
+our HAB. That was a couple of minutes at
+ 
+
+00:04:05.040 --> 00:04:09.229 align:start position:0%
+our HAB. That was a couple of minutes at
+most.<00:04:05.760><c> So,</c><00:04:06.000><c> let's</c><00:04:06.239><c> check</c><00:04:06.400><c> it</c>
+
+00:04:09.229 --> 00:04:09.239 align:start position:0%
+ 
+ 
+
+00:04:09.239 --> 00:04:12.229 align:start position:0%
+ 
+out.<00:04:10.239><c> All</c><00:04:10.239><c> right,</c><00:04:10.560><c> so</c><00:04:11.040><c> we've</c><00:04:11.360><c> got</c><00:04:11.519><c> a</c><00:04:11.760><c> call</c><00:04:12.080><c> to</c>
+
+00:04:12.229 --> 00:04:12.239 align:start position:0%
+out. All right, so we've got a call to
+ 
+
+00:04:12.239 --> 00:04:14.309 align:start position:0%
+out. All right, so we've got a call to
+action<00:04:12.480><c> button</c><00:04:12.799><c> now</c><00:04:12.959><c> to</c><00:04:13.120><c> sign</c><00:04:13.280><c> in,</c><00:04:13.599><c> sign</c><00:04:13.840><c> up.</c>
+
+00:04:14.309 --> 00:04:14.319 align:start position:0%
+action button now to sign in, sign up.
+ 
+
+00:04:14.319 --> 00:04:16.990 align:start position:0%
+action button now to sign in, sign up.
+So,<00:04:14.480><c> let's</c><00:04:14.720><c> click</c><00:04:15.040><c> sign</c>
+
+00:04:16.990 --> 00:04:17.000 align:start position:0%
+So, let's click sign
+ 
+
+00:04:17.000 --> 00:04:20.310 align:start position:0%
+So, let's click sign
+in.<00:04:18.000><c> So,</c><00:04:18.239><c> this</c><00:04:18.479><c> is</c><00:04:18.880><c> the</c><00:04:19.280><c> OR</c><00:04:19.680><c> package</c><00:04:20.000><c> that</c><00:04:20.160><c> we</c>
+
+00:04:20.310 --> 00:04:20.320 align:start position:0%
+in. So, this is the OR package that we
+ 
+
+00:04:20.320 --> 00:04:22.710 align:start position:0%
+in. So, this is the OR package that we
+give<00:04:20.479><c> you</c><00:04:20.720><c> out</c><00:04:20.959><c> of</c><00:04:20.959><c> the</c><00:04:21.120><c> box.</c><00:04:21.359><c> This</c><00:04:21.519><c> is</c><00:04:21.639><c> Hyp.</c>
+
+00:04:22.710 --> 00:04:22.720 align:start position:0%
+give you out of the box. This is Hyp.
+ 
+
+00:04:22.720 --> 00:04:25.990 align:start position:0%
+give you out of the box. This is Hyp.
+We've<00:04:23.040><c> built</c><00:04:23.280><c> a</c><00:04:23.600><c> full</c><00:04:24.080><c> user</c><00:04:24.560><c> or</c><00:04:24.800><c> flow</c><00:04:25.520><c> for</c><00:04:25.840><c> you</c>
+
+00:04:25.990 --> 00:04:26.000 align:start position:0%
+We've built a full user or flow for you
+ 
+
+00:04:26.000 --> 00:04:28.550 align:start position:0%
+We've built a full user or flow for you
+that<00:04:26.320><c> you</c><00:04:26.479><c> can</c><00:04:26.639><c> use.</c><00:04:26.960><c> So</c><00:04:27.120><c> a</c><00:04:27.280><c> user</c><00:04:27.600><c> can</c><00:04:27.759><c> sign</c><00:04:28.080><c> up</c>
+
+00:04:28.550 --> 00:04:28.560 align:start position:0%
+that you can use. So a user can sign up
+ 
+
+00:04:28.560 --> 00:04:30.870 align:start position:0%
+that you can use. So a user can sign up
+and<00:04:28.800><c> they</c><00:04:29.040><c> can</c><00:04:29.199><c> sign</c><00:04:29.440><c> in.</c><00:04:30.080><c> They</c><00:04:30.240><c> can</c><00:04:30.400><c> reset</c>
+
+00:04:30.870 --> 00:04:30.880 align:start position:0%
+and they can sign in. They can reset
+ 
+
+00:04:30.880 --> 00:04:34.830 align:start position:0%
+and they can sign in. They can reset
+their<00:04:31.120><c> password.</c><00:04:31.759><c> We</c><00:04:31.919><c> give</c><00:04:32.080><c> you</c><00:04:32.240><c> absolutely</c>
+
+00:04:34.830 --> 00:04:34.840 align:start position:0%
+ 
+ 
+
+00:04:34.840 --> 00:04:36.950 align:start position:0%
+ 
+everything.<00:04:35.840><c> Let's</c><00:04:36.080><c> go</c><00:04:36.240><c> ahead</c><00:04:36.400><c> and</c><00:04:36.560><c> sign</c><00:04:36.800><c> up</c>
+
+00:04:36.950 --> 00:04:36.960 align:start position:0%
+everything. Let's go ahead and sign up
+ 
+
+00:04:36.960 --> 00:04:53.350 align:start position:0%
+everything. Let's go ahead and sign up
+and<00:04:37.280><c> see</c><00:04:37.440><c> what</c><00:04:37.680><c> happens.</c>
+
+00:04:53.350 --> 00:04:53.360 align:start position:0%
+ 
+ 
+
+00:04:53.360 --> 00:04:55.830 align:start position:0%
+ 
+Cool.<00:04:53.840><c> Okay.</c><00:04:54.080><c> So,</c><00:04:54.240><c> I</c><00:04:54.479><c> signed</c><00:04:54.800><c> in</c><00:04:55.120><c> and</c><00:04:55.520><c> you</c><00:04:55.680><c> can</c>
+
+00:04:55.830 --> 00:04:55.840 align:start position:0%
+Cool. Okay. So, I signed in and you can
+ 
+
+00:04:55.840 --> 00:04:57.830 align:start position:0%
+Cool. Okay. So, I signed in and you can
+see<00:04:55.919><c> I've</c><00:04:56.160><c> got</c><00:04:56.240><c> a</c><00:04:56.479><c> profile</c><00:04:56.800><c> page</c><00:04:57.360><c> and</c><00:04:57.600><c> we're</c>
+
+00:04:57.830 --> 00:04:57.840 align:start position:0%
+see I've got a profile page and we're
+ 
+
+00:04:57.840 --> 00:05:00.390 align:start position:0%
+see I've got a profile page and we're
+handling<00:04:58.320><c> all</c><00:04:58.560><c> of</c><00:04:58.720><c> the</c><00:04:58.960><c> IDs</c><00:04:59.680><c> and</c><00:04:59.919><c> the</c><00:05:00.080><c> email</c>
+
+00:05:00.390 --> 00:05:00.400 align:start position:0%
+handling all of the IDs and the email
+ 
+
+00:05:00.400 --> 00:05:02.550 align:start position:0%
+handling all of the IDs and the email
+addresses<00:05:00.960><c> for</c><00:05:01.199><c> you</c><00:05:01.440><c> for</c><00:05:01.600><c> your</c><00:05:01.840><c> users.</c><00:05:02.400><c> So,</c>
+
+00:05:02.550 --> 00:05:02.560 align:start position:0%
+addresses for you for your users. So,
+ 
+
+00:05:02.560 --> 00:05:05.030 align:start position:0%
+addresses for you for your users. So,
+now<00:05:02.720><c> if</c><00:05:02.880><c> I</c><00:05:03.040><c> go</c><00:05:03.199><c> back</c><00:05:03.440><c> to</c><00:05:03.680><c> my</c><00:05:04.000><c> dashboard</c><00:05:04.800><c> in</c>
+
+00:05:05.030 --> 00:05:05.040 align:start position:0%
+now if I go back to my dashboard in
+ 
+
+00:05:05.040 --> 00:05:08.070 align:start position:0%
+now if I go back to my dashboard in
+Hypership<00:05:05.639><c> Studio</c><00:05:06.639><c> and</c><00:05:06.960><c> go</c><00:05:07.120><c> to</c><00:05:07.280><c> users,</c><00:05:07.840><c> I</c>
+
+00:05:08.070 --> 00:05:08.080 align:start position:0%
+Hypership Studio and go to users, I
+ 
+
+00:05:08.080 --> 00:05:09.990 align:start position:0%
+Hypership Studio and go to users, I
+should<00:05:08.320><c> be</c><00:05:08.400><c> able</c><00:05:08.639><c> to</c><00:05:08.800><c> see</c><00:05:09.199><c> the</c><00:05:09.360><c> new</c><00:05:09.520><c> user</c><00:05:09.759><c> that</c>
+
+00:05:09.990 --> 00:05:10.000 align:start position:0%
+should be able to see the new user that
+ 
+
+00:05:10.000 --> 00:05:11.510 align:start position:0%
+should be able to see the new user that
+signed<00:05:10.240><c> up.</c><00:05:10.479><c> And</c><00:05:10.639><c> there</c><00:05:10.800><c> we</c><00:05:10.960><c> go.</c><00:05:11.120><c> So,</c><00:05:11.280><c> less</c>
+
+00:05:11.510 --> 00:05:11.520 align:start position:0%
+signed up. And there we go. So, less
+ 
+
+00:05:11.520 --> 00:05:13.350 align:start position:0%
+signed up. And there we go. So, less
+than<00:05:11.600><c> a</c><00:05:11.759><c> minute</c><00:05:11.919><c> ago,</c><00:05:12.400><c> I</c><00:05:12.639><c> can</c><00:05:12.720><c> click</c><00:05:12.880><c> on</c><00:05:13.039><c> that</c>
+
+00:05:13.350 --> 00:05:13.360 align:start position:0%
+than a minute ago, I can click on that
+ 
+
+00:05:13.360 --> 00:05:15.270 align:start position:0%
+than a minute ago, I can click on that
+user,<00:05:13.919><c> see</c><00:05:14.080><c> a</c><00:05:14.240><c> bunch</c><00:05:14.400><c> of</c><00:05:14.479><c> metadata</c><00:05:15.039><c> about</c>
+
+00:05:15.270 --> 00:05:15.280 align:start position:0%
+user, see a bunch of metadata about
+ 
+
+00:05:15.280 --> 00:05:18.230 align:start position:0%
+user, see a bunch of metadata about
+them,<00:05:16.000><c> enable</c><00:05:16.400><c> or</c><00:05:16.639><c> disable</c><00:05:17.120><c> their</c><00:05:17.360><c> account.</c>
+
+00:05:18.230 --> 00:05:18.240 align:start position:0%
+them, enable or disable their account.
+ 
+
+00:05:18.240 --> 00:05:21.029 align:start position:0%
+them, enable or disable their account.
+It's<00:05:18.720><c> pretty</c><00:05:19.120><c> powerful.</c><00:05:20.160><c> that</c><00:05:20.479><c> we</c><00:05:20.639><c> have</c><00:05:20.800><c> full</c>
+
+00:05:21.029 --> 00:05:21.039 align:start position:0%
+It's pretty powerful. that we have full
+ 
+
+00:05:21.039 --> 00:05:23.990 align:start position:0%
+It's pretty powerful. that we have full
+user<00:05:21.520><c> off</c><00:05:21.840><c> in</c><00:05:22.720><c> literally</c><00:05:23.199><c> minutes.</c><00:05:23.759><c> Something</c>
+
+00:05:23.990 --> 00:05:24.000 align:start position:0%
+user off in literally minutes. Something
+ 
+
+00:05:24.000 --> 00:05:28.510 align:start position:0%
+user off in literally minutes. Something
+that<00:05:24.160><c> would</c><00:05:24.400><c> take</c><00:05:25.639><c> weeks</c><00:05:26.639><c> to</c><00:05:27.120><c> add</c><00:05:27.440><c> to</c><00:05:27.600><c> your</c>
+
+00:05:28.510 --> 00:05:28.520 align:start position:0%
+that would take weeks to add to your
+ 
+
+00:05:28.520 --> 00:05:31.350 align:start position:0%
+that would take weeks to add to your
+app.<00:05:29.520><c> Okay.</c><00:05:30.080><c> So,</c><00:05:30.320><c> now</c><00:05:30.400><c> that</c><00:05:30.560><c> we've</c><00:05:30.800><c> got</c><00:05:30.960><c> user</c>
+
+00:05:31.350 --> 00:05:31.360 align:start position:0%
+app. Okay. So, now that we've got user
+ 
+
+00:05:31.360 --> 00:05:34.469 align:start position:0%
+app. Okay. So, now that we've got user
+off<00:05:31.759><c> and</c><00:05:32.080><c> users</c><00:05:32.479><c> can</c><00:05:32.720><c> sign</c><00:05:32.960><c> in,</c><00:05:33.919><c> maybe</c><00:05:34.160><c> we</c>
+
+00:05:34.469 --> 00:05:34.479 align:start position:0%
+off and users can sign in, maybe we
+ 
+
+00:05:34.479 --> 00:05:36.870 align:start position:0%
+off and users can sign in, maybe we
+should<00:05:35.199><c> allow</c><00:05:35.520><c> it</c><00:05:35.759><c> so</c><00:05:35.919><c> that</c><00:05:36.080><c> our</c><00:05:36.240><c> users</c><00:05:36.639><c> can</c>
+
+00:05:36.870 --> 00:05:36.880 align:start position:0%
+should allow it so that our users can
+ 
+
+00:05:36.880 --> 00:05:38.710 align:start position:0%
+should allow it so that our users can
+track<00:05:37.199><c> workouts</c><00:05:37.759><c> and</c><00:05:37.919><c> then</c><00:05:38.160><c> save</c><00:05:38.479><c> those</c>
+
+00:05:38.710 --> 00:05:38.720 align:start position:0%
+track workouts and then save those
+ 
+
+00:05:38.720 --> 00:05:40.629 align:start position:0%
+track workouts and then save those
+workouts<00:05:39.199><c> to</c><00:05:39.360><c> a</c><00:05:39.520><c> database.</c><00:05:40.000><c> So,</c><00:05:40.160><c> when</c><00:05:40.320><c> they</c><00:05:40.479><c> go</c>
+
+00:05:40.629 --> 00:05:40.639 align:start position:0%
+workouts to a database. So, when they go
+ 
+
+00:05:40.639 --> 00:05:43.189 align:start position:0%
+workouts to a database. So, when they go
+back<00:05:40.880><c> in</c><00:05:41.520><c> later</c><00:05:41.840><c> on,</c><00:05:42.080><c> they</c><00:05:42.320><c> sign</c><00:05:42.479><c> in,</c><00:05:42.800><c> they</c><00:05:43.039><c> can</c>
+
+00:05:43.189 --> 00:05:43.199 align:start position:0%
+back in later on, they sign in, they can
+ 
+
+00:05:43.199 --> 00:05:45.590 align:start position:0%
+back in later on, they sign in, they can
+see<00:05:43.360><c> their</c><00:05:43.720><c> progress.</c><00:05:44.720><c> And</c><00:05:44.960><c> here's</c><00:05:45.280><c> another</c>
+
+00:05:45.590 --> 00:05:45.600 align:start position:0%
+see their progress. And here's another
+ 
+
+00:05:45.600 --> 00:05:47.029 align:start position:0%
+see their progress. And here's another
+thing<00:05:45.680><c> about</c><00:05:45.840><c> Hypership</c><00:05:46.400><c> is</c><00:05:46.560><c> we</c><00:05:46.720><c> give</c><00:05:46.800><c> you</c>
+
+00:05:47.029 --> 00:05:47.039 align:start position:0%
+thing about Hypership is we give you
+ 
+
+00:05:47.039 --> 00:05:49.270 align:start position:0%
+thing about Hypership is we give you
+user<00:05:47.360><c> authentication.</c><00:05:48.320><c> We</c><00:05:48.560><c> also</c><00:05:48.720><c> give</c><00:05:48.880><c> you</c><00:05:49.039><c> a</c>
+
+00:05:49.270 --> 00:05:49.280 align:start position:0%
+user authentication. We also give you a
+ 
+
+00:05:49.280 --> 00:05:51.189 align:start position:0%
+user authentication. We also give you a
+database<00:05:49.759><c> out</c><00:05:49.919><c> of</c><00:05:50.000><c> the</c><00:05:50.160><c> box</c><00:05:50.400><c> as</c><00:05:50.639><c> well.</c><00:05:50.960><c> So</c>
+
+00:05:51.189 --> 00:05:51.199 align:start position:0%
+database out of the box as well. So
+ 
+
+00:05:51.199 --> 00:05:52.629 align:start position:0%
+database out of the box as well. So
+again,<00:05:51.440><c> you</c><00:05:51.680><c> don't</c><00:05:51.759><c> need</c><00:05:51.919><c> to</c><00:05:52.080><c> sign</c><00:05:52.320><c> up</c><00:05:52.479><c> to</c>
+
+00:05:52.629 --> 00:05:52.639 align:start position:0%
+again, you don't need to sign up to
+ 
+
+00:05:52.639 --> 00:05:55.110 align:start position:0%
+again, you don't need to sign up to
+something<00:05:52.880><c> like</c><00:05:53.120><c> Firebase</c><00:05:53.680><c> or</c><00:05:54.120><c> Superbase.</c>
+
+00:05:55.110 --> 00:05:55.120 align:start position:0%
+something like Firebase or Superbase.
+ 
+
+00:05:55.120 --> 00:05:56.469 align:start position:0%
+something like Firebase or Superbase.
+You<00:05:55.280><c> don't</c><00:05:55.440><c> need</c><00:05:55.520><c> to</c><00:05:55.680><c> spin</c><00:05:55.919><c> up</c><00:05:56.080><c> your</c><00:05:56.320><c> own</c>
+
+00:05:56.469 --> 00:05:56.479 align:start position:0%
+You don't need to spin up your own
+ 
+
+00:05:56.479 --> 00:05:58.790 align:start position:0%
+You don't need to spin up your own
+database.<00:05:57.440><c> We</c><00:05:57.680><c> give</c><00:05:57.840><c> it</c><00:05:58.000><c> to</c><00:05:58.080><c> you</c><00:05:58.400><c> out</c><00:05:58.560><c> of</c><00:05:58.639><c> the</c>
+
+00:05:58.790 --> 00:05:58.800 align:start position:0%
+database. We give it to you out of the
+ 
+
+00:05:58.800 --> 00:06:01.749 align:start position:0%
+database. We give it to you out of the
+box.<00:05:59.199><c> All</c><00:05:59.440><c> you</c><00:05:59.600><c> have</c><00:05:59.759><c> to</c><00:05:59.919><c> do</c><00:06:00.080><c> is</c><00:06:00.400><c> ask</c><00:06:00.759><c> Hypership</c>
+
+00:06:01.749 --> 00:06:01.759 align:start position:0%
+box. All you have to do is ask Hypership
+ 
+
+00:06:01.759 --> 00:06:05.110 align:start position:0%
+box. All you have to do is ask Hypership
+to<00:06:02.160><c> use</c><00:06:03.039><c> uh</c><00:06:03.120><c> a</c><00:06:03.360><c> database</c><00:06:03.840><c> or</c><00:06:04.160><c> save</c><00:06:04.400><c> data</c><00:06:04.720><c> to</c><00:06:04.880><c> a</c>
+
+00:06:05.110 --> 00:06:05.120 align:start position:0%
+to use uh a database or save data to a
+ 
+
+00:06:05.120 --> 00:06:08.550 align:start position:0%
+to use uh a database or save data to a
+database<00:06:05.680><c> and</c><00:06:05.919><c> it</c><00:06:06.199><c> will</c><00:06:07.199><c> set</c><00:06:07.360><c> it</c><00:06:07.520><c> up</c><00:06:07.759><c> for</c><00:06:08.000><c> you.</c>
+
+00:06:08.550 --> 00:06:08.560 align:start position:0%
+database and it will set it up for you.
+ 
+
+00:06:08.560 --> 00:06:10.710 align:start position:0%
+database and it will set it up for you.
+So<00:06:08.800><c> let's</c><00:06:09.039><c> go</c><00:06:09.199><c> ahead</c><00:06:09.360><c> and</c><00:06:09.600><c> do</c><00:06:09.680><c> that.</c><00:06:10.080><c> Let's</c><00:06:10.560><c> add</c>
+
+00:06:10.710 --> 00:06:10.720 align:start position:0%
+So let's go ahead and do that. Let's add
+ 
+
+00:06:10.720 --> 00:06:12.550 align:start position:0%
+So let's go ahead and do that. Let's add
+a<00:06:10.960><c> feature</c><00:06:11.199><c> where</c><00:06:11.520><c> users</c><00:06:12.000><c> can</c><00:06:12.160><c> track</c>
+
+00:06:12.550 --> 00:06:12.560 align:start position:0%
+a feature where users can track
+ 
+
+00:06:12.560 --> 00:06:18.090 align:start position:0%
+a feature where users can track
+workouts.
+
+00:06:18.090 --> 00:06:18.100 align:start position:0%
+ 
+ 
+
+00:06:18.100 --> 00:06:30.680 align:start position:0%
+ 
+[Music]
+
+00:06:30.680 --> 00:06:30.690 align:start position:0%
+ 
+ 
+
+00:06:30.690 --> 00:06:37.830 align:start position:0%
+ 
+[Music]
+
+00:06:37.830 --> 00:06:37.840 align:start position:0%
+[Music]
+ 
+
+00:06:37.840 --> 00:06:39.590 align:start position:0%
+[Music]
+All<00:06:37.919><c> right.</c><00:06:38.240><c> So,</c><00:06:38.479><c> it</c><00:06:38.720><c> looks</c><00:06:38.880><c> like</c><00:06:39.039><c> Hypership</c>
+
+00:06:39.590 --> 00:06:39.600 align:start position:0%
+All right. So, it looks like Hypership
+ 
+
+00:06:39.600 --> 00:06:42.230 align:start position:0%
+All right. So, it looks like Hypership
+is<00:06:39.840><c> finished</c><00:06:40.080><c> adding</c><00:06:40.960><c> a</c><00:06:41.199><c> workout</c><00:06:41.680><c> tracking</c><00:06:42.080><c> to</c>
+
+00:06:42.230 --> 00:06:42.240 align:start position:0%
+is finished adding a workout tracking to
+ 
+
+00:06:42.240 --> 00:06:45.350 align:start position:0%
+is finished adding a workout tracking to
+our<00:06:42.479><c> app.</c><00:06:43.280><c> So,</c><00:06:43.440><c> let's</c><00:06:43.680><c> try</c><00:06:43.919><c> it</c><00:06:44.000><c> out.</c><00:06:44.880><c> So,</c><00:06:45.120><c> let's</c>
+
+00:06:45.350 --> 00:06:45.360 align:start position:0%
+our app. So, let's try it out. So, let's
+ 
+
+00:06:45.360 --> 00:06:49.909 align:start position:0%
+our app. So, let's try it out. So, let's
+go<00:06:45.520><c> back</c><00:06:46.120><c> into</c><00:06:47.120><c> our</c><00:06:47.360><c> app</c><00:06:47.600><c> in</c><00:06:47.840><c> a</c><00:06:48.000><c> new</c><00:06:48.360><c> tab.</c><00:06:49.360><c> I</c><00:06:49.759><c> can</c>
+
+00:06:49.909 --> 00:06:49.919 align:start position:0%
+go back into our app in a new tab. I can
+ 
+
+00:06:49.919 --> 00:06:51.590 align:start position:0%
+go back into our app in a new tab. I can
+click<00:06:50.240><c> profile</c><00:06:50.720><c> because</c><00:06:50.880><c> I'm</c><00:06:51.120><c> already</c><00:06:51.280><c> signed</c>
+
+00:06:51.590 --> 00:06:51.600 align:start position:0%
+click profile because I'm already signed
+ 
+
+00:06:51.600 --> 00:06:53.670 align:start position:0%
+click profile because I'm already signed
+in.<00:06:52.080><c> Now,</c><00:06:52.319><c> we've</c><00:06:52.560><c> got</c><00:06:52.720><c> this</c><00:06:52.960><c> little</c><00:06:53.199><c> workout</c>
+
+00:06:53.670 --> 00:06:53.680 align:start position:0%
+in. Now, we've got this little workout
+ 
+
+00:06:53.680 --> 00:06:56.309 align:start position:0%
+in. Now, we've got this little workout
+tracker<00:06:54.080><c> section</c><00:06:54.400><c> here.</c><00:06:54.800><c> Look</c><00:06:54.880><c> at</c><00:06:55.039><c> that.</c><00:06:55.919><c> Wow.</c>
+
+00:06:56.309 --> 00:06:56.319 align:start position:0%
+tracker section here. Look at that. Wow.
+ 
+
+00:06:56.319 --> 00:06:59.510 align:start position:0%
+tracker section here. Look at that. Wow.
+That<00:06:56.560><c> is</c><00:06:56.919><c> awesome.</c><00:06:57.919><c> That</c><00:06:58.160><c> is</c><00:06:58.960><c> crazy,</c><00:06:59.360><c> man,</c>
+
+00:06:59.510 --> 00:06:59.520 align:start position:0%
+That is awesome. That is crazy, man,
+ 
+
+00:06:59.520 --> 00:07:03.029 align:start position:0%
+That is awesome. That is crazy, man,
+that<00:06:59.759><c> it</c><00:06:59.919><c> added</c><00:07:00.160><c> that</c><00:07:00.479><c> in</c><00:07:01.000><c> minutes.</c><00:07:02.000><c> So,</c><00:07:02.720><c> let's</c>
+
+00:07:03.029 --> 00:07:03.039 align:start position:0%
+that it added that in minutes. So, let's
+ 
+
+00:07:03.039 --> 00:07:06.550 align:start position:0%
+that it added that in minutes. So, let's
+say<00:07:03.520><c> I'm</c><00:07:03.840><c> signed</c><00:07:04.080><c> in.</c><00:07:04.479><c> Let's</c><00:07:04.880><c> do</c><00:07:05.199><c> a</c><00:07:06.000><c> cycling</c>
+
+00:07:06.550 --> 00:07:06.560 align:start position:0%
+say I'm signed in. Let's do a cycling
+ 
+
+00:07:06.560 --> 00:07:09.830 align:start position:0%
+say I'm signed in. Let's do a cycling
+class.<00:07:07.039><c> Duration</c><00:07:07.599><c> was</c><00:07:08.080><c> 60</c><00:07:08.479><c> minutes.</c><00:07:09.280><c> Calories</c>
+
+00:07:09.830 --> 00:07:09.840 align:start position:0%
+class. Duration was 60 minutes. Calories
+ 
+
+00:07:09.840 --> 00:07:11.510 align:start position:0%
+class. Duration was 60 minutes. Calories
+burned.<00:07:10.319><c> What</c><00:07:10.479><c> do</c><00:07:10.560><c> you</c><00:07:10.720><c> reckon?</c><00:07:11.199><c> if</c><00:07:11.360><c> you're</c>
+
+00:07:11.510 --> 00:07:11.520 align:start position:0%
+burned. What do you reckon? if you're
+ 
+
+00:07:11.520 --> 00:07:13.270 align:start position:0%
+burned. What do you reckon? if you're
+really<00:07:11.840><c> gunning</c><00:07:12.160><c> for</c><00:07:12.319><c> it,</c><00:07:12.479><c> maybe</c><00:07:12.639><c> the</c><00:07:12.880><c> 800</c>
+
+00:07:13.270 --> 00:07:13.280 align:start position:0%
+really gunning for it, maybe the 800
+ 
+
+00:07:13.280 --> 00:07:16.189 align:start position:0%
+really gunning for it, maybe the 800
+calories<00:07:13.680><c> in</c><00:07:13.919><c> an</c><00:07:14.160><c> hour.</c><00:07:14.880><c> Let's</c><00:07:15.120><c> hit</c><00:07:15.360><c> save</c>
+
+00:07:16.189 --> 00:07:16.199 align:start position:0%
+calories in an hour. Let's hit save
+ 
+
+00:07:16.199 --> 00:07:20.469 align:start position:0%
+calories in an hour. Let's hit save
+workout.<00:07:17.199><c> Cool.</c><00:07:18.160><c> That</c><00:07:18.400><c> is</c><00:07:19.080><c> crazy.</c><00:07:20.080><c> So,</c><00:07:20.240><c> it</c>
+
+00:07:20.469 --> 00:07:20.479 align:start position:0%
+workout. Cool. That is crazy. So, it
+ 
+
+00:07:20.479 --> 00:07:22.469 align:start position:0%
+workout. Cool. That is crazy. So, it
+saves<00:07:20.800><c> it</c><00:07:20.960><c> to</c><00:07:21.120><c> the</c><00:07:21.280><c> database</c><00:07:21.919><c> just</c><00:07:22.080><c> like</c><00:07:22.240><c> that.</c>
+
+00:07:22.469 --> 00:07:22.479 align:start position:0%
+saves it to the database just like that.
+ 
+
+00:07:22.479 --> 00:07:24.150 align:start position:0%
+saves it to the database just like that.
+And<00:07:22.639><c> I</c><00:07:22.800><c> can</c><00:07:22.960><c> check</c><00:07:23.120><c> that</c><00:07:23.360><c> as</c><00:07:23.520><c> well.</c><00:07:23.680><c> I</c><00:07:23.840><c> can</c><00:07:24.000><c> go</c>
+
+00:07:24.150 --> 00:07:24.160 align:start position:0%
+And I can check that as well. I can go
+ 
+
+00:07:24.160 --> 00:07:27.110 align:start position:0%
+And I can check that as well. I can go
+back<00:07:24.319><c> into</c><00:07:25.039><c> my</c><00:07:25.280><c> Hypership</c><00:07:26.240><c> Studio.</c><00:07:26.800><c> Go</c><00:07:26.960><c> back</c>
+
+00:07:27.110 --> 00:07:27.120 align:start position:0%
+back into my Hypership Studio. Go back
+ 
+
+00:07:27.120 --> 00:07:30.110 align:start position:0%
+back into my Hypership Studio. Go back
+to<00:07:27.360><c> data.</c><00:07:28.319><c> Let's</c><00:07:28.479><c> see.</c><00:07:28.720><c> We</c><00:07:28.960><c> should</c><00:07:29.199><c> see</c><00:07:29.360><c> that</c>
+
+00:07:30.110 --> 00:07:30.120 align:start position:0%
+to data. Let's see. We should see that
+ 
+
+00:07:30.120 --> 00:07:32.710 align:start position:0%
+to data. Let's see. We should see that
+workouts.<00:07:31.120><c> Man,</c><00:07:31.440><c> that's</c><00:07:31.680><c> crazy,</c><00:07:32.080><c> dude.</c><00:07:32.479><c> Look</c>
+
+00:07:32.710 --> 00:07:32.720 align:start position:0%
+workouts. Man, that's crazy, dude. Look
+ 
+
+00:07:32.720 --> 00:07:34.309 align:start position:0%
+workouts. Man, that's crazy, dude. Look
+at<00:07:32.800><c> that.</c><00:07:33.039><c> So,</c><00:07:33.199><c> we</c><00:07:33.280><c> can</c><00:07:33.440><c> see</c><00:07:33.520><c> the</c><00:07:33.759><c> user</c><00:07:34.080><c> as</c>
+
+00:07:34.309 --> 00:07:34.319 align:start position:0%
+at that. So, we can see the user as
+ 
+
+00:07:34.319 --> 00:07:37.990 align:start position:0%
+at that. So, we can see the user as
+well.<00:07:35.039><c> So</c><00:07:35.280><c> every</c><00:07:35.599><c> piece</c><00:07:35.919><c> of</c><00:07:36.639><c> data</c><00:07:37.360><c> if</c><00:07:37.520><c> a</c><00:07:37.759><c> user</c>
+
+00:07:37.990 --> 00:07:38.000 align:start position:0%
+well. So every piece of data if a user
+ 
+
+00:07:38.000 --> 00:07:40.390 align:start position:0%
+well. So every piece of data if a user
+is<00:07:38.240><c> signed</c><00:07:38.479><c> in</c><00:07:38.880><c> we</c><00:07:39.199><c> automatically</c><00:07:39.919><c> link</c><00:07:40.240><c> it</c>
+
+00:07:40.390 --> 00:07:40.400 align:start position:0%
+is signed in we automatically link it
+ 
+
+00:07:40.400 --> 00:07:42.550 align:start position:0%
+is signed in we automatically link it
+for<00:07:40.639><c> you</c><00:07:40.800><c> as</c><00:07:41.039><c> well.</c><00:07:41.360><c> So</c><00:07:41.520><c> I</c><00:07:41.680><c> can</c><00:07:41.759><c> click</c><00:07:41.919><c> on</c><00:07:42.240><c> that</c>
+
+00:07:42.550 --> 00:07:42.560 align:start position:0%
+for you as well. So I can click on that
+ 
+
+00:07:42.560 --> 00:07:46.430 align:start position:0%
+for you as well. So I can click on that
+and<00:07:42.800><c> we</c><00:07:43.039><c> can</c><00:07:43.199><c> see</c><00:07:44.080><c> our</c><00:07:44.400><c> user</c><00:07:44.720><c> data</c><00:07:45.280><c> from</c><00:07:45.919><c> our</c>
+
+00:07:46.430 --> 00:07:46.440 align:start position:0%
+and we can see our user data from our
+ 
+
+00:07:46.440 --> 00:07:49.749 align:start position:0%
+and we can see our user data from our
+app.<00:07:47.440><c> That</c><00:07:47.680><c> is</c><00:07:47.919><c> crazy</c><00:07:48.240><c> powerful.</c><00:07:48.800><c> In</c><00:07:49.199><c> minutes</c>
+
+00:07:49.749 --> 00:07:49.759 align:start position:0%
+app. That is crazy powerful. In minutes
+ 
+
+00:07:49.759 --> 00:07:54.189 align:start position:0%
+app. That is crazy powerful. In minutes
+we've<00:07:50.160><c> added</c><00:07:50.560><c> user</c><00:07:51.039><c> or</c><00:07:51.919><c> we</c><00:07:52.160><c> built</c><00:07:52.400><c> an</c><00:07:52.759><c> app</c><00:07:53.759><c> and</c>
+
+00:07:54.189 --> 00:07:54.199 align:start position:0%
+we've added user or we built an app and
+ 
+
+00:07:54.199 --> 00:07:57.230 align:start position:0%
+we've added user or we built an app and
+we've<00:07:55.199><c> been</c><00:07:55.360><c> able</c><00:07:55.599><c> to</c><00:07:55.919><c> save</c><00:07:56.240><c> data</c><00:07:56.720><c> to</c><00:07:56.960><c> a</c>
+
+00:07:57.230 --> 00:07:57.240 align:start position:0%
+we've been able to save data to a
+ 
+
+00:07:57.240 --> 00:07:59.430 align:start position:0%
+we've been able to save data to a
+database.<00:07:58.240><c> That</c><00:07:58.479><c> is</c><00:07:58.639><c> something</c><00:07:58.960><c> that</c><00:07:59.120><c> would</c>
+
+00:07:59.430 --> 00:07:59.440 align:start position:0%
+database. That is something that would
+ 
+
+00:07:59.440 --> 00:08:04.150 align:start position:0%
+database. That is something that would
+take<00:08:00.160><c> like</c><00:08:00.919><c> days</c><00:08:01.919><c> if</c><00:08:02.160><c> not</c><00:08:02.560><c> weeks</c><00:08:03.199><c> to</c><00:08:03.440><c> do.</c><00:08:03.840><c> if</c>
+
+00:08:04.150 --> 00:08:04.160 align:start position:0%
+take like days if not weeks to do. if
+ 
+
+00:08:04.160 --> 00:08:07.029 align:start position:0%
+take like days if not weeks to do. if
+you're<00:08:04.639><c> having</c><00:08:04.879><c> to</c><00:08:05.120><c> sign</c><00:08:05.360><c> up</c><00:08:05.599><c> for</c><00:08:06.479><c> third</c><00:08:06.720><c> party</c>
+
+00:08:07.029 --> 00:08:07.039 align:start position:0%
+you're having to sign up for third party
+ 
+
+00:08:07.039 --> 00:08:09.350 align:start position:0%
+you're having to sign up for third party
+services<00:08:07.520><c> like</c><00:08:07.759><c> Superbase</c><00:08:08.319><c> or</c><00:08:08.479><c> Firebase,</c>
+
+00:08:09.350 --> 00:08:09.360 align:start position:0%
+services like Superbase or Firebase,
+ 
+
+00:08:09.360 --> 00:08:11.270 align:start position:0%
+services like Superbase or Firebase,
+having<00:08:09.680><c> to</c><00:08:09.840><c> manage</c><00:08:10.160><c> all</c><00:08:10.319><c> that</c><00:08:10.560><c> connection.</c>
+
+00:08:11.270 --> 00:08:11.280 align:start position:0%
+having to manage all that connection.
+ 
+
+00:08:11.280 --> 00:08:12.869 align:start position:0%
+having to manage all that connection.
+And<00:08:11.360><c> then</c><00:08:11.599><c> don't</c><00:08:11.759><c> forget,</c><00:08:12.080><c> you're</c><00:08:12.319><c> spending</c>
+
+00:08:12.869 --> 00:08:12.879 align:start position:0%
+And then don't forget, you're spending
+ 
+
+00:08:12.879 --> 00:08:17.110 align:start position:0%
+And then don't forget, you're spending
+crazy<00:08:13.199><c> amounts</c><00:08:13.520><c> of</c><00:08:13.879><c> tokens</c><00:08:14.879><c> in</c><00:08:15.800><c> your</c><00:08:16.800><c> coding</c>
+
+00:08:17.110 --> 00:08:17.120 align:start position:0%
+crazy amounts of tokens in your coding
+ 
+
+00:08:17.120 --> 00:08:20.950 align:start position:0%
+crazy amounts of tokens in your coding
+platforms<00:08:17.919><c> to</c><00:08:18.319><c> hook</c><00:08:18.639><c> up</c><00:08:19.280><c> to</c><00:08:19.680><c> the</c><00:08:20.400><c> external</c>
+
+00:08:20.950 --> 00:08:20.960 align:start position:0%
+platforms to hook up to the external
+ 
+
+00:08:20.960 --> 00:08:22.950 align:start position:0%
+platforms to hook up to the external
+services<00:08:21.360><c> like</c><00:08:21.599><c> Superbase</c><00:08:22.479><c> because</c><00:08:22.720><c> there's</c>
+
+00:08:22.950 --> 00:08:22.960 align:start position:0%
+services like Superbase because there's
+ 
+
+00:08:22.960 --> 00:08:24.510 align:start position:0%
+services like Superbase because there's
+just<00:08:23.120><c> a</c><00:08:23.280><c> lot</c><00:08:23.440><c> more</c><00:08:23.599><c> code</c><00:08:23.840><c> that</c><00:08:24.080><c> needs</c><00:08:24.240><c> to</c><00:08:24.400><c> be</c>
+
+00:08:24.510 --> 00:08:24.520 align:start position:0%
+just a lot more code that needs to be
+ 
+
+00:08:24.520 --> 00:08:27.510 align:start position:0%
+just a lot more code that needs to be
+written.<00:08:25.520><c> Whereas</c><00:08:25.759><c> with</c><00:08:26.199><c> Hypership,</c><00:08:27.199><c> we've</c>
+
+00:08:27.510 --> 00:08:27.520 align:start position:0%
+written. Whereas with Hypership, we've
+ 
+
+00:08:27.520 --> 00:08:29.430 align:start position:0%
+written. Whereas with Hypership, we've
+made<00:08:27.680><c> it</c><00:08:27.919><c> so</c><00:08:28.160><c> that</c><00:08:28.319><c> it</c><00:08:28.560><c> there's</c><00:08:28.879><c> hardly</c><00:08:29.199><c> any</c>
+
+00:08:29.430 --> 00:08:29.440 align:start position:0%
+made it so that it there's hardly any
+ 
+
+00:08:29.440 --> 00:08:31.670 align:start position:0%
+made it so that it there's hardly any
+code<00:08:29.680><c> to</c><00:08:29.919><c> write</c><00:08:30.479><c> so</c><00:08:30.720><c> it</c><00:08:30.879><c> costs</c><00:08:31.120><c> you</c><00:08:31.360><c> less</c>
+
+00:08:31.670 --> 00:08:31.680 align:start position:0%
+code to write so it costs you less
+ 
+
+00:08:31.680 --> 00:08:35.389 align:start position:0%
+code to write so it costs you less
+tokens.<00:08:32.719><c> So</c><00:08:33.120><c> that</c><00:08:33.360><c> is</c>
+
+00:08:35.389 --> 00:08:35.399 align:start position:0%
+tokens. So that is
+ 
+
+00:08:35.399 --> 00:08:37.829 align:start position:0%
+tokens. So that is
+awesome.<00:08:36.399><c> All</c><00:08:36.399><c> right.</c><00:08:36.719><c> So</c><00:08:36.880><c> I've</c><00:08:37.039><c> been</c><00:08:37.120><c> ving</c><00:08:37.680><c> a</c>
+
+00:08:37.829 --> 00:08:37.839 align:start position:0%
+awesome. All right. So I've been ving a
+ 
+
+00:08:37.839 --> 00:08:39.670 align:start position:0%
+awesome. All right. So I've been ving a
+bit<00:08:38.000><c> more</c><00:08:38.159><c> to</c><00:08:38.479><c> tweak</c><00:08:38.800><c> the</c><00:08:39.039><c> look</c><00:08:39.120><c> and</c><00:08:39.360><c> feel</c><00:08:39.519><c> of</c>
+
+00:08:39.670 --> 00:08:39.680 align:start position:0%
+bit more to tweak the look and feel of
+ 
+
+00:08:39.680 --> 00:08:42.269 align:start position:0%
+bit more to tweak the look and feel of
+our<00:08:39.839><c> page.</c><00:08:40.479><c> Let's</c><00:08:40.719><c> have</c><00:08:40.880><c> a</c><00:08:41.039><c> look</c><00:08:41.120><c> at</c>
+
+00:08:42.269 --> 00:08:42.279 align:start position:0%
+our page. Let's have a look at
+ 
+
+00:08:42.279 --> 00:08:46.190 align:start position:0%
+our page. Let's have a look at
+it.<00:08:43.279><c> Wow.</c><00:08:44.000><c> Okay.</c><00:08:44.480><c> That</c><00:08:44.640><c> is</c><00:08:45.040><c> crazy</c>
+
+00:08:46.190 --> 00:08:46.200 align:start position:0%
+it. Wow. Okay. That is crazy
+ 
+
+00:08:46.200 --> 00:08:49.310 align:start position:0%
+it. Wow. Okay. That is crazy
+good.<00:08:47.200><c> That</c><00:08:47.440><c> looks</c><00:08:47.680><c> so</c><00:08:48.000><c> good,</c>
+
+00:08:49.310 --> 00:08:49.320 align:start position:0%
+good. That looks so good,
+ 
+
+00:08:49.320 --> 00:08:54.030 align:start position:0%
+good. That looks so good,
+man.<00:08:50.320><c> So</c><00:08:50.640><c> let's</c><00:08:50.959><c> go</c><00:08:51.120><c> to</c><00:08:51.360><c> the</c><00:08:51.680><c> full</c><00:08:52.360><c> page</c>
+
+00:08:54.030 --> 00:08:54.040 align:start position:0%
+man. So let's go to the full page
+ 
+
+00:08:54.040 --> 00:08:56.870 align:start position:0%
+man. So let's go to the full page
+and<00:08:55.040><c> let's</c><00:08:55.360><c> have</c><00:08:55.440><c> a</c><00:08:55.600><c> look.</c><00:08:56.160><c> And</c><00:08:56.240><c> our</c><00:08:56.560><c> profile</c>
+
+00:08:56.870 --> 00:08:56.880 align:start position:0%
+and let's have a look. And our profile
+ 
+
+00:08:56.880 --> 00:08:59.829 align:start position:0%
+and let's have a look. And our profile
+when<00:08:57.040><c> we</c><00:08:57.200><c> sign</c><00:08:57.720><c> in.</c><00:08:58.720><c> Yeah,</c><00:08:58.959><c> look</c><00:08:59.120><c> at</c><00:08:59.279><c> that</c><00:08:59.600><c> dark</c>
+
+00:08:59.829 --> 00:08:59.839 align:start position:0%
+when we sign in. Yeah, look at that dark
+ 
+
+00:08:59.839 --> 00:09:02.630 align:start position:0%
+when we sign in. Yeah, look at that dark
+mode.<00:09:00.080><c> Looks</c><00:09:00.399><c> so</c><00:09:00.640><c> good.</c><00:09:01.760><c> And</c><00:09:01.839><c> let's</c><00:09:02.080><c> track</c><00:09:02.240><c> any</c>
+
+00:09:02.630 --> 00:09:02.640 align:start position:0%
+mode. Looks so good. And let's track any
+ 
+
+00:09:02.640 --> 00:09:04.790 align:start position:0%
+mode. Looks so good. And let's track any
+workout.<00:09:03.040><c> So</c><00:09:03.200><c> let's</c><00:09:03.360><c> say</c><00:09:03.519><c> weight</c><00:09:03.839><c> training.</c>
+
+00:09:04.790 --> 00:09:04.800 align:start position:0%
+workout. So let's say weight training.
+ 
+
+00:09:04.800 --> 00:09:07.110 align:start position:0%
+workout. So let's say weight training.
+Duration<00:09:05.360><c> we</c><00:09:05.519><c> did</c><00:09:05.680><c> 45</c><00:09:06.160><c> minutes.</c><00:09:06.640><c> Calories</c>
+
+00:09:07.110 --> 00:09:07.120 align:start position:0%
+Duration we did 45 minutes. Calories
+ 
+
+00:09:07.120 --> 00:09:09.150 align:start position:0%
+Duration we did 45 minutes. Calories
+burned
+
+00:09:09.150 --> 00:09:09.160 align:start position:0%
+burned
+ 
+
+00:09:09.160 --> 00:09:11.750 align:start position:0%
+burned
+500.<00:09:10.160><c> We</c><00:09:10.399><c> got</c><00:09:10.560><c> the</c><00:09:10.720><c> date.</c><00:09:11.120><c> Look</c><00:09:11.360><c> how</c><00:09:11.519><c> we</c><00:09:11.600><c> even</c>
+
+00:09:11.750 --> 00:09:11.760 align:start position:0%
+500. We got the date. Look how we even
+ 
+
+00:09:11.760 --> 00:09:15.110 align:start position:0%
+500. We got the date. Look how we even
+got<00:09:12.000><c> date</c><00:09:12.240><c> picker</c><00:09:12.560><c> on</c><00:09:13.000><c> it.</c><00:09:14.000><c> So</c><00:09:14.080><c> we'll</c><00:09:14.240><c> say</c><00:09:14.800><c> that</c>
+
+00:09:15.110 --> 00:09:15.120 align:start position:0%
+got date picker on it. So we'll say that
+ 
+
+00:09:15.120 --> 00:09:16.750 align:start position:0%
+got date picker on it. So we'll say that
+was<00:09:15.760><c> on</c>
+
+00:09:16.750 --> 00:09:16.760 align:start position:0%
+was on
+ 
+
+00:09:16.760 --> 00:09:19.509 align:start position:0%
+was on
+Wednesday.<00:09:17.760><c> Save</c><00:09:18.160><c> workout.</c><00:09:18.959><c> Yeah.</c><00:09:19.200><c> And</c><00:09:19.360><c> it</c>
+
+00:09:19.509 --> 00:09:19.519 align:start position:0%
+Wednesday. Save workout. Yeah. And it
+ 
+
+00:09:19.519 --> 00:09:22.110 align:start position:0%
+Wednesday. Save workout. Yeah. And it
+just<00:09:19.680><c> say</c><00:09:19.920><c> it</c><00:09:20.160><c> just</c><00:09:20.320><c> works.</c><00:09:20.800><c> Everything</c><00:09:21.120><c> just</c>
+
+00:09:22.110 --> 00:09:22.120 align:start position:0%
+just say it just works. Everything just
+ 
+
+00:09:22.120 --> 00:09:26.630 align:start position:0%
+just say it just works. Everything just
+works.<00:09:23.120><c> That</c><00:09:23.360><c> is</c><00:09:23.760><c> crazy</c><00:09:24.240><c> good.</c>
+
+00:09:26.630 --> 00:09:26.640 align:start position:0%
+works. That is crazy good.
+ 
+
+00:09:26.640 --> 00:09:28.230 align:start position:0%
+works. That is crazy good.
+So,<00:09:26.959><c> let's</c><00:09:27.200><c> explore</c><00:09:27.519><c> the</c><00:09:27.680><c> Hypership</c>
+
+00:09:28.230 --> 00:09:28.240 align:start position:0%
+So, let's explore the Hypership
+ 
+
+00:09:28.240 --> 00:09:29.990 align:start position:0%
+So, let's explore the Hypership
+dashboard<00:09:28.720><c> just</c><00:09:28.880><c> a</c><00:09:29.120><c> little</c><00:09:29.200><c> bit</c><00:09:29.360><c> to</c><00:09:29.600><c> show</c><00:09:29.680><c> you</c>
+
+00:09:29.990 --> 00:09:30.000 align:start position:0%
+dashboard just a little bit to show you
+ 
+
+00:09:30.000 --> 00:09:31.829 align:start position:0%
+dashboard just a little bit to show you
+all<00:09:30.160><c> the</c><00:09:30.399><c> other</c><00:09:30.560><c> cool</c><00:09:30.800><c> stuff</c><00:09:30.959><c> that</c><00:09:31.200><c> you</c><00:09:31.360><c> get</c>
+
+00:09:31.829 --> 00:09:31.839 align:start position:0%
+all the other cool stuff that you get
+ 
+
+00:09:31.839 --> 00:09:33.590 align:start position:0%
+all the other cool stuff that you get
+out<00:09:32.000><c> of</c><00:09:32.080><c> the</c><00:09:32.240><c> box</c><00:09:32.480><c> for</c><00:09:32.720><c> free.</c><00:09:33.040><c> So,</c><00:09:33.279><c> I'll</c><00:09:33.440><c> click</c>
+
+00:09:33.590 --> 00:09:33.600 align:start position:0%
+out of the box for free. So, I'll click
+ 
+
+00:09:33.600 --> 00:09:35.990 align:start position:0%
+out of the box for free. So, I'll click
+into<00:09:33.839><c> my</c><00:09:34.080><c> app.</c><00:09:34.720><c> I</c><00:09:34.959><c> can</c><00:09:35.120><c> see</c><00:09:35.519><c> that</c><00:09:35.680><c> I</c><00:09:35.839><c> get</c>
+
+00:09:35.990 --> 00:09:36.000 align:start position:0%
+into my app. I can see that I get
+ 
+
+00:09:36.000 --> 00:09:38.790 align:start position:0%
+into my app. I can see that I get
+hosting.<00:09:36.560><c> So,</c><00:09:36.720><c> the</c><00:09:36.880><c> app</c><00:09:37.120><c> is</c><00:09:37.320><c> hosted.</c><00:09:38.320><c> Um,</c><00:09:38.640><c> when</c>
+
+00:09:38.790 --> 00:09:38.800 align:start position:0%
+hosting. So, the app is hosted. Um, when
+ 
+
+00:09:38.800 --> 00:09:40.790 align:start position:0%
+hosting. So, the app is hosted. Um, when
+I'm<00:09:39.120><c> happy</c><00:09:39.440><c> with</c><00:09:39.680><c> my</c><00:09:39.920><c> changes,</c><00:09:40.240><c> I</c><00:09:40.480><c> can</c><00:09:40.560><c> publish</c>
+
+00:09:40.790 --> 00:09:40.800 align:start position:0%
+I'm happy with my changes, I can publish
+ 
+
+00:09:40.800 --> 00:09:42.949 align:start position:0%
+I'm happy with my changes, I can publish
+them<00:09:41.040><c> and</c><00:09:41.200><c> you</c><00:09:41.360><c> can</c><00:09:41.519><c> start</c><00:09:41.760><c> sharing</c><00:09:42.160><c> that</c><00:09:42.640><c> that</c>
+
+00:09:42.949 --> 00:09:42.959 align:start position:0%
+them and you can start sharing that that
+ 
+
+00:09:42.959 --> 00:09:45.190 align:start position:0%
+them and you can start sharing that that
+link<00:09:43.200><c> with</c><00:09:43.440><c> people</c><00:09:43.760><c> and</c><00:09:44.000><c> that's</c><00:09:44.240><c> live.</c><00:09:44.959><c> We've</c>
+
+00:09:45.190 --> 00:09:45.200 align:start position:0%
+link with people and that's live. We've
+ 
+
+00:09:45.200 --> 00:09:46.710 align:start position:0%
+link with people and that's live. We've
+gone<00:09:45.440><c> through</c><00:09:45.680><c> users.</c><00:09:46.080><c> So,</c><00:09:46.240><c> you</c><00:09:46.399><c> can</c><00:09:46.480><c> start</c>
+
+00:09:46.710 --> 00:09:46.720 align:start position:0%
+gone through users. So, you can start
+ 
+
+00:09:46.720 --> 00:09:49.030 align:start position:0%
+gone through users. So, you can start
+tracking<00:09:47.200><c> users</c><00:09:47.440><c> and</c><00:09:47.680><c> user</c><00:09:48.040><c> authentication.</c>
+
+00:09:49.030 --> 00:09:49.040 align:start position:0%
+tracking users and user authentication.
+ 
+
+00:09:49.040 --> 00:09:50.870 align:start position:0%
+tracking users and user authentication.
+We've<00:09:49.360><c> also</c><00:09:49.600><c> gone</c><00:09:49.760><c> through</c><00:09:50.000><c> data.</c><00:09:50.560><c> So,</c><00:09:50.720><c> right</c>
+
+00:09:50.870 --> 00:09:50.880 align:start position:0%
+We've also gone through data. So, right
+ 
+
+00:09:50.880 --> 00:09:52.630 align:start position:0%
+We've also gone through data. So, right
+now<00:09:51.040><c> I'm</c><00:09:51.200><c> tracking</c><00:09:51.600><c> workouts.</c><00:09:52.320><c> The</c><00:09:52.560><c> thing</c>
+
+00:09:52.630 --> 00:09:52.640 align:start position:0%
+now I'm tracking workouts. The thing
+ 
+
+00:09:52.640 --> 00:09:54.790 align:start position:0%
+now I'm tracking workouts. The thing
+that<00:09:52.800><c> I</c><00:09:53.040><c> haven't</c><00:09:53.279><c> shown</c><00:09:53.440><c> you</c><00:09:53.920><c> is</c><00:09:54.240><c> page</c><00:09:54.560><c> view</c>
+
+00:09:54.790 --> 00:09:54.800 align:start position:0%
+that I haven't shown you is page view
+ 
+
+00:09:54.800 --> 00:09:57.110 align:start position:0%
+that I haven't shown you is page view
+analytics.<00:09:55.519><c> So</c><00:09:56.000><c> think</c><00:09:56.320><c> of</c><00:09:56.560><c> like</c><00:09:56.800><c> Google</c>
+
+00:09:57.110 --> 00:09:57.120 align:start position:0%
+analytics. So think of like Google
+ 
+
+00:09:57.120 --> 00:09:58.710 align:start position:0%
+analytics. So think of like Google
+Analytics
+
+00:09:58.710 --> 00:09:58.720 align:start position:0%
+Analytics
+ 
+
+00:09:58.720 --> 00:10:02.990 align:start position:0%
+Analytics
+um<00:09:59.279><c> built</c><00:09:59.800><c> into</c><00:10:00.920><c> Hypershin.</c><00:10:01.920><c> So</c><00:10:02.320><c> we</c>
+
+00:10:02.990 --> 00:10:03.000 align:start position:0%
+um built into Hypershin. So we
+ 
+
+00:10:03.000 --> 00:10:05.269 align:start position:0%
+um built into Hypershin. So we
+automatically<00:10:04.000><c> give</c><00:10:04.240><c> you</c><00:10:04.399><c> this</c><00:10:04.800><c> out</c><00:10:04.959><c> of</c><00:10:05.120><c> the</c>
+
+00:10:05.269 --> 00:10:05.279 align:start position:0%
+automatically give you this out of the
+ 
+
+00:10:05.279 --> 00:10:06.790 align:start position:0%
+automatically give you this out of the
+box.<00:10:05.600><c> You</c><00:10:05.760><c> don't</c><00:10:05.920><c> even</c><00:10:06.160><c> need</c><00:10:06.240><c> to</c><00:10:06.480><c> configure</c>
+
+00:10:06.790 --> 00:10:06.800 align:start position:0%
+box. You don't even need to configure
+ 
+
+00:10:06.800 --> 00:10:09.190 align:start position:0%
+box. You don't even need to configure
+it.<00:10:07.040><c> You</c><00:10:07.279><c> don't</c><00:10:07.440><c> have</c><00:10:07.519><c> to</c><00:10:08.480><c> go</c><00:10:08.720><c> through</c><00:10:08.880><c> any</c>
+
+00:10:09.190 --> 00:10:09.200 align:start position:0%
+it. You don't have to go through any
+ 
+
+00:10:09.200 --> 00:10:11.110 align:start position:0%
+it. You don't have to go through any
+setup<00:10:09.519><c> or</c><00:10:09.760><c> anything</c><00:10:10.000><c> like</c><00:10:10.160><c> that.</c><00:10:10.560><c> It</c><00:10:10.800><c> just</c>
+
+00:10:11.110 --> 00:10:11.120 align:start position:0%
+setup or anything like that. It just
+ 
+
+00:10:11.120 --> 00:10:13.990 align:start position:0%
+setup or anything like that. It just
+works.<00:10:11.600><c> So</c><00:10:12.080><c> if</c><00:10:12.320><c> people</c><00:10:13.040><c> are</c><00:10:13.360><c> clicking</c><00:10:13.680><c> on</c><00:10:13.839><c> your</c>
+
+00:10:13.990 --> 00:10:14.000 align:start position:0%
+works. So if people are clicking on your
+ 
+
+00:10:14.000 --> 00:10:15.590 align:start position:0%
+works. So if people are clicking on your
+link,<00:10:14.320><c> you</c><00:10:14.480><c> can</c><00:10:14.640><c> see</c><00:10:14.800><c> exactly</c><00:10:15.200><c> where</c><00:10:15.360><c> they're</c>
+
+00:10:15.590 --> 00:10:15.600 align:start position:0%
+link, you can see exactly where they're
+ 
+
+00:10:15.600 --> 00:10:17.829 align:start position:0%
+link, you can see exactly where they're
+coming<00:10:15.839><c> from</c><00:10:16.079><c> and</c><00:10:16.399><c> what</c><00:10:16.640><c> pages</c><00:10:17.440><c> that</c><00:10:17.600><c> they</c>
+
+00:10:17.829 --> 00:10:17.839 align:start position:0%
+coming from and what pages that they
+ 
+
+00:10:17.839 --> 00:10:21.350 align:start position:0%
+coming from and what pages that they
+come<00:10:18.120><c> from.</c><00:10:19.120><c> The</c><00:10:19.279><c> next</c><00:10:19.440><c> thing</c><00:10:19.600><c> is</c><00:10:19.839><c> events.</c><00:10:20.720><c> So</c>
+
+00:10:21.350 --> 00:10:21.360 align:start position:0%
+come from. The next thing is events. So
+ 
+
+00:10:21.360 --> 00:10:24.069 align:start position:0%
+come from. The next thing is events. So
+you<00:10:21.600><c> can</c><00:10:21.760><c> actually</c><00:10:22.240><c> create</c><00:10:23.120><c> like</c><00:10:23.440><c> mouse</c><00:10:23.760><c> click</c>
+
+00:10:24.069 --> 00:10:24.079 align:start position:0%
+you can actually create like mouse click
+ 
+
+00:10:24.079 --> 00:10:25.990 align:start position:0%
+you can actually create like mouse click
+events<00:10:24.399><c> and</c><00:10:24.640><c> buy</c><00:10:24.640><c> button</c><00:10:24.880><c> click</c><00:10:25.200><c> events</c><00:10:25.600><c> or</c><00:10:25.839><c> if</c>
+
+00:10:25.990 --> 00:10:26.000 align:start position:0%
+events and buy button click events or if
+ 
+
+00:10:26.000 --> 00:10:27.190 align:start position:0%
+events and buy button click events or if
+someone<00:10:26.320><c> if</c><00:10:26.480><c> you're</c><00:10:26.640><c> creating</c><00:10:26.880><c> like</c><00:10:27.040><c> a</c>
+
+00:10:27.190 --> 00:10:27.200 align:start position:0%
+someone if you're creating like a
+ 
+
+00:10:27.200 --> 00:10:29.509 align:start position:0%
+someone if you're creating like a
+shopping<00:10:27.600><c> app</c><00:10:28.320><c> you</c><00:10:28.480><c> can</c><00:10:28.640><c> attach</c><00:10:28.880><c> an</c><00:10:29.120><c> event</c><00:10:29.360><c> to</c>
+
+00:10:29.509 --> 00:10:29.519 align:start position:0%
+shopping app you can attach an event to
+ 
+
+00:10:29.519 --> 00:10:32.470 align:start position:0%
+shopping app you can attach an event to
+the<00:10:30.240><c> uh</c><00:10:30.320><c> like</c><00:10:30.720><c> shopping</c><00:10:31.120><c> cart.</c><00:10:31.760><c> So</c><00:10:32.000><c> again</c><00:10:32.240><c> it's</c>
+
+00:10:32.470 --> 00:10:32.480 align:start position:0%
+the uh like shopping cart. So again it's
+ 
+
+00:10:32.480 --> 00:10:35.910 align:start position:0%
+the uh like shopping cart. So again it's
+like<00:10:32.800><c> finer</c><00:10:33.720><c> grained</c><00:10:34.720><c> page</c><00:10:35.040><c> view</c><00:10:35.279><c> analytics</c>
+
+00:10:35.910 --> 00:10:35.920 align:start position:0%
+like finer grained page view analytics
+ 
+
+00:10:35.920 --> 00:10:38.470 align:start position:0%
+like finer grained page view analytics
+but<00:10:36.320><c> with</c><00:10:36.560><c> with</c><00:10:36.959><c> event</c><00:10:37.279><c> tracking.</c><00:10:38.160><c> So</c><00:10:38.320><c> with</c>
+
+00:10:38.470 --> 00:10:38.480 align:start position:0%
+but with with event tracking. So with
+ 
+
+00:10:38.480 --> 00:10:40.790 align:start position:0%
+but with with event tracking. So with
+Hypership<00:10:39.040><c> we</c><00:10:39.200><c> give</c><00:10:39.360><c> you</c><00:10:39.600><c> so</c><00:10:39.920><c> much</c><00:10:40.240><c> out</c><00:10:40.480><c> of</c><00:10:40.560><c> the</c>
+
+00:10:40.790 --> 00:10:40.800 align:start position:0%
+Hypership we give you so much out of the
+ 
+
+00:10:40.800 --> 00:10:43.990 align:start position:0%
+Hypership we give you so much out of the
+box<00:10:41.440><c> for</c><00:10:41.760><c> free.</c><00:10:42.560><c> It</c><00:10:42.800><c> just</c><00:10:42.959><c> saves</c><00:10:43.200><c> you</c><00:10:43.360><c> a</c><00:10:43.680><c> crazy</c>
+
+00:10:43.990 --> 00:10:44.000 align:start position:0%
+box for free. It just saves you a crazy
+ 
+
+00:10:44.000 --> 00:10:46.470 align:start position:0%
+box for free. It just saves you a crazy
+amount<00:10:44.240><c> of</c><00:10:44.680><c> time.</c><00:10:45.680><c> Thanks</c><00:10:45.920><c> for</c><00:10:46.079><c> checking</c><00:10:46.320><c> out</c>
+
+00:10:46.470 --> 00:10:46.480 align:start position:0%
+amount of time. Thanks for checking out
+ 
+
+00:10:46.480 --> 00:10:49.110 align:start position:0%
+amount of time. Thanks for checking out
+this<00:10:46.760><c> video.</c><00:10:47.760><c> Hope</c><00:10:48.000><c> you</c><00:10:48.079><c> enjoyed</c><00:10:48.480><c> it.</c><00:10:48.880><c> We're</c>
+
+00:10:49.110 --> 00:10:49.120 align:start position:0%
+this video. Hope you enjoyed it. We're
+ 
+
+00:10:49.120 --> 00:10:51.670 align:start position:0%
+this video. Hope you enjoyed it. We're
+going<00:10:49.200><c> to</c><00:10:49.360><c> have</c><00:10:49.519><c> loads</c><00:10:49.839><c> more</c><00:10:50.079><c> videos</c><00:10:50.560><c> where</c><00:10:51.360><c> I</c>
+
+00:10:51.670 --> 00:10:51.680 align:start position:0%
+going to have loads more videos where I
+ 
+
+00:10:51.680 --> 00:10:54.310 align:start position:0%
+going to have loads more videos where I
+use<00:10:51.920><c> Hypership</c><00:10:52.640><c> to</c><00:10:52.880><c> vibe</c><00:10:53.279><c> code</c><00:10:53.680><c> a</c><00:10:54.000><c> bunch</c><00:10:54.160><c> of</c>
+
+00:10:54.310 --> 00:10:54.320 align:start position:0%
+use Hypership to vibe code a bunch of
+ 
+
+00:10:54.320 --> 00:10:55.870 align:start position:0%
+use Hypership to vibe code a bunch of
+different
+
+00:10:55.870 --> 00:10:55.880 align:start position:0%
+different
+ 
+
+00:10:55.880 --> 00:10:58.150 align:start position:0%
+different
+apps.<00:10:56.880><c> Like</c><00:10:57.120><c> and</c><00:10:57.360><c> subscribe.</c><00:10:57.839><c> It</c><00:10:58.000><c> would</c>
+
+00:10:58.150 --> 00:10:58.160 align:start position:0%
+apps. Like and subscribe. It would
+ 
+
+00:10:58.160 --> 00:11:00.630 align:start position:0%
+apps. Like and subscribe. It would
+really<00:10:58.399><c> help</c><00:10:58.640><c> the</c><00:10:58.959><c> channel.</c><00:10:59.760><c> Um,</c><00:11:00.079><c> if</c><00:11:00.320><c> you</c><00:11:00.480><c> do</c>
+
+00:11:00.630 --> 00:11:00.640 align:start position:0%
+really help the channel. Um, if you do
+ 
+
+00:11:00.640 --> 00:11:02.550 align:start position:0%
+really help the channel. Um, if you do
+want<00:11:00.800><c> to</c><00:11:00.880><c> try</c><00:11:01.120><c> Hypership,</c><00:11:01.760><c> it's</c><00:11:01.920><c> free</c><00:11:02.160><c> to</c><00:11:02.399><c> sign</c>
+
+00:11:02.550 --> 00:11:02.560 align:start position:0%
+want to try Hypership, it's free to sign
+ 
+
+00:11:02.560 --> 00:11:04.310 align:start position:0%
+want to try Hypership, it's free to sign
+up<00:11:02.800><c> and</c><00:11:03.040><c> you</c><00:11:03.200><c> get</c><00:11:03.360><c> a</c><00:11:03.519><c> bunch</c><00:11:03.600><c> of</c><00:11:03.760><c> tokens</c><00:11:04.160><c> when</c>
+
+00:11:04.310 --> 00:11:04.320 align:start position:0%
+up and you get a bunch of tokens when
+ 
+
+00:11:04.320 --> 00:11:06.790 align:start position:0%
+up and you get a bunch of tokens when
+you<00:11:04.480><c> sign</c><00:11:04.720><c> up</c><00:11:04.880><c> for</c><00:11:05.200><c> free.</c><00:11:05.920><c> Um,</c><00:11:06.399><c> just</c><00:11:06.560><c> go</c><00:11:06.720><c> to</c>
+
+00:11:06.790 --> 00:11:06.800 align:start position:0%
+you sign up for free. Um, just go to
+ 
+
+00:11:06.800 --> 00:11:09.829 align:start position:0%
+you sign up for free. Um, just go to
+hypership.dev<00:11:07.680><c> dev</c><00:11:08.640><c> and</c><00:11:08.959><c> you</c><00:11:09.200><c> can</c><00:11:09.279><c> click</c><00:11:09.600><c> sign</c>
+
+00:11:09.829 --> 00:11:09.839 align:start position:0%
+hypership.dev dev and you can click sign
+ 
+
+00:11:09.839 --> 00:11:12.230 align:start position:0%
+hypership.dev dev and you can click sign
+up<00:11:10.160><c> up</c><00:11:10.480><c> here</c><00:11:11.040><c> or</c><00:11:11.279><c> you</c><00:11:11.440><c> can</c><00:11:11.519><c> just</c><00:11:11.680><c> type</c><00:11:11.839><c> in</c><00:11:12.079><c> your</c>
+
+00:11:12.230 --> 00:11:12.240 align:start position:0%
+up up here or you can just type in your
+ 
+
+00:11:12.240 --> 00:11:14.310 align:start position:0%
+up up here or you can just type in your
+prompt<00:11:12.640><c> here</c><00:11:13.440><c> the</c><00:11:13.600><c> app</c><00:11:13.839><c> that</c><00:11:14.000><c> you</c><00:11:14.079><c> want</c><00:11:14.240><c> to</c>
+
+00:11:14.310 --> 00:11:14.320 align:start position:0%
+prompt here the app that you want to
+ 
+
+00:11:14.320 --> 00:11:17.269 align:start position:0%
+prompt here the app that you want to
+build<00:11:14.560><c> and</c><00:11:14.800><c> hit</c><00:11:15.200><c> go</c><00:11:15.839><c> and</c><00:11:16.480><c> app</c><00:11:16.720><c> ship</c><00:11:16.959><c> will</c><00:11:17.120><c> start</c>
+
+00:11:17.269 --> 00:11:17.279 align:start position:0%
+build and hit go and app ship will start
+ 
+
+00:11:17.279 --> 00:11:19.670 align:start position:0%
+build and hit go and app ship will start
+building<00:11:17.519><c> the</c><00:11:17.680><c> app</c><00:11:17.839><c> for</c><00:11:18.200><c> you.</c><00:11:19.279><c> Thanks.</c><00:11:19.519><c> See</c>
+
+00:11:19.670 --> 00:11:19.680 align:start position:0%
+building the app for you. Thanks. See
+ 
+
+00:11:19.680 --> 00:11:22.680 align:start position:0%
+building the app for you. Thanks. See
+you.
+
