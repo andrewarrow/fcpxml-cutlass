@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"os"
@@ -95,28 +96,80 @@ func generateFCPXML(inputFile, outputFile string) error {
 	inputExt := strings.ToLower(filepath.Ext(inputFile))
 	nameWithoutExt := strings.TrimSuffix(inputName, inputExt)
 
-	fcpxml := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE fcpxml>
-<fcpxml version="1.11">
-	<resources>
-		<format id="r1" name="FFVideoFormat1080p30" frameDuration="1001/30000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
-		<asset id="r2" name="%s" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="3600s">
-			<media-rep kind="original-media" sig="%s" src="file://%s"/>
-		</asset>
-	</resources>
-	<library>
-		<event name="Converted Media">
-			<project name="%s">
-				<sequence format="r1" duration="3600s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
-					<spine>
-						<asset-clip ref="r2" offset="0s" name="%s" duration="3600s" format="r1" tcFormat="NDF">
-						</asset-clip>
-					</spine>
-				</sequence>
-			</project>
-		</event>
-	</library>
-</fcpxml>`, nameWithoutExt, inputFile, inputFile, inputFile, nameWithoutExt, nameWithoutExt)
+	fcpxml := FCPXML{
+		Version: "1.11",
+		Resources: Resources{
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat1080p30",
+					FrameDuration: "1001/30000s",
+					Width:         "1920",
+					Height:        "1080",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Assets: []Asset{
+				{
+					ID:           "r2",
+					Name:         nameWithoutExt,
+					UID:          inputFile,
+					Start:        "0s",
+					HasVideo:     "1",
+					Format:       "r1",
+					HasAudio:     "1",
+					AudioSources: "1",
+					AudioChannels: "2",
+					Duration:     "3600s",
+					MediaRep: MediaRep{
+						Kind: "original-media",
+						Sig:  inputFile,
+						Src:  "file://" + inputFile,
+					},
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Converted Media",
+					Projects: []Project{
+						{
+							Name: nameWithoutExt,
+							Sequences: []Sequence{
+								{
+									Format:      "r1",
+									Duration:    "3600s",
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine: Spine{
+										AssetClips: []AssetClip{
+											{
+												Ref:      "r2",
+												Offset:   "0s",
+												Name:     nameWithoutExt,
+												Duration: "3600s",
+												Format:   "r1",
+												TCFormat: "NDF",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	return os.WriteFile(outputFile, []byte(fcpxml), 0644)
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
+	return os.WriteFile(outputFile, []byte(xmlContent), 0644)
 }

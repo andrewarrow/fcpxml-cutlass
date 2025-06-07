@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +25,132 @@ type Clip struct {
 	Duration  time.Duration
 	Text      string
 	ClipNum   int
+}
+
+type FCPXML struct {
+	XMLName  xml.Name `xml:"fcpxml"`
+	Version  string   `xml:"version,attr"`
+	Resources Resources `xml:"resources"`
+	Library  Library  `xml:"library"`
+}
+
+type Resources struct {
+	Formats []Format `xml:"format"`
+	Assets  []Asset  `xml:"asset"`
+}
+
+type Format struct {
+	ID            string `xml:"id,attr"`
+	Name          string `xml:"name,attr"`
+	FrameDuration string `xml:"frameDuration,attr"`
+	Width         string `xml:"width,attr"`
+	Height        string `xml:"height,attr"`
+	ColorSpace    string `xml:"colorSpace,attr"`
+}
+
+type Asset struct {
+	ID           string    `xml:"id,attr"`
+	Name         string    `xml:"name,attr"`
+	UID          string    `xml:"uid,attr"`
+	Start        string    `xml:"start,attr"`
+	HasVideo     string    `xml:"hasVideo,attr"`
+	Format       string    `xml:"format,attr"`
+	HasAudio     string    `xml:"hasAudio,attr"`
+	AudioSources string    `xml:"audioSources,attr"`
+	AudioChannels string   `xml:"audioChannels,attr"`
+	Duration     string    `xml:"duration,attr"`
+	MediaRep     MediaRep  `xml:"media-rep"`
+}
+
+type MediaRep struct {
+	Kind string `xml:"kind,attr"`
+	Sig  string `xml:"sig,attr"`
+	Src  string `xml:"src,attr"`
+}
+
+type Library struct {
+	Events []Event `xml:"event"`
+}
+
+type Event struct {
+	Name     string    `xml:"name,attr"`
+	Projects []Project `xml:"project"`
+}
+
+type Project struct {
+	Name      string   `xml:"name,attr"`
+	Sequences []Sequence `xml:"sequence"`
+}
+
+type Sequence struct {
+	Format      string `xml:"format,attr"`
+	Duration    string `xml:"duration,attr"`
+	TCStart     string `xml:"tcStart,attr"`
+	TCFormat    string `xml:"tcFormat,attr"`
+	AudioLayout string `xml:"audioLayout,attr"`
+	AudioRate   string `xml:"audioRate,attr"`
+	Spine       Spine  `xml:"spine"`
+}
+
+type Spine struct {
+	XMLName    xml.Name    `xml:"spine"`
+	AssetClips []AssetClip `xml:"asset-clip"`
+	Gaps       []Gap       `xml:"gap"`
+}
+
+type AssetClip struct {
+	Ref      string `xml:"ref,attr"`
+	Offset   string `xml:"offset,attr"`
+	Name     string `xml:"name,attr"`
+	Start    string `xml:"start,attr,omitempty"`
+	Duration string `xml:"duration,attr"`
+	Format   string `xml:"format,attr"`
+	TCFormat string `xml:"tcFormat,attr"`
+}
+
+type Gap struct {
+	Name     string  `xml:"name,attr"`
+	Offset   string  `xml:"offset,attr"`
+	Duration string  `xml:"duration,attr"`
+	Titles   []Title `xml:"title"`
+}
+
+type Title struct {
+	Lane      string         `xml:"lane,attr"`
+	Offset    string         `xml:"offset,attr"`
+	Name      string         `xml:"name,attr"`
+	Duration  string         `xml:"duration,attr"`
+	Params    []Param        `xml:"param"`
+	Text      TitleText      `xml:"text"`
+	TextStyle TextStyleDef   `xml:"text-style-def"`
+}
+
+type Param struct {
+	Name  string `xml:"name,attr"`
+	Key   string `xml:"key,attr"`
+	Value string `xml:"value,attr"`
+}
+
+type TitleText struct {
+	TextStyle TextStyleRef `xml:"text-style"`
+}
+
+type TextStyleRef struct {
+	Ref  string `xml:"ref,attr"`
+	Text string `xml:",chardata"`
+}
+
+type TextStyleDef struct {
+	ID        string    `xml:"id,attr"`
+	TextStyle TextStyle `xml:"text-style"`
+}
+
+type TextStyle struct {
+	Font      string `xml:"font,attr"`
+	FontSize  string `xml:"fontSize,attr"`
+	FontFace  string `xml:"fontFace,attr"`
+	FontColor string `xml:"fontColor,attr"`
+	Alignment string `xml:"alignment,attr"`
 }
 
 func parseVTTTime(timeStr string) (time.Duration, error) {
@@ -179,10 +306,10 @@ func formatDurationForFCPXML(d time.Duration) string {
 	return fmt.Sprintf("%d/30000s", totalFrames*1001)
 }
 
-func generateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
+func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 	absVideoPath, err := filepath.Abs(videoPath)
 	if err != nil {
-		return err
+		return FCPXML{}, err
 	}
 	
 	videoName := filepath.Base(absVideoPath)
@@ -194,70 +321,138 @@ func generateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
 		totalDuration += clip.Duration + 2*time.Second // Add 2s for title card
 	}
 	
-	xml := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE fcpxml>
-<fcpxml version="1.11">
-    <resources>
-        <format id="r1" name="FFVideoFormat1080p30" frameDuration="1001/30000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
-        <asset id="r2" name="%s" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="%s">
-            <media-rep kind="original-media" sig="%s" src="file://%s"/>
-        </asset>
-    </resources>
-    <library>
-        <event name="Auto Generated Clips">
-            <project name="%s Clips">
-                <sequence format="r1" duration="%s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
-                    <spine>`, 
-		nameWithoutExt, absVideoPath, formatDurationForFCPXML(totalDuration), 
-		absVideoPath, absVideoPath, nameWithoutExt, formatDurationForFCPXML(totalDuration))
-	
+	var assetClips []AssetClip
+	var gaps []Gap
 	currentOffset := time.Duration(0)
 	
 	for _, clip := range clips {
 		// Video clip
-		xml += fmt.Sprintf(`
-                        <asset-clip ref="r2" offset="%s" name="%s Clip %d" start="%s" duration="%s" format="r1" tcFormat="NDF">
-                        </asset-clip>`, 
-			formatDurationForFCPXML(currentOffset),
-			nameWithoutExt, clip.ClipNum,
-			formatDurationForFCPXML(clip.StartTime),
-			formatDurationForFCPXML(clip.Duration))
+		assetClips = append(assetClips, AssetClip{
+			Ref:      "r2",
+			Offset:   formatDurationForFCPXML(currentOffset),
+			Name:     fmt.Sprintf("%s Clip %d", nameWithoutExt, clip.ClipNum),
+			Start:    formatDurationForFCPXML(clip.StartTime),
+			Duration: formatDurationForFCPXML(clip.Duration),
+			Format:   "r1",
+			TCFormat: "NDF",
+		})
 		
 		currentOffset += clip.Duration
 		
-		// Title card with inline definition
-		xml += fmt.Sprintf(`
-                        <gap name="Gap" offset="%s" duration="%s">
-                            <title lane="1" offset="0s" name="Clip %d Title" duration="%s">
-                                <param name="Position" key="9999/999166631/999166633/1/100/101" value="0 0"/>
-                                <param name="Flat" key="9999/999166631/999166633/1/999166650/999166651" value="1"/>
-                                <param name="Alignment" key="9999/999166631/999166633/2/354/999169573/401" value="1 (Center)"/>
-                                <text>
-                                    <text-style ref="ts%d">Clip %d</text-style>
-                                </text>
-                                <text-style-def id="ts%d">
-                                    <text-style font="Helvetica" fontSize="72" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
-                                </text-style-def>
-                            </title>
-                        </gap>`, 
-			formatDurationForFCPXML(currentOffset),
-			formatDurationForFCPXML(2*time.Second),
-			clip.ClipNum, 
-			formatDurationForFCPXML(2*time.Second),
-			clip.ClipNum, clip.ClipNum, clip.ClipNum)
+		// Title card gap
+		gaps = append(gaps, Gap{
+			Name:     "Gap",
+			Offset:   formatDurationForFCPXML(currentOffset),
+			Duration: formatDurationForFCPXML(2 * time.Second),
+			Titles: []Title{
+				{
+					Lane:     "1",
+					Offset:   "0s",
+					Name:     fmt.Sprintf("Clip %d Title", clip.ClipNum),
+					Duration: formatDurationForFCPXML(2 * time.Second),
+					Params: []Param{
+						{Name: "Position", Key: "9999/999166631/999166633/1/100/101", Value: "0 0"},
+						{Name: "Flat", Key: "9999/999166631/999166633/1/999166650/999166651", Value: "1"},
+						{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
+					},
+					Text: TitleText{
+						TextStyle: TextStyleRef{
+							Ref:  fmt.Sprintf("ts%d", clip.ClipNum),
+							Text: fmt.Sprintf("Clip %d", clip.ClipNum),
+						},
+					},
+					TextStyle: TextStyleDef{
+						ID: fmt.Sprintf("ts%d", clip.ClipNum),
+						TextStyle: TextStyle{
+							Font:      "Helvetica",
+							FontSize:  "72",
+							FontFace:  "Bold",
+							FontColor: "1 1 1 1",
+							Alignment: "center",
+						},
+					},
+				},
+			},
+		})
 		
 		currentOffset += 2 * time.Second
 	}
 	
-	xml += `
-                    </spine>
-                </sequence>
-            </project>
-        </event>
-    </library>
-</fcpxml>`
-	
-	return os.WriteFile(outputPath, []byte(xml), 0644)
+	return FCPXML{
+		Version: "1.11",
+		Resources: Resources{
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat1080p30",
+					FrameDuration: "1001/30000s",
+					Width:         "1920",
+					Height:        "1080",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Assets: []Asset{
+				{
+					ID:           "r2",
+					Name:         nameWithoutExt,
+					UID:          absVideoPath,
+					Start:        "0s",
+					HasVideo:     "1",
+					Format:       "r1",
+					HasAudio:     "1",
+					AudioSources: "1",
+					AudioChannels: "2",
+					Duration:     formatDurationForFCPXML(totalDuration),
+					MediaRep: MediaRep{
+						Kind: "original-media",
+						Sig:  absVideoPath,
+						Src:  "file://" + absVideoPath,
+					},
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Auto Generated Clips",
+					Projects: []Project{
+						{
+							Name: nameWithoutExt + " Clips",
+							Sequences: []Sequence{
+								{
+									Format:      "r1",
+									Duration:    formatDurationForFCPXML(totalDuration),
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine: Spine{
+										AssetClips: assetClips,
+										Gaps:       gaps,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil
+}
+
+func generateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
+	fcpxml, err := buildClipFCPXML(clips, videoPath)
+	if err != nil {
+		return err
+	}
+
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
+	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
 }
 
 func breakIntoLogicalParts(youtubeID string) error {
