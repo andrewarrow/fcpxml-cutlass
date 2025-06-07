@@ -172,11 +172,11 @@ func segmentIntoClips(segments []VTTSegment, minDuration, maxDuration time.Durat
 }
 
 func formatDurationForFCPXML(d time.Duration) string {
-	// Convert to fractional seconds format used in FCPXML (e.g., "24000/6000s")
-	totalMs := d.Milliseconds()
-	// Use 6000 as denominator for precision (6000 = 6 * 1000)
-	numerator := totalMs * 6
-	return fmt.Sprintf("%d/6000s", numerator)
+	// Convert to frame-aligned format for 30fps video
+	// 30000 frames per second with 1001/30000s frame duration
+	totalFrames := int64(d.Seconds() * 30000 / 1001)
+	// Ensure frame alignment
+	return fmt.Sprintf("%d/30000s", totalFrames*1001)
 }
 
 func generateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
@@ -202,7 +202,6 @@ func generateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
         <asset id="r2" name="%s" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="%s">
             <media-rep kind="original-media" sig="%s" src="file://%s"/>
         </asset>
-        <effect id="r3" name="Basic Title" uid=".../Titles.localized/Basic.localized/Basic Title.localized/Basic Title.moti"/>
     </resources>
     <library>
         <event name="Auto Generated Clips">
@@ -226,21 +225,26 @@ func generateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
 		
 		currentOffset += clip.Duration
 		
-		// Title card
+		// Title card with inline definition
 		xml += fmt.Sprintf(`
-                        <title ref="r3" offset="%s" name="Clip %d Title" duration="2s">
-                            <param name="Position" key="9999/999166631/999166633/1/100/101" value="0 0"/>
-                            <param name="Flat" key="9999/999166631/999166633/1/999166650/999166651" value="1"/>
-                            <param name="Alignment" key="9999/999166631/999166633/2/354/999169573/401" value="1 (Center)"/>
-                            <text>
-                                <text-style ref="ts%d">Clip %d</text-style>
-                            </text>
-                            <text-style-def id="ts%d">
-                                <text-style font="Helvetica" fontSize="72" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
-                            </text-style-def>
-                        </title>`, 
+                        <gap name="Gap" offset="%s" duration="%s">
+                            <title lane="1" offset="0s" name="Clip %d Title" duration="%s">
+                                <param name="Position" key="9999/999166631/999166633/1/100/101" value="0 0"/>
+                                <param name="Flat" key="9999/999166631/999166633/1/999166650/999166651" value="1"/>
+                                <param name="Alignment" key="9999/999166631/999166633/2/354/999169573/401" value="1 (Center)"/>
+                                <text>
+                                    <text-style ref="ts%d">Clip %d</text-style>
+                                </text>
+                                <text-style-def id="ts%d">
+                                    <text-style font="Helvetica" fontSize="72" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
+                                </text-style-def>
+                            </title>
+                        </gap>`, 
 			formatDurationForFCPXML(currentOffset),
-			clip.ClipNum, clip.ClipNum, clip.ClipNum, clip.ClipNum)
+			formatDurationForFCPXML(2*time.Second),
+			clip.ClipNum, 
+			formatDurationForFCPXML(2*time.Second),
+			clip.ClipNum, clip.ClipNum, clip.ClipNum)
 		
 		currentOffset += 2 * time.Second
 	}
