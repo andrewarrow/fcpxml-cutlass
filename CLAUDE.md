@@ -265,3 +265,81 @@ Usage: `cutalyst -i <youtube_id> -s [output_file]`
 - Keep package dependencies minimal and unidirectional
 - Each package should have a clear, single responsibility
 - Avoid circular dependencies between packages
+
+## FCPXML Timeline Layout and Lane Stacking
+
+**CRITICAL UNDERSTANDING:** FCPXML timeline layout works fundamentally differently than expected.
+
+### Timeline Layout Rules
+1. **Spine elements** = Horizontal arrangement in Final Cut Pro timeline
+2. **Lane elements** = Vertical stacking ABOVE spine elements (NOT separate spine elements)
+
+### Correct Structure for Vertical Stacking
+To achieve vertical stacking in Final Cut Pro timeline, elements must be **nested** with lanes:
+
+```xml
+<spine>
+    <!-- Main video on spine (appears horizontally) -->
+    <video ref="r2" offset="0s" name="Main">
+        <!-- Nested video with lane="1" stacks VERTICALLY above main video -->
+        <video ref="r2" lane="1" offset="0s" name="Stacked Above">
+            <!-- Content for stacked element -->
+        </video>
+        <!-- Nested video with lane="2" stacks even higher -->
+        <video ref="r2" lane="2" offset="0s" name="Stacked Higher">
+            <!-- Content for element stacked above lane="1" -->
+        </video>
+    </video>
+    
+    <!-- Second main video (appears horizontally, separate from first) -->
+    <video ref="r2" offset="10s" name="Second Main">
+        <!-- This appears horizontally next to first video -->
+    </video>
+</spine>
+```
+
+### INCORRECT Approach (Does NOT create vertical stacking)
+```xml
+<spine>
+    <video ref="r2" offset="0s" name="Video 1" />
+    <video ref="r2" lane="1" offset="0s" name="Video 2" />  <!-- Still horizontal! -->
+    <video ref="r2" lane="2" offset="0s" name="Video 3" />  <!-- Still horizontal! -->
+</spine>
+```
+
+### CORRECT Approach (Creates vertical stacking)
+```xml
+<spine>
+    <video ref="r2" offset="0s" name="Main Video">
+        <video ref="r2" lane="1" offset="0s" name="Stacked Video" />  <!-- Vertical! -->
+        <title ref="r3" lane="2" offset="0s" name="Stacked Title" />  <!-- Higher! -->
+    </video>
+</spine>
+```
+
+### Implementation in Go Structs
+The `Video` struct in `fcp/types.go` must support nested elements:
+
+```go
+type Video struct {
+    XMLName xml.Name `xml:"video"`
+    Ref     string   `xml:"ref,attr"`
+    Lane    string   `xml:"lane,attr,omitempty"`  // Only for nested elements
+    Offset  string   `xml:"offset,attr"`
+    Name    string   `xml:"name,attr"`
+    // ... other fields ...
+    NestedVideos []Video `xml:"video,omitempty"`   // REQUIRED for vertical stacking
+    NestedTitles []Title `xml:"title,omitempty"`   // REQUIRED for vertical stacking
+}
+```
+
+### Key Learnings from Testing
+1. **Reference file analysis**: `table.fcpxml` shows the correct pattern with nested `lane="1"` elements
+2. **Iterative testing**: Started with minimal 2-element test, then added nested structure
+3. **Structure validation**: Only nested elements with lanes create vertical stacking
+4. **Timeline behavior**: Spine elements always appear horizontally; lanes stack vertically within their parent
+
+### Testing Commands
+- Generate test FCPXML: `go build && ./cutalyst -i "Andre_Agassi" -w tennis.fcpxml`
+- Verify structure by opening generated `tennis.fcpxml` in Final Cut Pro
+- Compare timeline layout with working reference `table.fcpxml`
