@@ -122,6 +122,21 @@ type Title struct {
 }
 
 // GeneratorClip represents a generated media clip (shapes, colors, etc.)
+type Video struct {
+	Ref           string         `xml:"ref,attr"`
+	Lane          string         `xml:"lane,attr,omitempty"`
+	Offset        string         `xml:"offset,attr"`
+	Name          string         `xml:"name,attr"`
+	Duration      string         `xml:"duration,attr"`
+	Start         string         `xml:"start,attr,omitempty"`
+	Params        []Param        `xml:"param,omitempty"`
+	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
+}
+
+type AdjustTransform struct {
+	Scale string `xml:"scale,attr,omitempty"`
+}
+
 type GeneratorClip struct {
 	Ref      string  `xml:"ref,attr"`
 	Lane     string  `xml:"lane,attr,omitempty"`

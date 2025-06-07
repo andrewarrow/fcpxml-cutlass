@@ -12,7 +12,7 @@ func buildSpineContent(elements []interface{}) string {
 	var content strings.Builder
 	for _, elem := range elements {
 		switch e := elem.(type) {
-		case GeneratorClip:
+		case Video:
 			xml, _ := xml.Marshal(e)
 			content.Write(xml)
 		case Title:
@@ -69,7 +69,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 
 	// Create horizontal grid lines
 	for i := 0; i <= numRows; i++ {
-		spineElements = append(spineElements, GeneratorClip{
+		spineElements = append(spineElements, Video{
 			Ref:      "r2",
 			Offset:   FormatDurationForFCPXML(currentOffset),
 			Name:     fmt.Sprintf("H-Line %d", i),
@@ -81,12 +81,13 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", horizontalPositions[i])},
 			},
+			AdjustTransform: &AdjustTransform{Scale: "0.800 0.002"},
 		})
 	}
 
 	// Create vertical grid lines
 	for j := 0; j <= numCols; j++ {
-		spineElements = append(spineElements, GeneratorClip{
+		spineElements = append(spineElements, Video{
 			Ref:      "r2",
 			Lane:     "1",
 			Offset:   FormatDurationForFCPXML(currentOffset),
@@ -99,6 +100,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", verticalPositions[j])},
 			},
+			AdjustTransform: &AdjustTransform{Scale: "0.002 0.600"},
 		})
 	}
 
@@ -188,7 +190,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		bgColor := getBackgroundColor(result.Column2, result.Style)
 
 		// Background shape for result cell
-		spineElements = append(spineElements, GeneratorClip{
+		spineElements = append(spineElements, Video{
 			Ref:      "r2",
 			Lane:     "4",
 			Offset:   FormatDurationForFCPXML(revealTime),
@@ -201,6 +203,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.700 %.3f", cellCenterPositions[i])},
 			},
+			AdjustTransform: &AdjustTransform{Scale: "0.380 0.096"},
 		})
 
 		// Column 1 text
@@ -281,18 +284,18 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 					ColorSpace:    "1-1-1 (Rec. 709)",
 				},
 			},
-			Generators: []Generator{
-				{
-					ID:   "r2",
-					Name: "Shapes",
-					UID:  ".../Generators.localized/Elements.localized/Shapes.localized/Shapes.motn",
-				},
-			},
 			Effects: []Effect{
 				{
 					ID:   "r3",
 					Name: "Text",
 					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+				},
+			},
+			Generators: []Generator{
+				{
+					ID:   "r2",
+					Name: "Shapes",
+					UID:  ".../Generators.localized/Elements.localized/Shapes.localized/Shapes.motn",
 				},
 			},
 		},
