@@ -123,35 +123,46 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	fmt.Printf("DEBUG: Table has %d data rows + 1 header = %d total rows, so need %d horizontal lines\n", 
 		len(tableData.Rows), numRows, numRows+1)
 	
-	// Calculate positions for proper table grid
-	tableTop := 0.2     // Start table near top of screen  
-	tableBottom := 0.8  // End table near bottom of screen
+	// Calculate positions for proper table grid with better spacing
+	tableTop := 0.1     // Start table near top of screen  
+	tableBottom := 0.9  // End table near bottom of screen - use more space
 	tableLeft := 0.05   // Start table near left edge
 	tableRight := 0.95  // End table near right edge
 	
-	// Calculate horizontal line positions (rows)
+	// Limit rows and columns for better visibility
+	maxVisibleRows := min(6, numRows)  // Show max 6 rows instead of all
+	maxVisibleCols := min(8, len(tableData.Headers))  // Show max 8 columns instead of 10
+	
+	// Calculate horizontal line positions (rows) with increased spacing
 	var tableHorizontalPositions []float64
-	for i := 0; i <= numRows; i++ {
-		yPos := tableTop + (tableBottom-tableTop)*float64(i)/float64(numRows)
+	for i := 0; i <= maxVisibleRows; i++ {
+		yPos := tableTop + (tableBottom-tableTop)*float64(i)/float64(maxVisibleRows)
 		tableHorizontalPositions = append(tableHorizontalPositions, yPos)
 		fmt.Printf("DEBUG: Horizontal line %d at Y=%.3f\n", i, yPos)
 	}
 	
-	// Calculate vertical line positions (columns) - limit to first 10 columns for visibility
-	maxCols := min(10, len(tableData.Headers))
+	// Calculate vertical line positions (columns) with increased spacing
 	var tableVerticalPositions []float64
-	for j := 0; j <= maxCols; j++ {
-		xPos := tableLeft + (tableRight-tableLeft)*float64(j)/float64(maxCols)
+	for j := 0; j <= maxVisibleCols; j++ {
+		xPos := tableLeft + (tableRight-tableLeft)*float64(j)/float64(maxVisibleCols)
 		tableVerticalPositions = append(tableVerticalPositions, xPos)
 		fmt.Printf("DEBUG: Vertical line %d at X=%.3f\n", j, xPos)
 	}
 	
-	// Create horizontal lines for table grid
-	fmt.Printf("DEBUG: Creating %d horizontal lines\n", len(tableHorizontalPositions))
+	// Create ONE main video with ALL table lines as nested elements (following table.fcpxml pattern)
+	fmt.Printf("DEBUG: Creating ONE main video with all table lines nested inside\n")
+	
+	// Create all nested elements for the main video
+	var nestedVideos []Video
+	var nestedTitles []Title
+	laneCounter := 1
+	
+	// Add all horizontal lines as nested videos in lanes
 	for i, yPos := range tableHorizontalPositions {
 		horizontalLine := Video{
 			Ref:      "r2",
-			Offset:   FormatDurationForFCPXML(currentOffset),
+			Lane:     fmt.Sprintf("%d", laneCounter),
+			Offset:   "108108000/30000s",
 			Name:     fmt.Sprintf("Horizontal Line %d", i+1),
 			Start:    "108108000/30000s",
 			Duration: FormatDurationForFCPXML(totalDuration),
@@ -166,41 +177,65 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
 				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", yPos)},
 			},
-			AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
+			AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "1 0.0394"},
 		}
-		
-		// Add vertical lines as nested videos with lanes for this horizontal line
-		var nestedVideos []Video
-		for j, xPos := range tableVerticalPositions {
-			verticalLine := Video{
-				Ref:      "r2",
-				Lane:     fmt.Sprintf("%d", j+1),
-				Offset:   "108108000/30000s",
-				Name:     fmt.Sprintf("Vertical Line %d", j+1),
-				Start:    "108108000/30000s",
-				Duration: FormatDurationForFCPXML(totalDuration),
-				Params: []Param{
-					{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-					{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-					{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-					{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
-					{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-					{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-					{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
-					{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-					{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", xPos)},
-				},
-				AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "0.0394 1"},
-			}
-			nestedVideos = append(nestedVideos, verticalLine)
-		}
-		
-		horizontalLine.NestedVideos = nestedVideos
-		spineElements = append(spineElements, horizontalLine)
-		fmt.Printf("DEBUG: Created horizontal line %d at Y=%.3f with %d nested vertical lines\n", i+1, yPos, len(nestedVideos))
+		nestedVideos = append(nestedVideos, horizontalLine)
+		laneCounter++
+		fmt.Printf("DEBUG: Added horizontal line %d at Y=%.3f in lane %d\n", i+1, yPos, horizontalLine.Lane)
 	}
-
-	fmt.Printf("DEBUG: Created full table grid with %d horizontal lines and %d vertical lines each\n", 
+	
+	// Add all vertical lines as nested videos in lanes
+	for j, xPos := range tableVerticalPositions {
+		verticalLine := Video{
+			Ref:      "r2",
+			Lane:     fmt.Sprintf("%d", laneCounter),
+			Offset:   "108108000/30000s",
+			Name:     fmt.Sprintf("Vertical Line %d", j+1),
+			Start:    "108108000/30000s",
+			Duration: FormatDurationForFCPXML(totalDuration),
+			Params: []Param{
+				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", xPos)},
+			},
+			AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "0.0394 1"},
+		}
+		nestedVideos = append(nestedVideos, verticalLine)
+		laneCounter++
+		fmt.Printf("DEBUG: Added vertical line %d at X=%.3f in lane %d\n", j+1, xPos, verticalLine.Lane)
+	}
+	
+	// Create the main spine video with all lines nested inside (like table.fcpxml)
+	mainVideo := Video{
+		Ref:      "r2",
+		Offset:   "0s",
+		Name:     "Table Grid Base",
+		Start:    "108108000/30000s",
+		Duration: FormatDurationForFCPXML(totalDuration),
+		Params: []Param{
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.5"},
+		},
+		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
+		NestedVideos:    nestedVideos,
+		NestedTitles:    nestedTitles,
+	}
+	
+	spineElements = append(spineElements, mainVideo)
+	fmt.Printf("DEBUG: Created ONE main video with %d nested horizontal lines and %d nested vertical lines\n", 
 		len(tableHorizontalPositions), len(tableVerticalPositions))
 
 	fmt.Printf("DEBUG: SUMMARY - Total spine elements created: %d\n", len(spineElements))
