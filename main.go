@@ -201,34 +201,26 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 	fmt.Printf("Table headers: %v\n", table.Headers)
 	fmt.Printf("Table has %d rows\n", len(table.Rows))
 	
-	// Convert ONLY the selected table to the loosely typed format expected by
-	// the generator.  Passing the whole slice previously meant that the
-	// generator always processed the first table instead of the best-scoring
-	// one.
-	var tableData []interface{}
-
-	{
-		t := table // the best table selected above
-		rows := make([]interface{}, len(t.Rows))
-		for j, row := range t.Rows {
-			cells := make([]interface{}, len(row.Cells))
-			for k, cell := range row.Cells {
-				cells[k] = map[string]interface{}{
-					"Content":    cell.Content,
-					"Style":      cell.Style,
-					"Class":      cell.Class,
-					"ColSpan":    cell.ColSpan,
-					"RowSpan":    cell.RowSpan,
-					"Attributes": cell.Attributes,
-				}
-			}
-			rows[j] = map[string]interface{}{"Cells": cells}
+	// Convert the selected table to the structured TableData format
+	tableData := &fcp.TableData{
+		Headers: table.Headers,
+		Rows:    make([]fcp.TableRow, len(table.Rows)),
+	}
+	
+	for i, row := range table.Rows {
+		tableData.Rows[i] = fcp.TableRow{
+			Cells: make([]fcp.TableCell, len(row.Cells)),
 		}
-
-		tableData = append(tableData, map[string]interface{}{
-			"Headers": t.Headers,
-			"Rows":    rows,
-		})
+		for j, cell := range row.Cells {
+			tableData.Rows[i].Cells[j] = fcp.TableCell{
+				Content:    cell.Content,
+				Style:      cell.Style,
+				Class:      cell.Class,
+				ColSpan:    cell.ColSpan,
+				RowSpan:    cell.RowSpan,
+				Attributes: cell.Attributes,
+			}
+		}
 	}
 	
 	// Generate FCPXML

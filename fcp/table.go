@@ -29,12 +29,9 @@ type TableResult struct {
 	Style   map[string]string
 }
 
-func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
-	// Convert interface{} data to structured TableData
-	var tableData *TableData
-	if dataSlice, ok := data.([]interface{}); ok {
-		tableData = ConvertToTableData(dataSlice)
-	} else {
+func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
+	// Use default data if tableData is nil
+	if tableData == nil {
 		tableData = &TableData{
 			Headers: []string{"Column 1", "Column 2"},
 			Rows: []TableRow{
@@ -405,6 +402,6 @@ func getBackgroundColor(content string, style map[string]string) string {
 	return "0.95 0.95 0.95"
 }
 
-func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
-	return GenerateTableGridFCPXML(data, outputPath)
+func GenerateWikipediaTableFCPXML(tableData *TableData, outputPath string) error {
+	return GenerateTableGridFCPXML(tableData, outputPath)
 }
