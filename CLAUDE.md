@@ -1,6 +1,7 @@
 # Project Context for AI Assistance
 
 Never run the program, only edit code make sure it compiles.
+never generate xml from hard coded string templates with %s placeholders, use structs
 
 ## Project Overview
 

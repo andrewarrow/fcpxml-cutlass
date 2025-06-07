@@ -8,97 +8,54 @@ import (
 	"time"
 )
 
-type TournamentResult struct {
-	Tournament string
-	Result     string
-	Style      map[string]string
-}
-
-
-// GenerateTableGridFCPXML builds a simple table view inside an FCPXML timeline.
-// The original implementation ignored the supplied `data` parameter and relied
-// on hard-coded sample data.  This has been replaced with logic that attempts
-// to extract information from the structure produced by the wikipedia/parse
-// package.  If the structure is unrecognised or empty we fall back to the
-// previous sample so that callers still receive a valid file instead of an
-// error.
-func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
-	// First, try to convert the loosely-typed `data` argument into a slice of
-	// TournamentResult values that can drive the rendering.
-	
-	tournamentResults := extractTournamentResults(data)
-
-	if len(tournamentResults) == 0 {
-		// Nothing recognised – keep the original sample so the output is never
-		// empty (and to aid manual debugging in the Final Cut Pro UI).
-		tournamentResults = []TournamentResult{
-			{Tournament: "US Open", Result: "1R", Style: map[string]string{"background": "#afeeee"}},
-			{Tournament: "Australian Open", Result: "A", Style: map[string]string{}},
-			{Tournament: "French Open", Result: "A", Style: map[string]string{}},
-			{Tournament: "Wimbledon", Result: "A", Style: map[string]string{}},
+func buildSpineContent(elements []interface{}) string {
+	var content strings.Builder
+	for _, elem := range elements {
+		switch e := elem.(type) {
+		case GeneratorClip:
+			xml, _ := xml.Marshal(e)
+			content.Write(xml)
+		case Title:
+			xml, _ := xml.Marshal(e)
+			content.Write(xml)
 		}
 	}
-	
-	// Create table grid using shapes and text
+	return content.String()
+}
+
+type TableResult struct {
+	Column1 string
+	Column2 string
+	Style   map[string]string
+}
+
+func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
+	tableResults := extractTableResults(data)
+
+	if len(tableResults) == 0 {
+		tableResults = []TableResult{
+			{Column1: "Sample Item", Column2: "Sample Value", Style: map[string]string{"background": "#f0f0f0"}},
+			{Column1: "Another Item", Column2: "Another Value", Style: map[string]string{}},
+		}
+	}
+
 	totalDuration := 15 * time.Second
-	var spineContent strings.Builder
 	currentOffset := time.Duration(0)
-	
-	// Calculate grid dimensions - exactly like tennis.fcpxml
-	numRows := len(tournamentResults) + 1 // +1 for header = 5 rows
-	numCols := 2 // Tournament and 1986 result
-	
-	// Grid positioning – start a little below the top of the frame (20 % of the
-	// height) and keep the same spacing that the reference file used (12 %).  We
-	// build the slice dynamically so that any number of rows is supported.
+
+	numRows := len(tableResults) + 1
+	numCols := 2
+
 	var horizontalPositions []float64
-	startY := 0.200 // First (top) horizontal line
+	startY := 0.200
 	rowSpacing := 0.120
 	for i := 0; i <= numRows; i++ {
 		horizontalPositions = append(horizontalPositions, startY+rowSpacing*float64(i))
 	}
 
-	// Two-column layout (tournament / result) – the reference used three
-	// vertical positions: 0.1 (left border), 0.5 (centre border) and 0.9 (right
-	// border).  We keep those fixed.
 	verticalPositions := []float64{0.100, 0.500, 0.900}
-	
-	// Create horizontal grid lines - exactly like tennis.fcpxml
-	for i := 0; i <= numRows; i++ {
-		spineContent.WriteString(fmt.Sprintf(`
-		<video ref="r2" offset="%s" name="H-Line %d" start="0s" duration="%s">
-			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
-			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="0.2 0.2 0.2"/>
-			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
-			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="0.5 %.3f"/>
-			<adjust-transform scale="0.800 0.002"/>
-		</video>`,
-			FormatDurationForFCPXML(currentOffset),
-			i,
-			FormatDurationForFCPXML(totalDuration),
-			horizontalPositions[i]))
-	}
-	
-	// Create vertical grid lines - exactly like tennis.fcpxml  
-	for j := 0; j <= numCols; j++ {
-		spineContent.WriteString(fmt.Sprintf(`
-		<video ref="r2" lane="1" offset="%s" name="V-Line %d" start="0s" duration="%s">
-			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
-			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="0.2 0.2 0.2"/>
-			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
-			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="%.3f 0.5"/>
-			<adjust-transform scale="0.002 0.600"/>
-		</video>`,
-			FormatDurationForFCPXML(currentOffset),
-			j,
-			FormatDurationForFCPXML(totalDuration),
-			verticalPositions[j]))
-	}
-	
-	// Header row – if the caller supplied explicit headers we use them, otherwise
-	// fall back to the default "Tournament" / "Result" pair.
-	primaryHeader := "Tournament"
-	secondaryHeader := "Result"
+
+	primaryHeader := "Column 1"
+	secondaryHeader := "Column 2"
 	if hdrs, ok := tableHeadersFromData(data); ok {
 		if len(hdrs) > 0 {
 			primaryHeader = hdrs[0]
@@ -108,135 +65,209 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		}
 	}
 
-	protectedPrimary := escapeXMLText(primaryHeader)
-	protectedSecondary := escapeXMLText(secondaryHeader)
+	var spineElements []interface{}
 
-	// Header – left column
-	spineContent.WriteString(fmt.Sprintf(`
-	<title ref="r3" lane="2" offset="%s" name="Header %s" start="%s" duration="%s">
-		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-200.0 -259.2"/>
-		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
-		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
-		<text>
-			<text-style ref="ts1">%s</text-style>
-		</text>
-		<text-style-def id="ts1">
-			<text-style font="SF Pro Display" fontSize="36" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
-		</text-style-def>
-	</title>`,
-		FormatDurationForFCPXML(currentOffset),
-		protectedPrimary,
-		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(totalDuration),
-		protectedPrimary))
+	// Create horizontal grid lines
+	for i := 0; i <= numRows; i++ {
+		spineElements = append(spineElements, GeneratorClip{
+			Ref:      "r2",
+			Offset:   FormatDurationForFCPXML(currentOffset),
+			Name:     fmt.Sprintf("H-Line %d", i),
+			Start:    "0s",
+			Duration: FormatDurationForFCPXML(totalDuration),
+			Params: []Param{
+				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", horizontalPositions[i])},
+			},
+		})
+	}
 
-	// Header – right column
-	spineContent.WriteString(fmt.Sprintf(`
-	<title ref="r3" lane="3" offset="%s" name="Header %s" start="%s" duration="%s">
-		<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="200.0 -259.2"/>
-		<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
-		<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
-		<text>
-			<text-style ref="ts2">%s</text-style>
-		</text>
-		<text-style-def id="ts2">
-			<text-style font="SF Pro Display" fontSize="36" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
-		</text-style-def>
-	</title>`,
-		FormatDurationForFCPXML(currentOffset),
-		protectedSecondary,
-		FormatDurationForFCPXML(currentOffset),
-		FormatDurationForFCPXML(totalDuration),
-		protectedSecondary))
-	
-	// Row Y positions for text – keep the original 129.6-pixel spacing so that
-	// the visual result remains similar to the reference.  The first data row in
-	// tennis.fcpxml sat at ‑129.6px, so we replicate that offset and generate as
-	// many entries as required.
+	// Create vertical grid lines
+	for j := 0; j <= numCols; j++ {
+		spineElements = append(spineElements, GeneratorClip{
+			Ref:      "r2",
+			Lane:     "1",
+			Offset:   FormatDurationForFCPXML(currentOffset),
+			Name:     fmt.Sprintf("V-Line %d", j),
+			Start:    "0s",
+			Duration: FormatDurationForFCPXML(totalDuration),
+			Params: []Param{
+				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", verticalPositions[j])},
+			},
+		})
+	}
+
+	// Header - left column
+	spineElements = append(spineElements, Title{
+		Ref:      "r3",
+		Lane:     "2",
+		Offset:   FormatDurationForFCPXML(currentOffset),
+		Name:     fmt.Sprintf("Header %s", escapeXMLText(primaryHeader)),
+		Start:    FormatDurationForFCPXML(currentOffset),
+		Duration: FormatDurationForFCPXML(totalDuration),
+		Params: []Param{
+			{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "-200.0 -259.2"},
+			{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+			{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+		},
+		Text: TitleText{
+			TextStyle: TextStyleRef{
+				Ref:  "ts1",
+				Text: escapeXMLText(primaryHeader),
+			},
+		},
+		TextStyleDef: TextStyleDef{
+			ID: "ts1",
+			TextStyle: TextStyle{
+				Font:      "SF Pro Display",
+				FontSize:  "36",
+				FontFace:  "Bold",
+				FontColor: "0.1 0.1 0.1 1",
+				Alignment: "center",
+			},
+		},
+	})
+
+	// Header - right column
+	spineElements = append(spineElements, Title{
+		Ref:      "r3",
+		Lane:     "3",
+		Offset:   FormatDurationForFCPXML(currentOffset),
+		Name:     fmt.Sprintf("Header %s", escapeXMLText(secondaryHeader)),
+		Start:    FormatDurationForFCPXML(currentOffset),
+		Duration: FormatDurationForFCPXML(totalDuration),
+		Params: []Param{
+			{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "200.0 -259.2"},
+			{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+			{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+		},
+		Text: TitleText{
+			TextStyle: TextStyleRef{
+				Ref:  "ts2",
+				Text: escapeXMLText(secondaryHeader),
+			},
+		},
+		TextStyleDef: TextStyleDef{
+			ID: "ts2",
+			TextStyle: TextStyle{
+				Font:      "SF Pro Display",
+				FontSize:  "36",
+				FontFace:  "Bold",
+				FontColor: "0.1 0.1 0.1 1",
+				Alignment: "center",
+			},
+		},
+	})
+
 	var textYPositions []float64
 	textStartPx := -129.6
 	textSpacingPx := 129.6
-	for i := 0; i < len(tournamentResults); i++ {
+	for i := 0; i < len(tableResults); i++ {
 		textYPositions = append(textYPositions, textStartPx+float64(i)*textSpacingPx)
 	}
 
-	// Cell centre positions for the coloured background rectangles.
 	var cellCenterPositions []float64
-	for i := 0; i < len(tournamentResults); i++ {
+	for i := 0; i < len(tableResults); i++ {
 		centerY := startY + rowSpacing*float64(i+1) + rowSpacing/2
 		cellCenterPositions = append(cellCenterPositions, centerY)
 	}
-	
-	// Add tournament data with gradual reveal - using tennis.fcpxml patterns
-	for i, result := range tournamentResults {
+
+	// Add table data with gradual reveal
+	for i, result := range tableResults {
 		revealTime := currentOffset + time.Duration(i+1)*2*time.Second
 		cellDuration := totalDuration - time.Duration(i+1)*2*time.Second
-		
-		// Escape user content for attribute/text contexts
-		tournamentEscAttr := escapeXMLText(result.Tournament)
-		resultEscAttr := escapeXMLText(result.Result)
-		
-		// Background color for the result cell
-		bgColor := getBackgroundColor(result.Result, result.Style)
-		
-		// Background shape for result cell - exactly like tennis.fcpxml
-		spineContent.WriteString(fmt.Sprintf(`
-		<video ref="r2" lane="4" offset="%s" name="BG %s" start="%s" duration="%s">
-			<param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
-			<param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="%s"/>
-			<param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
-			<param name="Center" key="9999/988469355/988469353/3/988469357/1" value="0.700 %.3f"/>
-			<adjust-transform scale="0.380 0.096"/>
-		</video>`,
-			FormatDurationForFCPXML(revealTime),
-			tournamentEscAttr,
-			FormatDurationForFCPXML(revealTime),
-			FormatDurationForFCPXML(cellDuration),
-			bgColor,
-			cellCenterPositions[i]))
-		
-		// Tournament name - exactly like tennis.fcpxml
-		spineContent.WriteString(fmt.Sprintf(`
-		<title ref="r3" lane="5" offset="%s" name="%s" start="%s" duration="%s">
-			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-200.0 %.1f"/>
-			<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
-			<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
-			<text>
-				<text-style ref="ts%d">%s</text-style>
-			</text>
-			<text-style-def id="ts%d">
-				<text-style font="SF Pro Display" fontSize="28" fontFace="Medium" fontColor="0.1 0.1 0.1 1" alignment="center"/>
-			</text-style-def>
-		</title>`,
-			FormatDurationForFCPXML(revealTime),
-			tournamentEscAttr,
-			FormatDurationForFCPXML(revealTime),
-			FormatDurationForFCPXML(cellDuration),
-			textYPositions[i],
-			i+10, escapeXMLText(result.Tournament), i+10))
-		
-		// Result - exactly like tennis.fcpxml
-		spineContent.WriteString(fmt.Sprintf(`
-		<title ref="r3" lane="6" offset="%s" name="Result %s" start="%s" duration="%s">
-			<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="200.0 %.1f"/>
-			<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
-			<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
-			<text>
-				<text-style ref="ts%d">%s</text-style>
-			</text>
-			<text-style-def id="ts%d">
-				<text-style font="SF Pro Display" fontSize="32" fontFace="Bold" fontColor="0.1 0.1 0.1 1" alignment="center"/>
-			</text-style-def>
-		</title>`,
-			FormatDurationForFCPXML(revealTime),
-			resultEscAttr,
-			FormatDurationForFCPXML(revealTime),
-			FormatDurationForFCPXML(cellDuration),
-			textYPositions[i],
-			i+50, escapeXMLText(result.Result), i+50))
+
+		col1EscAttr := escapeXMLText(result.Column1)
+		col2EscAttr := escapeXMLText(result.Column2)
+
+		bgColor := getBackgroundColor(result.Column2, result.Style)
+
+		// Background shape for result cell
+		spineElements = append(spineElements, GeneratorClip{
+			Ref:      "r2",
+			Lane:     "4",
+			Offset:   FormatDurationForFCPXML(revealTime),
+			Name:     fmt.Sprintf("BG %s", col1EscAttr),
+			Start:    FormatDurationForFCPXML(revealTime),
+			Duration: FormatDurationForFCPXML(cellDuration),
+			Params: []Param{
+				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: bgColor},
+				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.700 %.3f", cellCenterPositions[i])},
+			},
+		})
+
+		// Column 1 text
+		spineElements = append(spineElements, Title{
+			Ref:      "r3",
+			Lane:     "5",
+			Offset:   FormatDurationForFCPXML(revealTime),
+			Name:     col1EscAttr,
+			Start:    FormatDurationForFCPXML(revealTime),
+			Duration: FormatDurationForFCPXML(cellDuration),
+			Params: []Param{
+				{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("-200.0 %.1f", textYPositions[i])},
+				{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+				{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+			},
+			Text: TitleText{
+				TextStyle: TextStyleRef{
+					Ref:  fmt.Sprintf("ts%d", i+10),
+					Text: escapeXMLText(result.Column1),
+				},
+			},
+			TextStyleDef: TextStyleDef{
+				ID: fmt.Sprintf("ts%d", i+10),
+				TextStyle: TextStyle{
+					Font:      "SF Pro Display",
+					FontSize:  "28",
+					FontFace:  "Medium",
+					FontColor: "0.1 0.1 0.1 1",
+					Alignment: "center",
+				},
+			},
+		})
+
+		// Column 2 text
+		spineElements = append(spineElements, Title{
+			Ref:      "r3",
+			Lane:     "6",
+			Offset:   FormatDurationForFCPXML(revealTime),
+			Name:     fmt.Sprintf("Result %s", col2EscAttr),
+			Start:    FormatDurationForFCPXML(revealTime),
+			Duration: FormatDurationForFCPXML(cellDuration),
+			Params: []Param{
+				{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("200.0 %.1f", textYPositions[i])},
+				{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+				{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+			},
+			Text: TitleText{
+				TextStyle: TextStyleRef{
+					Ref:  fmt.Sprintf("ts%d", i+50),
+					Text: escapeXMLText(result.Column2),
+				},
+			},
+			TextStyleDef: TextStyleDef{
+				ID: fmt.Sprintf("ts%d", i+50),
+				TextStyle: TextStyle{
+					Font:      "SF Pro Display",
+					FontSize:  "32",
+					FontFace:  "Bold",
+					FontColor: "0.1 0.1 0.1 1",
+					Alignment: "center",
+				},
+			},
+		})
 	}
-	
-	// Create the FCPXML structure
+
+	spineContent := buildSpineContent(spineElements)
+
 	fcpxml := FCPXML{
 		Version: "1.13",
 		Resources: Resources{
@@ -250,12 +281,14 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 					ColorSpace:    "1-1-1 (Rec. 709)",
 				},
 			},
-			Effects: []Effect{
+			Generators: []Generator{
 				{
 					ID:   "r2",
 					Name: "Shapes",
 					UID:  ".../Generators.localized/Elements.localized/Shapes.localized/Shapes.motn",
 				},
+			},
+			Effects: []Effect{
 				{
 					ID:   "r3",
 					Name: "Text",
@@ -266,10 +299,10 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		Library: Library{
 			Events: []Event{
 				{
-					Name: "Andre Agassi 1986",
+					Name: "Table View",
 					Projects: []Project{
 						{
-							Name: "Tournament Table",
+							Name: "Data Table",
 							Sequences: []Sequence{
 								{
 									Format:      "r1",
@@ -279,7 +312,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 									AudioLayout: "stereo",
 									AudioRate:   "48k",
 									Spine: Spine{
-										Content: spineContent.String(),
+										Content: spineContent,
 									},
 								},
 							},
@@ -289,30 +322,24 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			},
 		},
 	}
-	
+
 	output, err := xml.MarshalIndent(fcpxml, "", "    ")
 	if err != nil {
 		return err
 	}
-	
+
 	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
 	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
 }
 
-// extractTournamentResults converts the dynamic data structure passed from
-// main.go (or any other caller) into a slice of TournamentResult values.  The
-// implementation purposefully performs many runtime type assertions instead of
-// reflection to keep things simple and dependency-free.
-func extractTournamentResults(data interface{}) []TournamentResult {
-	var results []TournamentResult
+func extractTableResults(data interface{}) []TableResult {
+	var results []TableResult
 
-	// Expecting []interface{} (tables)
 	outerSlice, ok := data.([]interface{})
 	if !ok || len(outerSlice) == 0 {
 		return results
 	}
 
-	// Work with the first table only for now.
 	tableMap, ok := outerSlice[0].(map[string]interface{})
 	if !ok {
 		return results
@@ -333,23 +360,19 @@ func extractTournamentResults(data interface{}) []TournamentResult {
 			continue
 		}
 
-		// First cell → tournament/event name
 		firstCellMap, ok := cellsIface[0].(map[string]interface{})
 		if !ok {
 			continue
 		}
-		name, _ := firstCellMap["Content"].(string)
+		col1Content, _ := firstCellMap["Content"].(string)
 
-		// Second cell (if present) → result value (W, F, SF, etc.)
-		var resultStr string
+		var col2Content string
 		var styleMap map[string]string
 		if len(cellsIface) > 1 {
 			secondCellMap, ok := cellsIface[1].(map[string]interface{})
 			if ok {
-				resultStr, _ = secondCellMap["Content"].(string)
+				col2Content, _ = secondCellMap["Content"].(string)
 
-				// style is itself a map[string]string but comes through as
-				// map[string]interface{} – convert if needed.
 				if rawStyle, exists := secondCellMap["Style"]; exists {
 					styleMap = make(map[string]string)
 					switch s := rawStyle.(type) {
@@ -366,19 +389,16 @@ func extractTournamentResults(data interface{}) []TournamentResult {
 			}
 		}
 
-		results = append(results, TournamentResult{
-			Tournament: name,
-			Result:     resultStr,
-			Style:      styleMap,
+		results = append(results, TableResult{
+			Column1: col1Content,
+			Column2: col2Content,
+			Style:   styleMap,
 		})
 	}
 
 	return results
 }
 
-// tableHeadersFromData tries to pull the header list from the first table in
-// the supplied dynamic structure.  It returns the slice and a boolean that
-// indicates success.
 func tableHeadersFromData(data interface{}) ([]string, bool) {
 	outerSlice, ok := data.([]interface{})
 	if !ok || len(outerSlice) == 0 {
@@ -388,8 +408,6 @@ func tableHeadersFromData(data interface{}) ([]string, bool) {
 		if hdr, ok := tableMap["Headers"].([]string); ok {
 			return hdr, true
 		}
-		// When coming through the JSON-like marshaling the headers may be a
-		// []interface{} of strings.
 		if hdrIface, ok := tableMap["Headers"].([]interface{}); ok {
 			var headers []string
 			for _, h := range hdrIface {
@@ -403,21 +421,26 @@ func tableHeadersFromData(data interface{}) ([]string, bool) {
 	return nil, false
 }
 
-func getBackgroundColor(result string, style map[string]string) string {
-	// Check style first
+func getBackgroundColor(content string, style map[string]string) string {
 	if style != nil {
 		if bg, ok := style["background"]; ok {
 			switch bg {
 			case "lime":
-				return "0.2 0.8 0.2" // Green for wins
+				return "0.2 0.8 0.2"
 			case "yellow":
-				return "1 1 0.2" // Yellow for semifinals
+				return "1 1 0.2"
 			case "thistle":
-				return "0.8 0.6 0.8" // Purple for finals
+				return "0.8 0.6 0.8"
 			case "#afeeee":
-				return "0.7 0.9 0.9" // Light blue for rounds
+				return "0.7 0.9 0.9"
 			case "#ffebcd":
-				return "1 0.9 0.8" // Light orange for quarterfinals
+				return "1 0.9 0.8"
+			case "lightblue":
+				return "0.7 0.9 1.0"
+			case "lightgreen":
+				return "0.7 1.0 0.7"
+			case "lightgray":
+				return "0.9 0.9 0.9"
 			}
 		}
 		if bgColor, ok := style["background-color"]; ok {
@@ -428,32 +451,17 @@ func getBackgroundColor(result string, style map[string]string) string {
 				return "1 1 0.2"
 			case "thistle":
 				return "0.8 0.6 0.8"
+			case "lightblue":
+				return "0.7 0.9 1.0"
+			case "lightgreen":
+				return "0.7 1.0 0.7"
 			}
 		}
 	}
-	
-	// Fallback based on result content
-	switch result {
-	case "W", "'''W'''":
-		return "0.2 0.8 0.2" // Green for wins
-	case "F":
-		return "0.8 0.6 0.8" // Purple for finals
-	case "SF":
-		return "1 1 0.2" // Yellow for semifinals
-	case "QF":
-		return "1 0.9 0.8" // Light orange for quarterfinals
-	case "1R", "2R", "3R", "4R":
-		return "0.7 0.9 0.9" // Light blue for rounds
-	case "A":
-		return "0.9 0.9 0.9" // Light gray for absent
-	case "DNQ":
-		return "0.8 0.8 0.8" // Gray for did not qualify
-	default:
-		return "0.95 0.95 0.95" // Very light gray default
-	}
+
+	return "0.95 0.95 0.95"
 }
 
 func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
-	// Simple fallback function
 	return GenerateTableGridFCPXML(data, outputPath)
 }
