@@ -280,12 +280,18 @@ func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
 		
 		spineContent.WriteString(fmt.Sprintf(`
 			<gap name="Header Gap" offset="%s" duration="%s">
-				<text lane="1" offset="%s" name="Table Header" duration="%s">
-					<text-style font="Helvetica Neue Bold" fontSize="144" fontColor="1 1 1 1">%s</text-style>
-				</text>
+				<title ref="r2" lane="1" offset="%s" name="Table Header" start="%s" duration="%s">
+					<text>
+						<text-style ref="ts1">%s</text-style>
+					</text>
+					<text-style-def id="ts1">
+						<text-style font="Helvetica Neue" fontSize="176.8" fontColor="1 1 1 1"/>
+					</text-style-def>
+				</title>
 			</gap>`,
 			FormatDurationForFCPXML(currentOffset),
 			FormatDurationForFCPXML(rowDuration),
+			FormatDurationForFCPXML(100*time.Millisecond),
 			FormatDurationForFCPXML(100*time.Millisecond),
 			FormatDurationForFCPXML(rowDuration-200*time.Millisecond),
 			escapedText))
@@ -334,16 +340,22 @@ func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
 		
 		spineContent.WriteString(fmt.Sprintf(`
 			<gap name="Row Gap" offset="%s" duration="%s">
-				<text lane="1" offset="%s" name="Table Row %d" duration="%s">
-					<text-style font="Helvetica Neue" fontSize="120" fontColor="1 1 1 1">%s</text-style>
-				</text>
+				<title ref="r2" lane="1" offset="%s" name="Table Row %d" start="%s" duration="%s">
+					<text>
+						<text-style ref="ts%d">%s</text-style>
+					</text>
+					<text-style-def id="ts%d">
+						<text-style font="Helvetica Neue" fontSize="176.8" fontColor="1 1 1 1"/>
+					</text-style-def>
+				</title>
 			</gap>`,
 			FormatDurationForFCPXML(currentOffset),
 			FormatDurationForFCPXML(rowDuration),
 			FormatDurationForFCPXML(100*time.Millisecond),
 			i+1,
+			FormatDurationForFCPXML(100*time.Millisecond),
 			FormatDurationForFCPXML(rowDuration-200*time.Millisecond),
-			escapedText))
+			i+2, escapedText, i+2))
 		
 		currentOffset += rowDuration
 	}
@@ -360,6 +372,13 @@ func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
 					Width:         "1920",
 					Height:        "1080",
 					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Effects: []Effect{
+				{
+					ID:   "r2",
+					Name: "Graphic Text Block",
+					UID:  ".../Titles.localized/Basic Text.localized/Graphic Text Block.localized/Graphic Text Block.moti",
 				},
 			},
 		},
