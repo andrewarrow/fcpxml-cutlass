@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -22,6 +23,18 @@ func main() {
 	outputFile := args[0]
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
+	}
+
+	// Check if input looks like a YouTube ID
+	if len(inputFile) == 11 && !strings.Contains(inputFile, ".") {
+		fmt.Printf("Detected YouTube ID: %s, downloading...\n", inputFile)
+		videoFile := inputFile + ".mp4"
+		cmd := exec.Command("yt-dlp", "-o", videoFile, inputFile)
+		if err := cmd.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
+			os.Exit(1)
+		}
+		inputFile = videoFile
 	}
 
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
