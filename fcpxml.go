@@ -101,19 +101,19 @@ type Sequence struct {
 }
 
 type Spine struct {
-	XMLName    xml.Name    `xml:"spine"`
-	AssetClips []AssetClip `xml:"asset-clip"`
-	Gaps       []Gap       `xml:"gap"`
+	XMLName xml.Name `xml:"spine"`
+	Content string   `xml:",innerxml"`
 }
 
 type AssetClip struct {
-	Ref      string `xml:"ref,attr"`
-	Offset   string `xml:"offset,attr"`
-	Name     string `xml:"name,attr"`
-	Start    string `xml:"start,attr,omitempty"`
-	Duration string `xml:"duration,attr"`
-	Format   string `xml:"format,attr"`
-	TCFormat string `xml:"tcFormat,attr"`
+	Ref       string `xml:"ref,attr"`
+	Offset    string `xml:"offset,attr"`
+	Name      string `xml:"name,attr"`
+	Start     string `xml:"start,attr,omitempty"`
+	Duration  string `xml:"duration,attr"`
+	Format    string `xml:"format,attr"`
+	TCFormat  string `xml:"tcFormat,attr"`
+	AudioRole string `xml:"audioRole,attr,omitempty"`
 }
 
 type Gap struct {
@@ -332,53 +332,44 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 	}
 	totalDuration += 10*time.Second // Add final textblock
 	
-	var assetClips []AssetClip
-	var gaps []Gap
+	var spineContent strings.Builder
 	currentOffset := time.Duration(0)
 	
 	for i, clip := range clips {
 		// Textblock gap before each clip
-		gaps = append(gaps, Gap{
-			Name:     "Gap",
-			Offset:   formatDurationForFCPXML(currentOffset),
-			Duration: formatDurationForFCPXML(10 * time.Second),
-            Titles: []Title{
-                {
-                    Ref:      "r3",
-                    Lane:     "1",
-                    Offset:   formatDurationForFCPXML(360 * time.Millisecond),
-                    Name:     "Graphic Text Block",
-                    Start:    formatDurationForFCPXML(360 * time.Millisecond),
-                    Duration: formatDurationForFCPXML(10*time.Second - 133*time.Millisecond),
-                    Text: TitleText{
-                        TextStyle: TextStyleRef{
-                            Ref:  fmt.Sprintf("ts%d", i+1),
-                            Text: clip.Text,
-                        },
-                    },
-                    TextStyleDef: TextStyleDef{
-                        ID: fmt.Sprintf("ts%d", i+1),
-                        TextStyle: TextStyle{
-                            Font:      "Helvetica Neue",
-                            FontSize:  "176.8",
-                            FontColor: "1 1 1 1",
-                        },
-                    },
-                },
-            },
-		})
+		escapedText := strings.ReplaceAll(clip.Text, "&", "&amp;")
+		escapedText = strings.ReplaceAll(escapedText, "<", "&lt;")
+		escapedText = strings.ReplaceAll(escapedText, ">", "&gt;")
+		escapedText = strings.ReplaceAll(escapedText, "\"", "&quot;")
+		escapedText = strings.ReplaceAll(escapedText, "'", "&#39;")
+		
+		spineContent.WriteString(fmt.Sprintf(`
+			<gap name="Gap" offset="%s" duration="%s">
+				<title ref="r2" lane="1" offset="%s" name="Graphic Text Block" start="%s" duration="%s">
+					<text>
+						<text-style ref="ts%d">%s</text-style>
+					</text>
+					<text-style-def id="ts%d">
+						<text-style font="Helvetica Neue" fontSize="176.8" fontColor="1 1 1 1"/>
+					</text-style-def>
+				</title>
+			</gap>`,
+			formatDurationForFCPXML(currentOffset),
+			formatDurationForFCPXML(10 * time.Second),
+			formatDurationForFCPXML(360 * time.Millisecond),
+			formatDurationForFCPXML(360 * time.Millisecond),
+			formatDurationForFCPXML(10*time.Second - 133*time.Millisecond),
+			i+1, escapedText, i+1))
 		
 		currentOffset += 10 * time.Second
 		
 		// Video clip
-		assetClips = append(assetClips, AssetClip{
-			Ref:      "r2",
-			Offset:   formatDurationForFCPXML(currentOffset),
-			Name:     fmt.Sprintf("%s Clip %d", nameWithoutExt, clip.ClipNum),
-			Start:    formatDurationForFCPXML(clip.StartTime),
-			Duration: formatDurationForFCPXML(clip.Duration),
-			TCFormat: "NDF",
-		})
+		spineContent.WriteString(fmt.Sprintf(`
+			<asset-clip ref="r3" offset="%s" name="%s Clip %d" start="%s" duration="%s" tcFormat="NDF" audioRole="dialogue"/>`,
+			formatDurationForFCPXML(currentOffset),
+			nameWithoutExt, clip.ClipNum,
+			formatDurationForFCPXML(clip.StartTime),
+			formatDurationForFCPXML(clip.Duration)))
 		
 		currentOffset += clip.Duration
 	}
@@ -398,7 +389,7 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
             },
             Assets: []Asset{
                 {
-                    ID:           "r2",
+                    ID:           "r3",
                     Name:         nameWithoutExt,
                     UID:          absVideoPath,
                     Start:        "0s",
@@ -417,7 +408,7 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
             },
             Effects: []Effect{
                 {
-                    ID:   "r3",
+                    ID:   "r2",
                     Name: "Graphic Text Block",
                     UID:  ".../Titles.localized/Basic Text.localized/Graphic Text Block.localized/Graphic Text Block.moti",
                 },
@@ -439,8 +430,7 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 									AudioLayout: "stereo",
 									AudioRate:   "48k",
 									Spine: Spine{
-										AssetClips: assetClips,
-										Gaps:       gaps,
+										Content: spineContent.String(),
 									},
 								},
 							},

@@ -145,16 +145,7 @@ func generateFCPXML(inputFile, outputFile string) error {
 									AudioLayout: "stereo",
 									AudioRate:   "48k",
 									Spine: Spine{
-										AssetClips: []AssetClip{
-											{
-												Ref:      "r2",
-												Offset:   "0s",
-												Name:     nameWithoutExt,
-												Duration: "3600s",
-												Format:   "r1",
-												TCFormat: "NDF",
-											},
-										},
+										Content: `<asset-clip ref="r2" offset="0s" name="` + nameWithoutExt + `" duration="3600s" tcFormat="NDF" audioRole="dialogue"/>`,
 									},
 								},
 							},
