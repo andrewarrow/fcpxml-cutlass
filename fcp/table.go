@@ -108,6 +108,9 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		}
 	}
 
+	protectedPrimary := escapeXMLText(primaryHeader)
+	protectedSecondary := escapeXMLText(secondaryHeader)
+
 	// Header – left column
 	spineContent.WriteString(fmt.Sprintf(`
 	<title ref="r3" lane="2" offset="%s" name="Header %s" start="%s" duration="%s">
@@ -122,10 +125,10 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		</text-style-def>
 	</title>`,
 		FormatDurationForFCPXML(currentOffset),
-		primaryHeader,
+		protectedPrimary,
 		FormatDurationForFCPXML(currentOffset),
 		FormatDurationForFCPXML(totalDuration),
-		primaryHeader))
+		protectedPrimary))
 
 	// Header – right column
 	spineContent.WriteString(fmt.Sprintf(`
@@ -141,10 +144,10 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		</text-style-def>
 	</title>`,
 		FormatDurationForFCPXML(currentOffset),
-		secondaryHeader,
+		protectedSecondary,
 		FormatDurationForFCPXML(currentOffset),
 		FormatDurationForFCPXML(totalDuration),
-		secondaryHeader))
+		protectedSecondary))
 	
 	// Row Y positions for text – keep the original 129.6-pixel spacing so that
 	// the visual result remains similar to the reference.  The first data row in
@@ -169,6 +172,10 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 		revealTime := currentOffset + time.Duration(i+1)*2*time.Second
 		cellDuration := totalDuration - time.Duration(i+1)*2*time.Second
 		
+		// Escape user content for attribute/text contexts
+		tournamentEscAttr := escapeXMLText(result.Tournament)
+		resultEscAttr := escapeXMLText(result.Result)
+		
 		// Background color for the result cell
 		bgColor := getBackgroundColor(result.Result, result.Style)
 		
@@ -182,7 +189,7 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			<adjust-transform scale="0.380 0.096"/>
 		</video>`,
 			FormatDurationForFCPXML(revealTime),
-			result.Tournament,
+			tournamentEscAttr,
 			FormatDurationForFCPXML(revealTime),
 			FormatDurationForFCPXML(cellDuration),
 			bgColor,
@@ -202,11 +209,11 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			</text-style-def>
 		</title>`,
 			FormatDurationForFCPXML(revealTime),
-			result.Tournament,
+			tournamentEscAttr,
 			FormatDurationForFCPXML(revealTime),
 			FormatDurationForFCPXML(cellDuration),
 			textYPositions[i],
-			i+10, result.Tournament, i+10))
+			i+10, escapeXMLText(result.Tournament), i+10))
 		
 		// Result - exactly like tennis.fcpxml
 		spineContent.WriteString(fmt.Sprintf(`
@@ -222,11 +229,11 @@ func GenerateTableGridFCPXML(data interface{}, outputPath string) error {
 			</text-style-def>
 		</title>`,
 			FormatDurationForFCPXML(revealTime),
-			result.Result,
+			resultEscAttr,
 			FormatDurationForFCPXML(revealTime),
 			FormatDurationForFCPXML(cellDuration),
 			textYPositions[i],
-			i+50, result.Result, i+50))
+			i+50, escapeXMLText(result.Result), i+50))
 	}
 	
 	// Create the FCPXML structure
