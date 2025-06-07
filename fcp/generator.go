@@ -235,3 +235,175 @@ func GenerateClipFCPXML(clips []vtt.Clip, videoPath, outputPath string) error {
 	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
 	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
 }
+
+func GenerateWikipediaTableFCPXML(data interface{}, outputPath string) error {
+	// Import the wikipedia package here locally to avoid circular imports
+	tables, ok := data.([]interface{})
+	if !ok {
+		return fmt.Errorf("invalid table data format")
+	}
+
+	totalDuration := 6 * time.Minute // 6 minutes total
+	
+	var spineContent strings.Builder
+	currentOffset := time.Duration(0)
+	
+	if len(tables) == 0 {
+		return fmt.Errorf("no tables found in Wikipedia data")
+	}
+	
+	// Get the first table
+	firstTable := tables[0]
+	tableMap, ok := firstTable.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid table format")
+	}
+	
+	headers, _ := tableMap["Headers"].([]string)
+	rows, _ := tableMap["Rows"].([]interface{})
+	
+	totalRows := len(rows)
+	if totalRows == 0 {
+		return fmt.Errorf("no rows found in table")
+	}
+	
+	// Calculate timing - reveal rows slowly over 6 minutes
+	rowDuration := totalDuration / time.Duration(totalRows)
+	if rowDuration < 2*time.Second {
+		rowDuration = 2 * time.Second // Minimum 2 seconds per row
+	}
+	
+	// Create header text first
+	if len(headers) > 0 {
+		headerText := strings.Join(headers, " | ")
+		escapedText := escapeXMLText(headerText)
+		
+		spineContent.WriteString(fmt.Sprintf(`
+			<gap name="Header Gap" offset="%s" duration="%s">
+				<text lane="1" offset="%s" name="Table Header" duration="%s">
+					<text-style font="Helvetica Neue Bold" fontSize="144" fontColor="1 1 1 1">%s</text-style>
+				</text>
+			</gap>`,
+			FormatDurationForFCPXML(currentOffset),
+			FormatDurationForFCPXML(rowDuration),
+			FormatDurationForFCPXML(100*time.Millisecond),
+			FormatDurationForFCPXML(rowDuration-200*time.Millisecond),
+			escapedText))
+		
+		currentOffset += rowDuration
+	}
+	
+	// Add each row as a text block
+	for i, row := range rows {
+		rowMap, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		
+		cells, ok := rowMap["Cells"].([]string)
+		if !ok {
+			continue
+		}
+		
+		if len(cells) == 0 {
+			continue
+		}
+		
+		// Create row text - join first few cells
+		var displayCells []string
+		maxCells := 4 // Show max 4 cells to avoid overcrowding
+		for j, cell := range cells {
+			if j >= maxCells {
+				break
+			}
+			if strings.TrimSpace(cell) != "" {
+				displayCells = append(displayCells, strings.TrimSpace(cell))
+			}
+		}
+		
+		if len(displayCells) == 0 {
+			continue
+		}
+		
+		rowText := strings.Join(displayCells, " | ")
+		if len(rowText) > 100 { // Truncate if too long
+			rowText = rowText[:97] + "..."
+		}
+		
+		escapedText := escapeXMLText(rowText)
+		
+		spineContent.WriteString(fmt.Sprintf(`
+			<gap name="Row Gap" offset="%s" duration="%s">
+				<text lane="1" offset="%s" name="Table Row %d" duration="%s">
+					<text-style font="Helvetica Neue" fontSize="120" fontColor="1 1 1 1">%s</text-style>
+				</text>
+			</gap>`,
+			FormatDurationForFCPXML(currentOffset),
+			FormatDurationForFCPXML(rowDuration),
+			FormatDurationForFCPXML(100*time.Millisecond),
+			i+1,
+			FormatDurationForFCPXML(rowDuration-200*time.Millisecond),
+			escapedText))
+		
+		currentOffset += rowDuration
+	}
+	
+	// Create the FCPXML structure
+	fcpxml := FCPXML{
+		Version: "1.11",
+		Resources: Resources{
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat1080p30",
+					FrameDuration: "1001/30000s",
+					Width:         "1920",
+					Height:        "1080",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Wikipedia Table",
+					Projects: []Project{
+						{
+							Name: "Wikipedia Table Reveal",
+							Sequences: []Sequence{
+								{
+									Format:      "r1",
+									Duration:    FormatDurationForFCPXML(currentOffset),
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine: Spine{
+										Content: spineContent.String(),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return err
+	}
+	
+	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
+	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
+}
+
+func escapeXMLText(text string) string {
+	text = strings.ReplaceAll(text, "&", "&amp;")
+	text = strings.ReplaceAll(text, "<", "&lt;")
+	text = strings.ReplaceAll(text, ">", "&gt;")
+	text = strings.ReplaceAll(text, "\"", "&quot;")
+	text = strings.ReplaceAll(text, "'", "&#39;")
+	return text
+}

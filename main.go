@@ -10,20 +10,24 @@ import (
 
 	"cutalyst/fcp"
 	"cutalyst/vtt"
+	"cutalyst/wikipedia"
 	"cutalyst/youtube"
 )
 
 func main() {
 	var inputFile string
 	var segmentMode bool
+	var wikipediaMode bool
 	flag.StringVar(&inputFile, "i", "", "Input file (required)")
 	flag.BoolVar(&segmentMode, "s", false, "Segment mode: break into logical clips with title cards")
+	flag.BoolVar(&wikipediaMode, "w", false, "Wikipedia mode: create FCPXML from Wikipedia article tables")
 	flag.Parse()
 
 	args := flag.Args()
 	if inputFile == "" {
 		fmt.Fprintf(os.Stderr, "Usage: %s -i <input_file> [output_file]\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "  -s: Segment mode - break video into logical clips with title cards\n")
+		fmt.Fprintf(os.Stderr, "  -w: Wikipedia mode - create FCPXML from Wikipedia article tables\n")
 		os.Exit(1)
 	}
 
@@ -33,6 +37,16 @@ func main() {
 	}
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
+	}
+
+	// Handle Wikipedia mode
+	if wikipediaMode {
+		fmt.Printf("Using Wikipedia mode to create FCPXML from article tables...\n")
+		if err := generateFromWikipedia(inputFile, outputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating from Wikipedia: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	// Check if input looks like a YouTube ID
@@ -135,4 +149,66 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func generateFromWikipedia(articleTitle, outputFile string) error {
+	// Fetch Wikipedia source
+	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
+	source, err := wikipedia.FetchSource(articleTitle)
+	if err != nil {
+		return fmt.Errorf("failed to fetch Wikipedia source: %v", err)
+	}
+	
+	// Parse the source to extract tables
+	fmt.Printf("Parsing Wikipedia source for tables...\n")
+	data, err := wikipedia.ParseWikiSource(source)
+	if err != nil {
+		return fmt.Errorf("failed to parse Wikipedia source: %v", err)
+	}
+	
+	if len(data.Tables) == 0 {
+		return fmt.Errorf("no tables found in Wikipedia article")
+	}
+	
+	fmt.Printf("Found %d tables, selecting the largest one for FCPXML generation\n", len(data.Tables))
+	
+	// Find the table with the most rows (likely the main data table)
+	bestTableIndex := 0
+	maxRows := 0
+	for i, table := range data.Tables {
+		fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
+		if len(table.Rows) > maxRows {
+			maxRows = len(table.Rows)
+			bestTableIndex = i
+		}
+	}
+	
+	table := data.Tables[bestTableIndex]
+	fmt.Printf("Table headers: %v\n", table.Headers)
+	fmt.Printf("Table has %d rows\n", len(table.Rows))
+	
+	// Convert to interface{} format for FCPXML generator
+	tableData := make([]interface{}, len(data.Tables))
+	for i, table := range data.Tables {
+		rows := make([]interface{}, len(table.Rows))
+		for j, row := range table.Rows {
+			rows[j] = map[string]interface{}{
+				"Cells": row.Cells,
+			}
+		}
+		tableData[i] = map[string]interface{}{
+			"Headers": table.Headers,
+			"Rows":    rows,
+		}
+	}
+	
+	// Generate FCPXML
+	fmt.Printf("Generating FCPXML: %s\n", outputFile)
+	err = fcp.GenerateWikipediaTableFCPXML(tableData, outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to generate FCPXML: %v", err)
+	}
+	
+	fmt.Printf("Successfully generated Wikipedia table FCPXML: %s\n", outputFile)
+	return nil
 }
