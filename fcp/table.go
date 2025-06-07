@@ -129,9 +129,9 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	tableLeft := 0.05   // Start table near left edge
 	tableRight := 0.95  // End table near right edge
 	
-	// Limit rows and columns for better visibility
-	maxVisibleRows := min(6, numRows)  // Show max 6 rows instead of all
-	maxVisibleCols := min(8, len(tableData.Headers))  // Show max 8 columns instead of 10
+	// Limit rows and columns for text-friendly cells
+	maxVisibleRows := min(4, numRows)  // Show max 4 rows for larger cells
+	maxVisibleCols := min(5, len(tableData.Headers))  // Show max 5 columns for larger cells
 	
 	// Calculate horizontal line positions (rows) with increased spacing
 	var tableHorizontalPositions []float64
