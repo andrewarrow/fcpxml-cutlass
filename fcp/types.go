@@ -12,10 +12,10 @@ type FCPXML struct {
 }
 
 type Resources struct {
-	Formats    []Format    `xml:"format"`
-	Assets     []Asset     `xml:"asset"`
+	Assets     []Asset     `xml:"asset,omitempty"`
 	Effects    []Effect    `xml:"effect,omitempty"`
-	Generators []Generator `xml:"generator,omitempty"`
+	Formats    []Format    `xml:"format"`
+	// Remove generators as they should be effects
 }
 
 // Effect represents a Motion or standard FCP title effect referenced by <title ref="…"> elements.
@@ -25,12 +25,6 @@ type Effect struct {
 	UID  string `xml:"uid,attr,omitempty"`
 }
 
-// Generator represents a built-in shape, color, or generated media
-type Generator struct {
-	ID   string `xml:"id,attr"`
-	Name string `xml:"name,attr"`
-	UID  string `xml:"uid,attr,omitempty"`
-}
 
 type Format struct {
 	ID            string `xml:"id,attr"`
@@ -110,6 +104,7 @@ type Gap struct {
 }
 
 type Title struct {
+	XMLName xml.Name `xml:"title"`
 	Ref          string       `xml:"ref,attr"`
 	Lane         string       `xml:"lane,attr,omitempty"`
 	Offset       string       `xml:"offset,attr"`
@@ -121,8 +116,9 @@ type Title struct {
 	TextStyleDef TextStyleDef `xml:"text-style-def,omitempty"`
 }
 
-// GeneratorClip represents a generated media clip (shapes, colors, etc.)
+// Video represents a video element (shapes, colors, etc.)
 type Video struct {
+	XMLName xml.Name `xml:"video"`
 	Ref           string         `xml:"ref,attr"`
 	Lane          string         `xml:"lane,attr,omitempty"`
 	Offset        string         `xml:"offset,attr"`

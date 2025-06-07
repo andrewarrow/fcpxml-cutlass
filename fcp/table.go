@@ -311,16 +311,14 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			},
 			Effects: []Effect{
 				{
-					ID:   "r3",
-					Name: "Text",
-					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
-				},
-			},
-			Generators: []Generator{
-				{
 					ID:   "r2",
 					Name: "Shapes",
 					UID:  ".../Generators.localized/Elements.localized/Shapes.localized/Shapes.motn",
+				},
+				{
+					ID:   "r3",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
 				},
 			},
 		},
