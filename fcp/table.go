@@ -113,14 +113,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	verticalPositions := []float64{0.100, 0.500, 0.900}
 	fmt.Printf("DEBUG: verticalPositions: %v\n", verticalPositions)
 
-	primaryHeader := "Column 1"
-	secondaryHeader := "Column 2"
-	if len(tableData.Headers) > 0 {
-		primaryHeader = tableData.Headers[0]
-	}
-	if len(tableData.Headers) > 1 {
-		secondaryHeader = tableData.Headers[1]
-	}
+	// Removed unused header variables for minimal test
 
 	var spineElements []interface{}
 
@@ -153,262 +146,83 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		fmt.Printf("DEBUG: Vertical line %d at X=%.3f\n", j, xPos)
 	}
 	
-	// Create all horizontal lines as separate spine elements (they appear horizontally)
-	fmt.Printf("DEBUG: Creating %d horizontal lines as separate spine elements\n", len(tableHorizontalPositions))
-	for i, yPos := range tableHorizontalPositions {
-		horizontalLine := Video{
-			Ref:      "r2",
-			Offset:   FormatDurationForFCPXML(currentOffset),
-			Name:     fmt.Sprintf("H-Line %d", i),
-			Start:    FormatDurationForFCPXML(currentOffset),
-			Duration: FormatDurationForFCPXML(totalDuration),
-			Params: []Param{
-				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
-				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
-				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", yPos)},
-			},
-			AdjustTransform: &AdjustTransform{Scale: "1 0.0394"},
-		}
-		
-		fmt.Printf("DEBUG: Created H-Line %d at Y=%.3f\n", i, yPos)
-		spineElements = append(spineElements, horizontalLine)
+	// MINIMAL TEST: Create exactly like table.fcpxml structure
+	fmt.Printf("DEBUG: MINIMAL TEST - Creating main video on spine, then nested video with lane=1\n")
+	
+	// Create nested video for vertical stacking (like table.fcpxml line 26)
+	nestedVideo := Video{
+		Ref:      "r2",
+		Lane:     "1", // This creates the vertical stacking
+		Offset:   "108108000/30000s", // Copy exact values from table.fcpxml
+		Name:     "Shapes",
+		Start:    "108108000/30000s", // Copy exact values from table.fcpxml
+		Duration: "2634632/120000s",  // Copy exact values from table.fcpxml
+		Params: []Param{
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.59"}, // Copy exact from table.fcpxml
+		},
+		AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "1 0.0394"}, // Copy exact from table.fcpxml
+	}
+
+	// First video - main spine element with nested video inside (like table.fcpxml line 15)
+	mainVideo := Video{
+		Ref:      "r2",
+		Offset:   "0s",
+		Name:     "Shapes",
+		Start:    "108108000/30000s", // Copy exact values from table.fcpxml
+		Duration: "638638/30000s",    // Copy exact values from table.fcpxml
+		Params: []Param{
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.59"}, // Copy exact from table.fcpxml
+		},
+		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
+		NestedVideos:    []Video{nestedVideo}, // This is the key - nested video creates vertical stacking
 	}
 	
-	// Create all vertical lines using lane="1" for vertical stacking
-	fmt.Printf("DEBUG: Creating %d vertical lines using lane=1 for vertical stacking\n", len(tableVerticalPositions))
-	for j, xPos := range tableVerticalPositions {
-		verticalLine := Video{
-			Ref:      "r2",
-			Lane:     "1", // All vertical lines use same lane to stack vertically
-			Offset:   FormatDurationForFCPXML(currentOffset),
-			Name:     fmt.Sprintf("V-Line %d", j),
-			Start:    FormatDurationForFCPXML(currentOffset),
-			Duration: FormatDurationForFCPXML(totalDuration),
-			Params: []Param{
-				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
-				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
-				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", xPos)},
-			},
-			AdjustTransform: &AdjustTransform{Scale: "0.0394 1"},
-		}
-		
-		fmt.Printf("DEBUG: Created V-Line %d at X=%.3f (lane=1 for vertical stacking)\n", j, xPos)
-		spineElements = append(spineElements, verticalLine)
-	}
-
-	// Header - left column
-	spineElements = append(spineElements, Title{
-		Ref:      "r3",
-		Lane:     "2",
-		Offset:   FormatDurationForFCPXML(currentOffset),
-		Name:     fmt.Sprintf("Header %s", escapeXMLText(primaryHeader)),
-		Start:    FormatDurationForFCPXML(currentOffset),
-		Duration: FormatDurationForFCPXML(totalDuration),
+	fmt.Printf("DEBUG: Created main video on spine with nested video (lane=1) inside\n")
+	spineElements = append(spineElements, mainVideo)
+	
+	// Second video - separate spine element (like table.fcpxml line 66)
+	secondVideo := Video{
+		Ref:      "r2",
+		Offset:   "638638/30000s", // Copy exact values from table.fcpxml
+		Name:     "Shapes",
+		Start:    "108746638/30000s", // Copy exact values from table.fcpxml  
+		Duration: "80080/120000s",    // Copy exact values from table.fcpxml
 		Params: []Param{
-			{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "-200.0 -259.2"},
-			{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
-			{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
+			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.59"}, // Copy exact from table.fcpxml
 		},
-		Text: TitleText{
-			TextStyle: TextStyleRef{
-				Ref:  "ts1",
-				Text: escapeXMLText(primaryHeader),
-			},
-		},
-		TextStyleDef: TextStyleDef{
-			ID: "ts1",
-			TextStyle: TextStyle{
-				Font:      "SF Pro Display",
-				FontSize:  "36",
-				FontFace:  "Bold",
-				FontColor: "0.1 0.1 0.1 1",
-				Alignment: "center",
-			},
-		},
-	})
-
-	// Header - right column
-	spineElements = append(spineElements, Title{
-		Ref:      "r3",
-		Lane:     "3",
-		Offset:   FormatDurationForFCPXML(currentOffset),
-		Name:     fmt.Sprintf("Header %s", escapeXMLText(secondaryHeader)),
-		Start:    FormatDurationForFCPXML(currentOffset),
-		Duration: FormatDurationForFCPXML(totalDuration),
-		Params: []Param{
-			{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "200.0 -259.2"},
-			{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
-			{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
-		},
-		Text: TitleText{
-			TextStyle: TextStyleRef{
-				Ref:  "ts2",
-				Text: escapeXMLText(secondaryHeader),
-			},
-		},
-		TextStyleDef: TextStyleDef{
-			ID: "ts2",
-			TextStyle: TextStyle{
-				Font:      "SF Pro Display",
-				FontSize:  "36",
-				FontFace:  "Bold",
-				FontColor: "0.1 0.1 0.1 1",
-				Alignment: "center",
-			},
-		},
-	})
-
-	var textYPositions []float64
-	textStartPx := -129.6
-	textSpacingPx := 129.6
-	for i := 0; i < len(tableResults); i++ {
-		textYPositions = append(textYPositions, textStartPx+float64(i)*textSpacingPx)
+		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
 	}
+	
+	fmt.Printf("DEBUG: Created second video on spine\n")
+	spineElements = append(spineElements, secondVideo)
 
-	var cellCenterPositions []float64
-	for i := 0; i < len(tableResults); i++ {
-		centerY := startY + rowSpacing*float64(i+1) + rowSpacing/2
-		cellCenterPositions = append(cellCenterPositions, centerY)
-	}
-
-	// Add table data with gradual reveal
-	for i, result := range tableResults {
-		revealTime := currentOffset + time.Duration(i+1)*2*time.Second
-		cellDuration := totalDuration - time.Duration(i+1)*2*time.Second
-		
-		// Ensure duration is never negative
-		if cellDuration <= 0 {
-			cellDuration = time.Second // Minimum 1 second duration
-		}
-
-		col1EscAttr := escapeXMLText(result.Column1)
-		col2EscAttr := escapeXMLText(result.Column2)
-
-		bgColor := getBackgroundColor(result.Column2, result.Style)
-
-		// Background shape for result cell
-		spineElements = append(spineElements, Video{
-			Ref:      "r2",
-			Lane:     "4",
-			Offset:   FormatDurationForFCPXML(revealTime),
-			Name:     fmt.Sprintf("BG %s", col1EscAttr),
-			Start:    FormatDurationForFCPXML(revealTime),
-			Duration: FormatDurationForFCPXML(cellDuration),
-			Params: []Param{
-				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: bgColor},
-				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.700 %.3f", cellCenterPositions[i])},
-			},
-			AdjustTransform: &AdjustTransform{Scale: "0.380 0.096"},
-		})
-
-		// Column 1 text
-		spineElements = append(spineElements, Title{
-			Ref:      "r3",
-			Lane:     "5",
-			Offset:   FormatDurationForFCPXML(revealTime),
-			Name:     col1EscAttr,
-			Start:    FormatDurationForFCPXML(revealTime),
-			Duration: FormatDurationForFCPXML(cellDuration),
-			Params: []Param{
-				{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("-200.0 %.1f", textYPositions[i])},
-				{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
-				{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
-			},
-			Text: TitleText{
-				TextStyle: TextStyleRef{
-					Ref:  fmt.Sprintf("ts%d", i+10),
-					Text: escapeXMLText(result.Column1),
-				},
-			},
-			TextStyleDef: TextStyleDef{
-				ID: fmt.Sprintf("ts%d", i+10),
-				TextStyle: TextStyle{
-					Font:      "SF Pro Display",
-					FontSize:  "28",
-					FontFace:  "Medium",
-					FontColor: "0.1 0.1 0.1 1",
-					Alignment: "center",
-				},
-			},
-		})
-
-		// Column 2 text
-		spineElements = append(spineElements, Title{
-			Ref:      "r3",
-			Lane:     "6",
-			Offset:   FormatDurationForFCPXML(revealTime),
-			Name:     fmt.Sprintf("Result %s", col2EscAttr),
-			Start:    FormatDurationForFCPXML(revealTime),
-			Duration: FormatDurationForFCPXML(cellDuration),
-			Params: []Param{
-				{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("200.0 %.1f", textYPositions[i])},
-				{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
-				{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
-			},
-			Text: TitleText{
-				TextStyle: TextStyleRef{
-					Ref:  fmt.Sprintf("ts%d", i+50),
-					Text: escapeXMLText(result.Column2),
-				},
-			},
-			TextStyleDef: TextStyleDef{
-				ID: fmt.Sprintf("ts%d", i+50),
-				TextStyle: TextStyle{
-					Font:      "SF Pro Display",
-					FontSize:  "32",
-					FontFace:  "Bold",
-					FontColor: "0.1 0.1 0.1 1",
-					Alignment: "center",
-				},
-			},
-		})
-	}
+	fmt.Printf("DEBUG: MINIMAL TEST - 1 spine video with nested video (lane=1) + 1 separate spine video\n")
 
 	fmt.Printf("DEBUG: SUMMARY - Total spine elements created: %d\n", len(spineElements))
-	
-	// Count different types of elements
-	hLineCount := 0
-	vLineCount := 0
-	titleCount := 0
-	bgCount := 0
-	
-	for i, elem := range spineElements {
-		switch e := elem.(type) {
-		case Video:
-			if strings.HasPrefix(e.Name, "H-Line") {
-				hLineCount++
-				fmt.Printf("DEBUG: Element %d: HORIZONTAL LINE - Name: %s, Center: %s\n", i, e.Name, getCenter(e.Params))
-			} else if strings.HasPrefix(e.Name, "V-Line") {
-				vLineCount++
-				fmt.Printf("DEBUG: Element %d: VERTICAL LINE - Name: %s, Center: %s\n", i, e.Name, getCenter(e.Params))
-			} else if strings.HasPrefix(e.Name, "BG") {
-				bgCount++
-				fmt.Printf("DEBUG: Element %d: BACKGROUND - Name: %s, Lane: %s\n", i, e.Name, e.Lane)
-			} else {
-				fmt.Printf("DEBUG: Element %d: VIDEO - Name: %s, Lane: %s\n", i, e.Name, e.Lane)
-			}
-		case Title:
-			titleCount++
-			fmt.Printf("DEBUG: Element %d: TITLE - Name: %s, Lane: %s\n", i, e.Name, e.Lane)
-		}
-	}
-	
-	fmt.Printf("DEBUG: ELEMENT COUNTS - H-Lines: %d, V-Lines: %d, Titles: %d, Backgrounds: %d\n", 
-		hLineCount, vLineCount, titleCount, bgCount)
 	
 	spineContent := buildSpineContent(spineElements)
 	fmt.Printf("DEBUG: Spine content generated, length: %d characters\n", len(spineContent))
