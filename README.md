@@ -16,6 +16,9 @@ Perfect for content creators who want to quickly get YouTube videos or local med
 - **Subtitle Support**: Downloads English auto-generated subtitles from YouTube when available
 - **Auto-detection**: Automatically detects whether input is a local file or YouTube ID
 - **Flexible Output**: Specify custom output filename or use default naming
+- **🆕 Segment Mode**: Intelligently break YouTube videos into logical clips (6-18 seconds) with title cards
+- **Smart Clip Detection**: Uses subtitle timing and natural speech breaks to create meaningful segments
+- **Title Cards**: Automatically generates title cards between clips for easy navigation
 
 ## 🚀 Installation
 
@@ -56,18 +59,27 @@ go run .
 
 ### Basic Usage
 
+#### Standard Mode (Single Video)
 ```bash
 cutalyst -i <input_file> [output_file]
+```
+
+#### Segment Mode (Smart Clips)
+```bash
+cutalyst -i <youtube_id> -s [output_file]
 ```
 
 ### Parameters
 
 - `-i <input_file>` (required): Input file path or YouTube video ID
-- `[output_file]` (optional): Output FCPXML filename (defaults to "test.fcpxml")
+- `-s` (optional): Segment mode - intelligently break video into clips with title cards
+- `[output_file]` (optional): Output FCPXML filename
+  - Standard mode: defaults to "test.fcpxml"
+  - Segment mode: defaults to "{youtube_id}_clips.fcpxml"
 
 ### Examples
 
-#### Convert Local Video File
+#### Standard Mode: Convert Local Video File
 
 ```bash
 # Convert local video to FCPXML
@@ -77,7 +89,7 @@ cutalyst -i video.mp4
 cutalyst -i video.mp4 my_project.fcpxml
 ```
 
-#### Download and Convert YouTube Video
+#### Standard Mode: Download and Convert YouTube Video
 
 ```bash
 # Using YouTube video ID (11 characters)
@@ -86,6 +98,23 @@ cutalyst -i dQw4w9WgXcQ
 # With custom output filename
 cutalyst -i dQw4w9WgXcQ rick_roll_project.fcpxml
 ```
+
+#### 🆕 Segment Mode: Smart Clip Generation
+
+```bash
+# Break YouTube video into intelligent clips with title cards
+cutalyst -i dQw4w9WgXcQ -s
+
+# Custom output filename for segments
+cutalyst -i dQw4w9WgXcQ -s my_clips.fcpxml
+```
+
+**Segment Mode Features:**
+- Automatically downloads video and subtitles
+- Creates 6-18 second clips based on natural speech breaks
+- Adds 2-second title cards between clips
+- Generates frame-accurate timing for smooth editing
+- Perfect for creating short-form content from longer videos
 
 ### YouTube Video ID
 
@@ -105,10 +134,23 @@ To get a YouTube video ID:
 ### Output Format
 
 The tool generates FCPXML files with the following specifications:
+
+#### Standard Mode
 - **Format**: 1080p30 (1920x1080, 30fps)
 - **Duration**: 3600s (1 hour) - currently hardcoded
 - **Color Space**: Rec. 709
 - **Audio**: Stereo, 48kHz
+- **Timeline**: Single video asset with basic metadata
+
+#### Segment Mode
+- **Format**: 1080p30 (1920x1080, 30fps)
+- **Duration**: Calculated based on actual clip content
+- **Color Space**: Rec. 709
+- **Audio**: Stereo, 48kHz
+- **Timeline**: Multiple video clips with title cards
+- **Clip Duration**: 6-18 seconds each
+- **Title Cards**: 2 seconds between clips
+- **Timing**: Frame-accurate for seamless editing
 
 ### Project Structure
 
@@ -144,11 +186,14 @@ GOOS=linux GOARCH=amd64 go build -o cutalyst-linux
 Currently, testing is done manually:
 
 ```bash
-# Test with local file
+# Test standard mode with local file
 go run . -i test_video.mp4
 
-# Test with YouTube video
+# Test standard mode with YouTube video
 go run . -i dQw4w9WgXcQ
+
+# Test segment mode (requires YouTube video with subtitles)
+go run . -i dQw4w9WgXcQ -s
 
 # Verify the generated FCPXML imports correctly into Final Cut Pro
 ```
@@ -174,6 +219,16 @@ go run . -i dQw4w9WgXcQ
    - Ensure you're using Final Cut Pro 10.4 or later
    - Check that video file paths in the FCPXML are accessible
 
+5. **Segment mode fails**
+   - Verify the YouTube video has English subtitles available
+   - Check that both .mov and .vtt files were downloaded
+   - Some videos may not have auto-generated subtitles
+
+6. **Clips are too short/long in segment mode**
+   - Segment duration is automatically determined (6-18 seconds)
+   - Based on natural speech breaks and subtitle timing
+   - Currently not customizable
+
 ### Debug Mode
 
 Add print statements in the code for debugging:
@@ -198,8 +253,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📋 Roadmap
 
 - [ ] Support for custom video formats and resolutions
-- [ ] Dynamic duration detection instead of hardcoded 3600s
+- [ ] Dynamic duration detection instead of hardcoded 3600s in standard mode
+- [ ] Customizable clip duration ranges for segment mode
 - [ ] Batch processing for multiple files
+- [ ] Support for other subtitle languages in segment mode
+- [ ] Segment mode for local video files with subtitle tracks
 - [ ] Integration with other video platforms
 - [ ] GUI version for non-technical users
 - [ ] Automated testing framework
+- [ ] Clip preview generation for segment mode

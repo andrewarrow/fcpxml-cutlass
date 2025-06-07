@@ -325,17 +325,51 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 	videoName := filepath.Base(absVideoPath)
 	nameWithoutExt := strings.TrimSuffix(videoName, filepath.Ext(videoName))
 	
-	// Calculate total duration
+	// Calculate total duration - textblock, clip, textblock, clip pattern
 	var totalDuration time.Duration
 	for _, clip := range clips {
-		totalDuration += clip.Duration + 2*time.Second // Add 2s for title card
+		totalDuration += clip.Duration + 10*time.Second // Add 10s for textblock
 	}
+	totalDuration += 10*time.Second // Add final textblock
 	
 	var assetClips []AssetClip
 	var gaps []Gap
 	currentOffset := time.Duration(0)
 	
-	for _, clip := range clips {
+	for i, clip := range clips {
+		// Textblock gap before each clip
+		gaps = append(gaps, Gap{
+			Name:     "Gap",
+			Offset:   formatDurationForFCPXML(currentOffset),
+			Duration: formatDurationForFCPXML(10 * time.Second),
+            Titles: []Title{
+                {
+                    Ref:      "r3",
+                    Lane:     "1",
+                    Offset:   formatDurationForFCPXML(360 * time.Millisecond),
+                    Name:     "Graphic Text Block",
+                    Start:    formatDurationForFCPXML(360 * time.Millisecond),
+                    Duration: formatDurationForFCPXML(10*time.Second - 133*time.Millisecond),
+                    Text: TitleText{
+                        TextStyle: TextStyleRef{
+                            Ref:  fmt.Sprintf("ts%d", i+1),
+                            Text: clip.Text,
+                        },
+                    },
+                    TextStyleDef: TextStyleDef{
+                        ID: fmt.Sprintf("ts%d", i+1),
+                        TextStyle: TextStyle{
+                            Font:      "Helvetica Neue",
+                            FontSize:  "176.8",
+                            FontColor: "1 1 1 1",
+                        },
+                    },
+                },
+            },
+		})
+		
+		currentOffset += 10 * time.Second
+		
 		// Video clip
 		assetClips = append(assetClips, AssetClip{
 			Ref:      "r2",
@@ -343,51 +377,10 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 			Name:     fmt.Sprintf("%s Clip %d", nameWithoutExt, clip.ClipNum),
 			Start:    formatDurationForFCPXML(clip.StartTime),
 			Duration: formatDurationForFCPXML(clip.Duration),
-			Format:   "r1",
 			TCFormat: "NDF",
 		})
 		
 		currentOffset += clip.Duration
-		
-		// Title card gap
-		gaps = append(gaps, Gap{
-			Name:     "Gap",
-			Offset:   formatDurationForFCPXML(currentOffset),
-			Duration: formatDurationForFCPXML(2 * time.Second),
-            Titles: []Title{
-                {
-                    Ref:      "r3",
-                    Lane:     "1",
-                    Offset:   "0s",
-                    Name:     fmt.Sprintf("Clip %d Title", clip.ClipNum),
-                    Duration: formatDurationForFCPXML(2 * time.Second),
-                    Start:    "0s",
-                    Params: []Param{
-                        {Name: "Position", Key: "9999/999166631/999166633/1/100/101", Value: "0 0"},
-                        {Name: "Flat", Key: "9999/999166631/999166633/1/999166650/999166651", Value: "1"},
-                        {Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
-                    },
-                    Text: TitleText{
-                        TextStyle: TextStyleRef{
-                            Ref:  fmt.Sprintf("ts%d", clip.ClipNum),
-                            Text: fmt.Sprintf("Clip %d", clip.ClipNum),
-                        },
-                    },
-                    TextStyleDef: TextStyleDef{
-                        ID: fmt.Sprintf("ts%d", clip.ClipNum),
-                        TextStyle: TextStyle{
-                            Font:      "Helvetica",
-                            FontSize:  "72",
-                            FontFace:  "Bold",
-                            FontColor: "1 1 1 1",
-                            Alignment: "center",
-                        },
-                    },
-                },
-            },
-		})
-		
-		currentOffset += 2 * time.Second
 	}
 	
 	return FCPXML{
@@ -425,8 +418,8 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
             Effects: []Effect{
                 {
                     ID:   "r3",
-                    Name: "Typewriter",
-                    UID:  ".../Titles.localized/Build In:Out.localized/Typewriter.localized/Typewriter.moti",
+                    Name: "Graphic Text Block",
+                    UID:  ".../Titles.localized/Basic Text.localized/Graphic Text Block.localized/Graphic Text Block.moti",
                 },
             },
         },
