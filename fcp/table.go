@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func buildSpineContent(elements []interface{}) string {
 	var content strings.Builder
 	for _, elem := range elements {
@@ -33,8 +40,11 @@ type TableResult struct {
 }
 
 func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
+	fmt.Printf("DEBUG: GenerateTableGridFCPXML called with outputPath: %s\n", outputPath)
+	
 	// Use default data if tableData is nil
 	if tableData == nil {
+		fmt.Printf("DEBUG: tableData is nil, using default data\n")
 		tableData = &TableData{
 			Headers: []string{"Column 1", "Column 2"},
 			Rows: []TableRow{
@@ -42,6 +52,9 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Cells: []TableCell{{Content: "Another Item"}, {Content: "Another Value"}}},
 			},
 		}
+	} else {
+		fmt.Printf("DEBUG: tableData provided with %d headers and %d rows\n", len(tableData.Headers), len(tableData.Rows))
+		fmt.Printf("DEBUG: Headers: %v\n", tableData.Headers)
 	}
 
 	// Convert TableData to the format expected by the rest of the function
@@ -74,15 +87,22 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 
 	numRows := len(tableResults) + 1
 	numCols := 2
+	
+	fmt.Printf("DEBUG: numRows=%d (data rows + 1 header), numCols=%d\n", numRows, numCols)
+	fmt.Printf("DEBUG: totalDuration=%v, currentOffset=%v\n", totalDuration, currentOffset)
 
 	var horizontalPositions []float64
-	startY := 0.200
-	rowSpacing := 0.120
-	for i := 0; i <= numRows; i++ {
-		horizontalPositions = append(horizontalPositions, startY+rowSpacing*float64(i))
+	startY := 0.500  // Center the lines around middle of screen like in table.fcpxml
+	rowSpacing := 0.080  // Smaller spacing to keep lines visible
+	fmt.Printf("DEBUG: Calculating horizontal positions with startY=%.3f, rowSpacing=%.3f\n", startY, rowSpacing)
+	for i := 0; i <= min(3, numRows); i++ {  // Only create a few key horizontal lines like the reference
+		pos := startY + rowSpacing*float64(i-1)  // Center around startY
+		horizontalPositions = append(horizontalPositions, pos)
+		fmt.Printf("DEBUG: horizontalPositions[%d] = %.3f\n", i, pos)
 	}
 
 	verticalPositions := []float64{0.100, 0.500, 0.900}
+	fmt.Printf("DEBUG: verticalPositions: %v\n", verticalPositions)
 
 	primaryHeader := "Column 1"
 	secondaryHeader := "Column 2"
@@ -96,8 +116,15 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	var spineElements []interface{}
 
 	// Create horizontal grid lines
-	for i := 0; i <= numRows; i++ {
-		spineElements = append(spineElements, Video{
+	fmt.Printf("DEBUG: Creating horizontal grid lines for %d positions\n", len(horizontalPositions))
+	fmt.Printf("DEBUG: Horizontal positions: %v\n", horizontalPositions)
+	fmt.Printf("DEBUG: startY=%.3f, rowSpacing=%.3f\n", startY, rowSpacing)
+	
+	for i := 0; i < len(horizontalPositions); i++ {
+		yPos := horizontalPositions[i]
+		fmt.Printf("DEBUG: Creating H-Line %d at Y position %.3f\n", i, yPos)
+		
+		hLine := Video{
 			Ref:      "r2",
 			Offset:   FormatDurationForFCPXML(currentOffset),
 			Name:     fmt.Sprintf("H-Line %d", i),
@@ -105,17 +132,26 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", horizontalPositions[i])},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", yPos)},
 			},
-			AdjustTransform: &AdjustTransform{Scale: "0.800 0.002"},
-		})
+			AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
+		}
+		
+		fmt.Printf("DEBUG: H-Line %d - Center: 0.5 %.3f, Scale: 1 0.0395\n", i, yPos)
+		spineElements = append(spineElements, hLine)
 	}
 
 	// Create vertical grid lines
+	fmt.Printf("DEBUG: Creating vertical grid lines for %d columns (0 to %d)\n", numCols, numCols)
+	fmt.Printf("DEBUG: Vertical positions: %v\n", verticalPositions)
+	
 	for j := 0; j <= numCols; j++ {
-		spineElements = append(spineElements, Video{
+		xPos := verticalPositions[j]
+		fmt.Printf("DEBUG: Creating V-Line %d at X position %.3f\n", j, xPos)
+		
+		vLine := Video{
 			Ref:      "r2",
 			Lane:     "1",
 			Offset:   FormatDurationForFCPXML(currentOffset),
@@ -124,12 +160,15 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", verticalPositions[j])},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", xPos)},
 			},
 			AdjustTransform: &AdjustTransform{Scale: "0.002 0.600"},
-		})
+		}
+		
+		fmt.Printf("DEBUG: V-Line %d - Center: %.3f 0.5, Scale: 0.002 0.600\n", j, xPos)
+		spineElements = append(spineElements, vLine)
 	}
 
 	// Header - left column
@@ -302,7 +341,18 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		})
 	}
 
+	fmt.Printf("DEBUG: Total spine elements created: %d\n", len(spineElements))
+	for i, elem := range spineElements {
+		switch e := elem.(type) {
+		case Video:
+			fmt.Printf("DEBUG: Element %d: Video - Name: %s, Lane: %s\n", i, e.Name, e.Lane)
+		case Title:
+			fmt.Printf("DEBUG: Element %d: Title - Name: %s, Lane: %s\n", i, e.Name, e.Lane)
+		}
+	}
+	
 	spineContent := buildSpineContent(spineElements)
+	fmt.Printf("DEBUG: Spine content generated, length: %d characters\n", len(spineContent))
 
 	fcpxml := FCPXML{
 		Version: "1.13",
