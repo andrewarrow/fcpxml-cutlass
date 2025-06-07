@@ -24,6 +24,7 @@ type Clip struct {
 	EndTime   time.Duration
 	Duration  time.Duration
 	Text      string
+	FirstSegmentText string  // Just the first VTT segment for previews
 	ClipNum   int
 }
 
@@ -265,14 +266,18 @@ func segmentIntoClips(segments []VTTSegment, minDuration, maxDuration time.Durat
 		// Extend clip duration by adding consecutive segments
 		j := i + 1
 		for j < len(segments) {
-			currentDuration := segments[j-1].EndTime - clipStart
-			
-			// If adding this segment would exceed max duration, stop
-			if currentDuration >= maxDuration {
+			// Check if adding this segment would exceed max duration
+			proposedDuration := segments[j].EndTime - clipStart
+			if proposedDuration > maxDuration {
 				break
 			}
 			
-			// If we have minimum duration and there's a natural break, stop
+			// Add this segment to the clip
+			clipTexts = append(clipTexts, segments[j].Text)
+			j++
+			
+			// Check if we have minimum duration and there's a natural break
+			currentDuration := segments[j-1].EndTime - clipStart
 			if currentDuration >= minDuration {
 				// Look for sentence endings or pauses
 				lastText := segments[j-1].Text
@@ -280,9 +285,6 @@ func segmentIntoClips(segments []VTTSegment, minDuration, maxDuration time.Durat
 					break
 				}
 			}
-			
-			clipTexts = append(clipTexts, segments[j].Text)
-			j++
 		}
 		
 		clipEnd := segments[j-1].EndTime
@@ -291,6 +293,10 @@ func segmentIntoClips(segments []VTTSegment, minDuration, maxDuration time.Durat
 		// Ensure minimum duration
 		if clipDuration < minDuration && j < len(segments) {
 			clipEnd = clipStart + minDuration
+			// Also need to capture any additional text that falls within this extended duration
+			for k := j; k < len(segments) && segments[k].StartTime < clipEnd; k++ {
+				clipTexts = append(clipTexts, segments[k].Text)
+			}
 		}
 		
 		clips = append(clips, Clip{
@@ -298,6 +304,7 @@ func segmentIntoClips(segments []VTTSegment, minDuration, maxDuration time.Durat
 			EndTime:   clipEnd,
 			Duration:  clipEnd - clipStart,
 			Text:      strings.Join(clipTexts, " "),
+			FirstSegmentText: segments[i].Text,  // Just the first segment for textblock preview
 			ClipNum:   clipNum,
 		})
 		
@@ -336,8 +343,10 @@ func buildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 	currentOffset := time.Duration(0)
 	
 	for i, clip := range clips {
-		// Textblock gap before each clip
-		escapedText := strings.ReplaceAll(clip.Text, "&", "&amp;")
+		// Textblock gap before each clip - show just the first segment of what's coming next
+		clipText := clip.FirstSegmentText
+		
+		escapedText := strings.ReplaceAll(clipText, "&", "&amp;")
 		escapedText = strings.ReplaceAll(escapedText, "<", "&lt;")
 		escapedText = strings.ReplaceAll(escapedText, ">", "&gt;")
 		escapedText = strings.ReplaceAll(escapedText, "\"", "&quot;")
