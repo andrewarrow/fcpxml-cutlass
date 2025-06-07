@@ -1,13 +1,16 @@
 package main
 
 import (
-	"encoding/xml"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"cutalyst/fcp"
+	"cutalyst/vtt"
+	"cutalyst/youtube"
 )
 
 func main() {
@@ -34,24 +37,15 @@ func main() {
 
 	// Check if input looks like a YouTube ID
 	youtubeID := ""
-	if len(inputFile) == 11 && !strings.Contains(inputFile, ".") {
+	if youtube.IsYouTubeID(inputFile) {
 		youtubeID = inputFile
-		fmt.Printf("Detected YouTube ID: %s, downloading...\n", inputFile)
-		videoFile := inputFile + ".mov"
-		cmd := exec.Command("yt-dlp", "-o", videoFile, inputFile)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		videoFile, err := youtube.DownloadVideo(inputFile)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Printf("Downloading subtitles...\n")
-		youtubeURL := "https://www.youtube.com/watch?v=" + inputFile
-		subCmd := exec.Command("yt-dlp", "-o", inputFile, "--skip-download", "--write-auto-sub", "--sub-lang", "en", youtubeURL)
-		subCmd.Stdout = os.Stdout
-		subCmd.Stderr = os.Stderr
-		if err := subCmd.Run(); err != nil {
+		if err := youtube.DownloadSubtitles(inputFile); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: Could not download subtitles: %v\n", err)
 		}
 
@@ -83,7 +77,7 @@ func main() {
 	}
 
 	// Standard mode - generate simple FCPXML
-	if err := generateFCPXML(inputFile, outputFile); err != nil {
+	if err := fcp.GenerateStandard(inputFile, outputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating FCPXML: %v\n", err)
 		os.Exit(1)
 	}
@@ -91,76 +85,54 @@ func main() {
 	fmt.Printf("Successfully converted '%s' to '%s'\n", inputFile, outputFile)
 }
 
-func generateFCPXML(inputFile, outputFile string) error {
-	inputName := filepath.Base(inputFile)
-	inputExt := strings.ToLower(filepath.Ext(inputFile))
-	nameWithoutExt := strings.TrimSuffix(inputName, inputExt)
+func breakIntoLogicalParts(youtubeID string) error {
+	vttPath := fmt.Sprintf("%s.en.vtt", youtubeID)
+	videoPath := fmt.Sprintf("%s.mov", youtubeID)
+	outputPath := fmt.Sprintf("%s_clips.fcpxml", youtubeID)
 
-	fcpxml := FCPXML{
-		Version: "1.11",
-		Resources: Resources{
-			Formats: []Format{
-				{
-					ID:            "r1",
-					Name:          "FFVideoFormat1080p30",
-					FrameDuration: "1001/30000s",
-					Width:         "1920",
-					Height:        "1080",
-					ColorSpace:    "1-1-1 (Rec. 709)",
-				},
-			},
-			Assets: []Asset{
-				{
-					ID:           "r2",
-					Name:         nameWithoutExt,
-					UID:          inputFile,
-					Start:        "0s",
-					HasVideo:     "1",
-					Format:       "r1",
-					HasAudio:     "1",
-					AudioSources: "1",
-					AudioChannels: "2",
-					Duration:     "3600s",
-					MediaRep: MediaRep{
-						Kind: "original-media",
-						Sig:  inputFile,
-						Src:  "file://" + inputFile,
-					},
-				},
-			},
-		},
-		Library: Library{
-			Events: []Event{
-				{
-					Name: "Converted Media",
-					Projects: []Project{
-						{
-							Name: nameWithoutExt,
-							Sequences: []Sequence{
-								{
-									Format:      "r1",
-									Duration:    "3600s",
-									TCStart:     "0s",
-									TCFormat:    "NDF",
-									AudioLayout: "stereo",
-									AudioRate:   "48k",
-									Spine: Spine{
-										Content: `<asset-clip ref="r2" offset="0s" name="` + nameWithoutExt + `" duration="3600s" tcFormat="NDF" audioRole="dialogue"/>`,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+	// Check if files exist
+	if _, err := os.Stat(vttPath); os.IsNotExist(err) {
+		return fmt.Errorf("VTT file not found: %s", vttPath)
+	}
+	if _, err := os.Stat(videoPath); os.IsNotExist(err) {
+		return fmt.Errorf("video file not found: %s", videoPath)
 	}
 
-	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	// Parse VTT file
+	fmt.Printf("Parsing VTT file: %s\n", vttPath)
+	segments, err := vtt.ParseFile(vttPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("error parsing VTT file: %v", err)
 	}
 
-	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
-	return os.WriteFile(outputFile, []byte(xmlContent), 0644)
+	fmt.Printf("Found %d VTT segments\n", len(segments))
+
+	// Segment into logical clips (6-18 seconds)
+	minDuration := 6 * time.Second
+	maxDuration := 18 * time.Second
+	clips := vtt.SegmentIntoClips(segments, minDuration, maxDuration)
+
+	fmt.Printf("Generated %d clips\n", len(clips))
+	for i, clip := range clips {
+		fmt.Printf("Clip %d: %v - %v (%.1fs) - %s\n",
+			i+1, clip.StartTime, clip.EndTime, clip.Duration.Seconds(),
+			clip.Text[:min(50, len(clip.Text))])
+	}
+
+	// Generate FCPXML
+	fmt.Printf("Generating FCPXML: %s\n", outputPath)
+	err = fcp.GenerateClipFCPXML(clips, videoPath, outputPath)
+	if err != nil {
+		return fmt.Errorf("error generating FCPXML: %v", err)
+	}
+
+	fmt.Printf("Successfully generated %s with %d clips\n", outputPath, len(clips))
+	return nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

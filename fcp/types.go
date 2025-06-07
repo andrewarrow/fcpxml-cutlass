@@ -1,24 +1,8 @@
-package main
+package fcp
 
 import (
 	"encoding/xml"
-	"time"
 )
-
-type VTTSegment struct {
-	StartTime time.Duration
-	EndTime   time.Duration
-	Text      string
-}
-
-type Clip struct {
-	StartTime        time.Duration
-	EndTime          time.Duration
-	Duration         time.Duration
-	Text             string
-	FirstSegmentText string // Just the first VTT segment for previews
-	ClipNum          int
-}
 
 type FCPXML struct {
 	XMLName   xml.Name  `xml:"fcpxml"`
