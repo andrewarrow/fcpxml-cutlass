@@ -170,15 +170,29 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 		return fmt.Errorf("no tables found in Wikipedia article")
 	}
 	
-	fmt.Printf("Found %d tables, selecting the largest one for FCPXML generation\n", len(data.Tables))
+	fmt.Printf("Found %d tables, selecting the best one for FCPXML generation\n", len(data.Tables))
 	
-	// Find the table with the most rows (likely the main data table)
+	// Find the table with tournament data (look for year headers like 1986)
 	bestTableIndex := 0
-	maxRows := 0
+	maxScore := 0
 	for i, table := range data.Tables {
 		fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
-		if len(table.Rows) > maxRows {
-			maxRows = len(table.Rows)
+		fmt.Printf("  Headers: %v\n", table.Headers)
+		
+		score := 0
+		// Score based on headers containing years and tournaments
+		for _, header := range table.Headers {
+			if strings.Contains(header, "1986") || strings.Contains(header, "1987") || 
+			   strings.Contains(header, "Tournament") || strings.Contains(header, "Grand") {
+				score += 10
+			}
+		}
+		// Score based on number of headers (more headers = likely the main table)
+		score += len(table.Headers)
+		
+		fmt.Printf("  Score: %d\n", score)
+		if score > maxScore {
+			maxScore = score
 			bestTableIndex = i
 		}
 	}
@@ -192,8 +206,20 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 	for i, table := range data.Tables {
 		rows := make([]interface{}, len(table.Rows))
 		for j, row := range table.Rows {
+			// Convert TableCell structs to interface{} maps
+			cells := make([]interface{}, len(row.Cells))
+			for k, cell := range row.Cells {
+				cells[k] = map[string]interface{}{
+					"Content":    cell.Content,
+					"Style":      cell.Style,
+					"Class":      cell.Class,
+					"ColSpan":    cell.ColSpan,
+					"RowSpan":    cell.RowSpan,
+					"Attributes": cell.Attributes,
+				}
+			}
 			rows[j] = map[string]interface{}{
-				"Cells": row.Cells,
+				"Cells": cells,
 			}
 		}
 		tableData[i] = map[string]interface{}{
@@ -204,7 +230,7 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 	
 	// Generate FCPXML
 	fmt.Printf("Generating FCPXML: %s\n", outputFile)
-	err = fcp.GenerateWikipediaTableFCPXML(tableData, outputFile)
+	err = fcp.GenerateEnhancedWikipediaTableFCPXML(tableData, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}

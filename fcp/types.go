@@ -12,13 +12,21 @@ type FCPXML struct {
 }
 
 type Resources struct {
-	Formats []Format `xml:"format"`
-	Assets  []Asset  `xml:"asset"`
-	Effects []Effect `xml:"effect,omitempty"`
+	Formats    []Format    `xml:"format"`
+	Assets     []Asset     `xml:"asset"`
+	Effects    []Effect    `xml:"effect,omitempty"`
+	Generators []Generator `xml:"generator,omitempty"`
 }
 
 // Effect represents a Motion or standard FCP title effect referenced by <title ref="…"> elements.
 type Effect struct {
+	ID   string `xml:"id,attr"`
+	Name string `xml:"name,attr"`
+	UID  string `xml:"uid,attr,omitempty"`
+}
+
+// Generator represents a built-in shape, color, or generated media
+type Generator struct {
 	ID   string `xml:"id,attr"`
 	Name string `xml:"name,attr"`
 	UID  string `xml:"uid,attr,omitempty"`
@@ -94,22 +102,34 @@ type AssetClip struct {
 }
 
 type Gap struct {
-	Name     string  `xml:"name,attr"`
-	Offset   string  `xml:"offset,attr"`
-	Duration string  `xml:"duration,attr"`
-	Titles   []Title `xml:"title"`
+	Name           string          `xml:"name,attr"`
+	Offset         string          `xml:"offset,attr"`
+	Duration       string          `xml:"duration,attr"`
+	Titles         []Title         `xml:"title,omitempty"`
+	GeneratorClips []GeneratorClip `xml:"generator-clip,omitempty"`
 }
 
 type Title struct {
 	Ref          string       `xml:"ref,attr"`
-	Lane         string       `xml:"lane,attr"`
+	Lane         string       `xml:"lane,attr,omitempty"`
 	Offset       string       `xml:"offset,attr"`
 	Name         string       `xml:"name,attr"`
 	Duration     string       `xml:"duration,attr"`
 	Start        string       `xml:"start,attr,omitempty"`
-	Params       []Param      `xml:"param"`
-	Text         TitleText    `xml:"text"`
-	TextStyleDef TextStyleDef `xml:"text-style-def"`
+	Params       []Param      `xml:"param,omitempty"`
+	Text         TitleText    `xml:"text,omitempty"`
+	TextStyleDef TextStyleDef `xml:"text-style-def,omitempty"`
+}
+
+// GeneratorClip represents a generated media clip (shapes, colors, etc.)
+type GeneratorClip struct {
+	Ref      string  `xml:"ref,attr"`
+	Lane     string  `xml:"lane,attr,omitempty"`
+	Offset   string  `xml:"offset,attr"`
+	Name     string  `xml:"name,attr"`
+	Duration string  `xml:"duration,attr"`
+	Start    string  `xml:"start,attr,omitempty"`
+	Params   []Param `xml:"param,omitempty"`
 }
 
 type Param struct {

@@ -10,8 +10,17 @@ import (
 	"strings"
 )
 
+type TableCell struct {
+	Content    string
+	Style      map[string]string // CSS style attributes
+	Class      string
+	ColSpan    int
+	RowSpan    int
+	Attributes map[string]string // Other HTML attributes
+}
+
 type TableRow struct {
-	Cells []string
+	Cells []TableCell
 }
 
 type Table struct {
@@ -190,7 +199,13 @@ func parseWikiTable(tableSource string) Table {
 		if strings.HasPrefix(line, "!") {
 			if len(table.Headers) == 0 {
 				headerCells := parseTableCells(line, "!")
-				table.Headers = cleanCells(headerCells)
+				var headers []string
+				for _, cell := range headerCells {
+					if strings.TrimSpace(cell.Content) != "" {
+						headers = append(headers, strings.TrimSpace(cell.Content))
+					}
+				}
+				table.Headers = headers
 			}
 			continue
 		}
@@ -200,17 +215,17 @@ func parseWikiTable(tableSource string) Table {
 			if currentRow != nil && len(currentRow.Cells) > 0 {
 				table.Rows = append(table.Rows, *currentRow)
 			}
-			currentRow = &TableRow{Cells: []string{}}
+			currentRow = &TableRow{Cells: []TableCell{}}
 			continue
 		}
 		
 		// Table cell
 		if strings.HasPrefix(line, "|") && !strings.HasPrefix(line, "|}") {
 			if currentRow == nil {
-				currentRow = &TableRow{Cells: []string{}}
+				currentRow = &TableRow{Cells: []TableCell{}}
 			}
 			cells := parseTableCells(line, "|")
-			currentRow.Cells = append(currentRow.Cells, cleanCells(cells)...)
+			currentRow.Cells = append(currentRow.Cells, cells...)
 		}
 	}
 	
@@ -222,39 +237,124 @@ func parseWikiTable(tableSource string) Table {
 	return table
 }
 
-func parseTableCells(line, delimiter string) []string {
+func parseTableCells(line, delimiter string) []TableCell {
 	// Remove the leading delimiter
 	line = strings.TrimPrefix(line, delimiter)
 	
 	// Split by delimiter, but handle cases where delimiter appears in content
 	parts := strings.Split(line, delimiter)
-	var cells []string
+	var cells []TableCell
 	
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part != "" {
-			cells = append(cells, part)
+			cell := parseTableCell(part)
+			cells = append(cells, cell)
 		}
 	}
 	
 	return cells
 }
 
-func cleanCells(cells []string) []string {
-	var cleaned []string
+func parseTableCell(cellContent string) TableCell {
+	cell := TableCell{
+		Style:      make(map[string]string),
+		Attributes: make(map[string]string),
+		ColSpan:    1,
+		RowSpan:    1,
+	}
 	
-	for _, cell := range cells {
-		// Remove wiki markup
-		cell = removeWikiMarkup(cell)
-		cell = strings.TrimSpace(cell)
-		
-		if cell != "" {
-			cleaned = append(cleaned, cell)
+	content := strings.TrimSpace(cellContent)
+	
+	// Check if cell has attributes (contains = before |)
+	if strings.Contains(content, "=") && strings.Contains(content, "|") {
+		parts := strings.SplitN(content, "|", 2)
+		if len(parts) == 2 {
+			attributesPart := strings.TrimSpace(parts[0])
+			cell.Content = strings.TrimSpace(parts[1])
+			
+			// Parse attributes
+			parseHTMLAttributes(attributesPart, &cell)
+		} else {
+			cell.Content = content
+		}
+	} else {
+		cell.Content = content
+	}
+	
+	// Clean up content
+	cell.Content = removeWikiMarkup(cell.Content)
+	
+	return cell
+}
+
+func parseHTMLAttributes(attributeString string, cell *TableCell) {
+	// Parse style attributes like: style="background:lime;" class="highlight" colspan="2"
+	
+	// Extract style attribute
+	styleRegex := regexp.MustCompile(`style\s*=\s*["']([^"']*)["']`)
+	if matches := styleRegex.FindStringSubmatch(attributeString); len(matches) > 1 {
+		parseStyleAttribute(matches[1], cell)
+	}
+	
+	// Extract class attribute
+	classRegex := regexp.MustCompile(`class\s*=\s*["']([^"']*)["']`)
+	if matches := classRegex.FindStringSubmatch(attributeString); len(matches) > 1 {
+		cell.Class = matches[1]
+	}
+	
+	// Extract colspan
+	colspanRegex := regexp.MustCompile(`colspan\s*=\s*["']?(\d+)["']?`)
+	if matches := colspanRegex.FindStringSubmatch(attributeString); len(matches) > 1 {
+		if val := parseInt(matches[1]); val > 0 {
+			cell.ColSpan = val
 		}
 	}
 	
-	return cleaned
+	// Extract rowspan
+	rowspanRegex := regexp.MustCompile(`rowspan\s*=\s*["']?(\d+)["']?`)
+	if matches := rowspanRegex.FindStringSubmatch(attributeString); len(matches) > 1 {
+		if val := parseInt(matches[1]); val > 0 {
+			cell.RowSpan = val
+		}
+	}
+	
+	// Store any other attributes
+	cell.Attributes["raw"] = attributeString
 }
+
+func parseStyleAttribute(styleStr string, cell *TableCell) {
+	// Parse CSS style like "background:lime; color:red; font-weight:bold"
+	stylePairs := strings.Split(styleStr, ";")
+	
+	for _, pair := range stylePairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) == 2 {
+			property := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			cell.Style[property] = value
+		}
+	}
+}
+
+func parseInt(s string) int {
+	// Simple integer parsing - return 0 on error
+	var result int
+	for _, char := range s {
+		if char >= '0' && char <= '9' {
+			result = result*10 + int(char-'0')
+		} else {
+			return 0
+		}
+	}
+	return result
+}
+
 
 func removeWikiMarkup(text string) string {
 	// Remove links [[text|display]] -> display or [[text]] -> text
