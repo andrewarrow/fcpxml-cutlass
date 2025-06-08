@@ -132,16 +132,12 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Start:    "0s",
 			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
-				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1 0 0"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
 			},
-			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("0 %.1f", yOffset), Scale: "1 0.0394"},
+			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("0 %.1f", yOffset), Scale: "30 0.05"},
 		}
 		nestedVideos = append(nestedVideos, horizontalLine)
 		laneCounter++
@@ -157,16 +153,12 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Start:    "0s",
 			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
-				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1 0 0"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
 			},
-			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("%.1f 0", xOffset), Scale: "0.0394 1"},
+			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("%.1f 0", xOffset), Scale: "0.0081 30"},
 		}
 		nestedVideos = append(nestedVideos, verticalLine)
 		laneCounter++
