@@ -506,8 +506,44 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 			}
 		}
 	case AllColumnsAnimated:
-		// For AllColumnsAnimated (traditional tables), don't show static data cells
-		// All data will be shown via animation in generateTraditionalAnimatedData
+		// For traditional tables, show static field names (left column)
+		for fieldIdx := 0; fieldIdx < len(tableData.Headers) && fieldIdx < maxRows; fieldIdx++ {
+			dataRowPos := fieldIdx + 1 // +1 to skip header row
+			if dataRowPos < len(cellTextPositions) && len(cellTextPositions[dataRowPos]) >= 1 {
+				fieldName := tableData.Headers[fieldIdx]
+				fieldStyleID := fmt.Sprintf("static-field-style-%d", fieldIdx)
+				staticFieldTitle := Title{
+					Ref:      "r3",
+					Lane:     fmt.Sprintf("%d", laneCounter),
+					Offset:   "0s",
+					Name:     fmt.Sprintf("Static Field %d", fieldIdx),
+					Start:    "0s",
+					Duration: FormatDurationForFCPXML(totalDuration),
+					Params: []Param{
+						{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[dataRowPos][0].X*10, cellTextPositions[dataRowPos][0].Y*10)},
+					},
+					Text: &TitleText{
+						TextStyle: TextStyleRef{
+							Ref:  fieldStyleID,
+							Text: fieldName,
+						},
+					},
+					TextStyleDef: &TextStyleDef{
+						ID: fieldStyleID,
+						TextStyle: TextStyle{
+							Font:        "Helvetica Neue",
+							FontSize:    "120",
+							FontColor:   "1 1 1 1",
+							Bold:        "1",
+							Alignment:   "center",
+							LineSpacing: "1.08",
+						},
+					},
+				}
+				nestedTitles = append(nestedTitles, staticFieldTitle)
+				laneCounter++
+			}
+		}
 	}
 
 	// Add dynamic time-based data for appropriate table styles
@@ -683,53 +719,11 @@ func generateTraditionalAnimatedData(tableData *TableData, config TableConfig, c
 		}
 		
 		if rowIndex >= 0 && rowIndex < len(tableData.Rows) {
-			// Display each field-value pair vertically in 2-column format (Field | Value)
+			// Display only field values (right column) with animation - left column is already static
 			for fieldIdx := 0; fieldIdx < len(tableData.Headers) && fieldIdx < maxRows; fieldIdx++ {
 				dataRowPos := fieldIdx + 1 // +1 to skip header row
 				if dataRowPos < len(cellTextPositions) && len(cellTextPositions[dataRowPos]) >= 2 {
-					// Field name (left column)
-					fieldName := tableData.Headers[fieldIdx]
-					fieldStyleID := fmt.Sprintf("traditional-field-style-%s-%d", timeHeader, fieldIdx)
-					fieldTitle := Title{
-						Ref:      "r3",
-						Lane:     fmt.Sprintf("%d", *laneCounter),
-						Offset:   timeOffset,
-						Name:     fmt.Sprintf("Traditional Field %s-F%d", timeHeader, fieldIdx),
-						Start:    "0s",
-						Duration: timeDuration,
-						Params: []Param{
-							{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[dataRowPos][0].X*10, cellTextPositions[dataRowPos][0].Y*10)},
-							{Name: "Opacity", Key: "9999/10003/1/100/101", Value: "0", KeyframeAnimation: &KeyframeAnimation{
-								Keyframes: []Keyframe{
-									{Time: "0s", Value: "0"},
-									{Time: "15/30000s", Value: "1"},
-									{Time: "75/30000s", Value: "1"},
-									{Time: "90/30000s", Value: "0"},
-								},
-							}},
-						},
-						Text: &TitleText{
-							TextStyle: TextStyleRef{
-								Ref:  fieldStyleID,
-								Text: fieldName,
-							},
-						},
-						TextStyleDef: &TextStyleDef{
-							ID: fieldStyleID,
-							TextStyle: TextStyle{
-								Font:        "Helvetica Neue",
-								FontSize:    "120",
-								FontColor:   "1 1 1 1",
-								Bold:        "1",
-								Alignment:   "center",
-								LineSpacing: "1.08",
-							},
-						},
-					}
-					*nestedTitles = append(*nestedTitles, fieldTitle)
-					(*laneCounter)++
-
-					// Field value (right column)
+					// Field value (right column) - left column is static
 					fieldValue := ""
 					if fieldIdx < len(tableData.Rows[rowIndex].Cells) {
 						fieldValue = tableData.Rows[rowIndex].Cells[fieldIdx].Content
