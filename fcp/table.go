@@ -208,11 +208,11 @@ func analyzeTableStructure(tableData *TableData) TableConfig {
 			TimeSegments:    timeColumns,
 		}
 	} else if len(timeColumns) > 0 {
-		// Earthquake style: first column static, remaining columns animated
+		// Traditional table with date-based time segments (like earthquakes)
 		return TableConfig{
-			Style:           StaticLeftAnimatedRight,
-			StaticColumns:   []int{0}, // First column static
-			AnimatedColumns: staticColumnIndices[1:], // Remaining columns animated
+			Style:           AllColumnsAnimated,
+			StaticColumns:   staticColumnIndices, // All original columns available
+			AnimatedColumns: []int{}, // No animated columns (data shows as field-value pairs)
 			TimeSegments:    timeColumns,
 		}
 	} else {
@@ -250,7 +250,7 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 	case StaticLeftAnimatedRight:
 		maxCols = 2  // Static column + one animated column
 	case AllColumnsAnimated:
-		maxCols = min(4, len(tableData.Headers))  // Regular static table
+		maxCols = 2  // Traditional table: Field | Value format
 	default:
 		maxCols = min(4, len(tableData.Headers))
 	}
@@ -378,14 +378,15 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 			}
 		}
 	case AllColumnsAnimated:
-		// Static table: show all headers (for traditional tables like earthquakes)
-		for i := 0; i < len(tableData.Headers) && i < maxCols && i < len(cellTextPositions[0]); i++ {
-			headerStyleID := fmt.Sprintf("static-header-style-%d", i)
+		// Traditional table: show "Field" and "Value" headers
+		traditionalHeaders := []string{"Field", "Value"}
+		for i := 0; i < len(traditionalHeaders) && i < maxCols && i < len(cellTextPositions[0]); i++ {
+			headerStyleID := fmt.Sprintf("traditional-header-style-%d", i)
 			headerTitle := Title{
 				Ref:      "r3",
 				Lane:     fmt.Sprintf("%d", laneCounter),
 				Offset:   "0s",
-				Name:     fmt.Sprintf("Static Header %d", i+1),
+				Name:     fmt.Sprintf("Traditional Header %d", i+1),
 				Start:    "0s",
 				Duration: FormatDurationForFCPXML(totalDuration),
 				Params: []Param{
@@ -394,7 +395,7 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 				Text: &TitleText{
 					TextStyle: TextStyleRef{
 						Ref:  headerStyleID,
-						Text: tableData.Headers[i],
+						Text: traditionalHeaders[i],
 					},
 				},
 				TextStyleDef: &TextStyleDef{
@@ -662,7 +663,7 @@ func generateAnimatedData(tableData *TableData, config TableConfig, cellTextPosi
 }
 
 // generateTraditionalAnimatedData handles animated data for traditional tables (like earthquakes)
-// Shows each complete row for 3 seconds with all columns visible
+// Shows each field-value pair vertically in 2-column format for 3 seconds per row
 func generateTraditionalAnimatedData(tableData *TableData, config TableConfig, cellTextPositions [][]Position, nestedTitles *[]Title, laneCounter *int, maxRows, maxCols int) error {
 	for i, timeHeader := range config.TimeSegments {
 		timeOffset := FormatDurationForFCPXML(time.Duration(i*3) * time.Second)
@@ -682,21 +683,68 @@ func generateTraditionalAnimatedData(tableData *TableData, config TableConfig, c
 		}
 		
 		if rowIndex >= 0 && rowIndex < len(tableData.Rows) {
-			// Display all columns for this row in the first data row position (traditional table style)
-			for colIdx := 0; colIdx < len(tableData.Headers) && colIdx < maxCols; colIdx++ {
-				if colIdx < len(tableData.Rows[rowIndex].Cells) && len(cellTextPositions) > 1 && colIdx < len(cellTextPositions[1]) {
-					cellContent := tableData.Rows[rowIndex].Cells[colIdx].Content
-					if cellContent != "" {
-						cellStyleID := fmt.Sprintf("traditional-cell-style-%s-%d", timeHeader, colIdx)
-						traditionalCellTitle := Title{
+			// Display each field-value pair vertically in 2-column format (Field | Value)
+			for fieldIdx := 0; fieldIdx < len(tableData.Headers) && fieldIdx < maxRows; fieldIdx++ {
+				dataRowPos := fieldIdx + 1 // +1 to skip header row
+				if dataRowPos < len(cellTextPositions) && len(cellTextPositions[dataRowPos]) >= 2 {
+					// Field name (left column)
+					fieldName := tableData.Headers[fieldIdx]
+					fieldStyleID := fmt.Sprintf("traditional-field-style-%s-%d", timeHeader, fieldIdx)
+					fieldTitle := Title{
+						Ref:      "r3",
+						Lane:     fmt.Sprintf("%d", *laneCounter),
+						Offset:   timeOffset,
+						Name:     fmt.Sprintf("Traditional Field %s-F%d", timeHeader, fieldIdx),
+						Start:    "0s",
+						Duration: timeDuration,
+						Params: []Param{
+							{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[dataRowPos][0].X*10, cellTextPositions[dataRowPos][0].Y*10)},
+							{Name: "Opacity", Key: "9999/10003/1/100/101", Value: "0", KeyframeAnimation: &KeyframeAnimation{
+								Keyframes: []Keyframe{
+									{Time: "0s", Value: "0"},
+									{Time: "15/30000s", Value: "1"},
+									{Time: "75/30000s", Value: "1"},
+									{Time: "90/30000s", Value: "0"},
+								},
+							}},
+						},
+						Text: &TitleText{
+							TextStyle: TextStyleRef{
+								Ref:  fieldStyleID,
+								Text: fieldName,
+							},
+						},
+						TextStyleDef: &TextStyleDef{
+							ID: fieldStyleID,
+							TextStyle: TextStyle{
+								Font:        "Helvetica Neue",
+								FontSize:    "120",
+								FontColor:   "1 1 1 1",
+								Bold:        "1",
+								Alignment:   "center",
+								LineSpacing: "1.08",
+							},
+						},
+					}
+					*nestedTitles = append(*nestedTitles, fieldTitle)
+					(*laneCounter)++
+
+					// Field value (right column)
+					fieldValue := ""
+					if fieldIdx < len(tableData.Rows[rowIndex].Cells) {
+						fieldValue = tableData.Rows[rowIndex].Cells[fieldIdx].Content
+					}
+					if fieldValue != "" {
+						valueStyleID := fmt.Sprintf("traditional-value-style-%s-%d", timeHeader, fieldIdx)
+						valueTitle := Title{
 							Ref:      "r3",
 							Lane:     fmt.Sprintf("%d", *laneCounter),
 							Offset:   timeOffset,
-							Name:     fmt.Sprintf("Traditional Cell %s-C%d", timeHeader, colIdx),
+							Name:     fmt.Sprintf("Traditional Value %s-V%d", timeHeader, fieldIdx),
 							Start:    "0s",
 							Duration: timeDuration,
 							Params: []Param{
-								{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[1][colIdx].X*10, cellTextPositions[1][colIdx].Y*10)},
+								{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[dataRowPos][1].X*10, cellTextPositions[dataRowPos][1].Y*10)},
 								{Name: "Opacity", Key: "9999/10003/1/100/101", Value: "0", KeyframeAnimation: &KeyframeAnimation{
 									Keyframes: []Keyframe{
 										{Time: "0s", Value: "0"},
@@ -708,12 +756,12 @@ func generateTraditionalAnimatedData(tableData *TableData, config TableConfig, c
 							},
 							Text: &TitleText{
 								TextStyle: TextStyleRef{
-									Ref:  cellStyleID,
-									Text: cellContent,
+									Ref:  valueStyleID,
+									Text: fieldValue,
 								},
 							},
 							TextStyleDef: &TextStyleDef{
-								ID: cellStyleID,
+								ID: valueStyleID,
 								TextStyle: TextStyle{
 									Font:        "Helvetica Neue",
 									FontSize:    "120",
@@ -723,7 +771,7 @@ func generateTraditionalAnimatedData(tableData *TableData, config TableConfig, c
 								},
 							},
 						}
-						*nestedTitles = append(*nestedTitles, traditionalCellTitle)
+						*nestedTitles = append(*nestedTitles, valueTitle)
 						(*laneCounter)++
 					}
 				}
