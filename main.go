@@ -34,6 +34,8 @@ func main() {
 		handleParseCommand(args)
 	case "table":
 		handleTableCommand(args)
+	case "vtt":
+		handleVTTCommand(args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -51,6 +53,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  wikipedia <article-title> Generate FCPXML from Wikipedia tables\n")
 	fmt.Fprintf(os.Stderr, "  parse <fcpxml-file>       Parse and display FCPXML contents\n")
 	fmt.Fprintf(os.Stderr, "  table <article-title>     Display Wikipedia table data\n")
+	fmt.Fprintf(os.Stderr, "  vtt <file>                Parse VTT file and display cleaned text\n")
 	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	fmt.Fprintf(os.Stderr, "  -s, --segments           Break into logical clips with title cards (video/youtube)\n")
@@ -289,6 +292,25 @@ func parseFCPXML(filePath string) error {
 
 	fcp.DisplayFCPXML(fcpxml)
 	return nil
+}
+
+func handleVTTCommand(args []string) {
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: VTT file required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s vtt <file>\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	inputFile := args[0]
+	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: VTT file '%s' does not exist\n", inputFile)
+		os.Exit(1)
+	}
+	
+	if err := vtt.ParseAndDisplayCleanText(inputFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing VTT file: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataColIndex int) {

@@ -176,3 +176,141 @@ func SegmentIntoClips(segments []Segment, minDuration, maxDuration time.Duration
 
 	return clips
 }
+
+// ParseAndDisplayCleanText parses a VTT file and displays cleaned, readable text
+func ParseAndDisplayCleanText(vttPath string) error {
+	segments, err := ParseFile(vttPath)
+	if err != nil {
+		return fmt.Errorf("failed to parse VTT file: %v", err)
+	}
+
+	if len(segments) == 0 {
+		fmt.Printf("No segments found in VTT file\n")
+		return nil
+	}
+
+	fmt.Printf("=== VTT TEXT DISPLAY: %s ===\n\n", vttPath)
+	fmt.Printf("Found %d segments\n\n", len(segments))
+
+	cleanedSegments := removeOverlappingText(segments)
+	
+	fmt.Printf("=== ORIGINAL VTT (choppy) ===\n")
+	for i, segment := range segments {
+		if i >= 10 { // Show first 10 segments as sample
+			fmt.Printf("... (and %d more segments)\n\n", len(segments)-10)
+			break
+		}
+		fmt.Printf("[%v] %s\n", formatDuration(segment.StartTime), segment.Text)
+	}
+	
+	fmt.Printf("=== CLEANED TEXT (with timestamps) ===\n")
+	displayCleanedText(cleanedSegments)
+	
+	return nil
+}
+
+// removeOverlappingText processes VTT segments to remove overlapping text
+func removeOverlappingText(segments []Segment) []Segment {
+	if len(segments) == 0 {
+		return segments
+	}
+	
+	var result []Segment
+	var accumulatedWords []string
+	currentTime := segments[0].StartTime
+	
+	for i, segment := range segments {
+		text := strings.TrimSpace(segment.Text)
+		if text == "" {
+			continue
+		}
+		
+		words := strings.Fields(text)
+		if len(words) == 0 {
+			continue
+		}
+		
+		if i == 0 {
+			// First segment - add all words
+			accumulatedWords = append(accumulatedWords, words...)
+		} else {
+			// Find overlap with accumulated text
+			overlapLen := findOverlapLength(accumulatedWords, words)
+			
+			// Only add the non-overlapping part
+			if overlapLen < len(words) {
+				newWords := words[overlapLen:]
+				accumulatedWords = append(accumulatedWords, newWords...)
+			}
+		}
+		
+		// Check if we should create a sentence break
+		lastWord := words[len(words)-1]
+		if strings.HasSuffix(lastWord, ".") || strings.HasSuffix(lastWord, "!") || strings.HasSuffix(lastWord, "?") {
+			// Create a segment for this sentence
+			if len(accumulatedWords) > 0 {
+				result = append(result, Segment{
+					StartTime: currentTime,
+					EndTime:   segment.EndTime,
+					Text:      strings.Join(accumulatedWords, " "),
+				})
+				accumulatedWords = nil
+				currentTime = segment.EndTime
+			}
+		}
+	}
+	
+	// Add any remaining accumulated text as final segment
+	if len(accumulatedWords) > 0 {
+		result = append(result, Segment{
+			StartTime: currentTime,
+			EndTime:   segments[len(segments)-1].EndTime,
+			Text:      strings.Join(accumulatedWords, " "),
+		})
+	}
+	
+	return result
+}
+
+// findOverlapLength finds how many words from the beginning of newWords
+// match the end of accumulatedWords
+func findOverlapLength(accumulatedWords, newWords []string) int {
+	maxOverlap := min(len(accumulatedWords), len(newWords))
+	
+	for overlapLen := maxOverlap; overlapLen > 0; overlapLen-- {
+		// Check if the last overlapLen words of accumulated match
+		// the first overlapLen words of new
+		match := true
+		for i := 0; i < overlapLen; i++ {
+			accWord := strings.ToLower(strings.Trim(accumulatedWords[len(accumulatedWords)-overlapLen+i], ".,!?;:"))
+			newWord := strings.ToLower(strings.Trim(newWords[i], ".,!?;:"))
+			if accWord != newWord {
+				match = false
+				break
+			}
+		}
+		if match {
+			return overlapLen
+		}
+	}
+	
+	return 0
+}
+
+// displayCleanedText displays the cleaned segments with timestamps
+func displayCleanedText(segments []Segment) {
+	for _, segment := range segments {
+		text := strings.TrimSpace(segment.Text)
+		if text != "" {
+			fmt.Printf("[%v] %s\n", formatDuration(segment.StartTime), text)
+		}
+	}
+	fmt.Println()
+}
+
+// formatDuration formats a time.Duration as MM:SS
+func formatDuration(d time.Duration) string {
+	minutes := int(d.Minutes())
+	seconds := int(d.Seconds()) % 60
+	return fmt.Sprintf("%02d:%02d", minutes, seconds)
+}
