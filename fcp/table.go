@@ -95,9 +95,9 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 
 	totalDuration := 15 * time.Second
 	
-	// Calculate grid dimensions - limit for readability
-	maxRows := min(3, len(tableData.Rows))     // Limit to 3 data rows for readability
-	maxCols := min(3, len(tableData.Headers))  // Limit to 3 columns for readability
+	// Calculate grid dimensions - show more data for a proper table
+	maxRows := min(8, len(tableData.Rows))     // Show up to 8 data rows
+	maxCols := min(6, len(tableData.Headers))  // Show up to 6 columns
 	totalRows := maxRows + 1  // Add 1 for header row
 	
 	fmt.Printf("DEBUG: Creating %dx%d table (including header)\n", totalRows, maxCols)
