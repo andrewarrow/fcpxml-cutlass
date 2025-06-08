@@ -192,7 +192,10 @@ func ParseAndDisplayCleanText(vttPath string) error {
 	fmt.Printf("=== VTT TEXT DISPLAY: %s ===\n\n", vttPath)
 	fmt.Printf("Found %d segments\n\n", len(segments))
 
-	cleanedSegments := removeOverlappingText(segments)
+    // Break into cleaner chunks – default to a maximum of two sentences so the
+    // resulting captions are bite-sized and easier to work with.
+    cleanedSegments := removeOverlappingTextImproved(segments, 1)
+    cleanedSegments = postProcessSegments(cleanedSegments)
 	
 	fmt.Printf("=== ORIGINAL VTT (choppy) ===\n")
 	for i, segment := range segments {
@@ -210,66 +213,216 @@ func ParseAndDisplayCleanText(vttPath string) error {
 }
 
 // removeOverlappingText processes VTT segments to remove overlapping text
-func removeOverlappingText(segments []Segment) []Segment {
-	if len(segments) == 0 {
-		return segments
-	}
-	
-	var result []Segment
-	var accumulatedWords []string
-	currentTime := segments[0].StartTime
-	
-	for i, segment := range segments {
-		text := strings.TrimSpace(segment.Text)
-		if text == "" {
-			continue
-		}
-		
-		words := strings.Fields(text)
-		if len(words) == 0 {
-			continue
-		}
-		
-		if i == 0 {
-			// First segment - add all words
-			accumulatedWords = append(accumulatedWords, words...)
-		} else {
-			// Find overlap with accumulated text
-			overlapLen := findOverlapLength(accumulatedWords, words)
-			
-			// Only add the non-overlapping part
-			if overlapLen < len(words) {
-				newWords := words[overlapLen:]
-				accumulatedWords = append(accumulatedWords, newWords...)
-			}
-		}
-		
-		// Check if we should create a sentence break
-		lastWord := words[len(words)-1]
-		if strings.HasSuffix(lastWord, ".") || strings.HasSuffix(lastWord, "!") || strings.HasSuffix(lastWord, "?") {
-			// Create a segment for this sentence
-			if len(accumulatedWords) > 0 {
-				result = append(result, Segment{
-					StartTime: currentTime,
-					EndTime:   segment.EndTime,
-					Text:      strings.Join(accumulatedWords, " "),
-				})
-				accumulatedWords = nil
-				currentTime = segment.EndTime
-			}
-		}
-	}
-	
-	// Add any remaining accumulated text as final segment
-	if len(accumulatedWords) > 0 {
-		result = append(result, Segment{
-			StartTime: currentTime,
-			EndTime:   segments[len(segments)-1].EndTime,
-			Text:      strings.Join(accumulatedWords, " "),
-		})
-	}
-	
-	return result
+// removeOverlappingTextImproved removes duplicate sliding–window captions *and*
+// splits the incoming stream into logical chunks that contain at most
+// maxSentencesPerSegment sentences (defaults to 1 when set to 0).
+//
+// The original implementation only looked at the *last* word of every incoming
+// VTT fragment to decide whether it should flush the buffer.  Because YouTube
+// (and other) captions often repeat an early-sentence word after the timestamp
+// break, the sentence-terminating punctuation rarely lands on the last token –
+// which resulted in buffers that collected dozens of sentences.  We now inspect
+// every word that is appended, flush whenever we hit a sentence terminator and
+// – optionally – after `maxSentencesPerSegment` sentences have been collected.
+//
+// We also globally deduplicate *whole* segments so identical sentences that are
+// emitted multiple times (very common with YouTube auto-captions) no longer
+// survive the cleaning pass.
+func removeOverlappingTextImproved(segments []Segment, maxSentencesPerSegment int) []Segment {
+    if len(segments) == 0 {
+        return segments
+    }
+
+    if maxSentencesPerSegment <= 0 {
+        maxSentencesPerSegment = 1
+    }
+
+    var result []Segment
+    var accumulatedWords []string       // words for the currently building chunk
+    var sentenceCount int               // how many sentence terminators we've met in the current chunk
+    currentTime := segments[0].StartTime // start time for the current chunk
+
+    // Tail of the *previous* emitted chunk – used so that we can remove any
+    // leading overlap from the *next* chunk.  We keep a small window (20 words)
+    // which is plenty for typical captions.
+    var prevChunkTail []string
+
+    // Keeps track of *entire* cleaned chunks we have already emitted so we can
+    // avoid duplicates like "to have who to have watched this match." which are
+    // sometimes repeated verbatim three or four times in a row.
+    seenChunks := make(map[string]struct{})
+
+    for _, segment := range segments {
+        text := strings.TrimSpace(segment.Text)
+        if text == "" {
+            continue
+        }
+
+        words := strings.Fields(text)
+        if len(words) == 0 {
+            continue
+        }
+
+        // If we're at the very beginning of a fresh chunk (accumulatedWords is
+        // empty) we additionally check for overlap with the *tail* of the
+        // previously emitted chunk so we don't start the new one with text
+        // that we literally just output.
+        var overlapLen int
+        if len(accumulatedWords) == 0 && len(prevChunkTail) > 0 {
+            overlapLen = findOverlapLength(prevChunkTail, words)
+        } else {
+            overlapLen = findOverlapLength(accumulatedWords, words)
+        }
+        if overlapLen < len(words) {
+            words = words[overlapLen:]
+        } else {
+            // Entire set of words already present – skip.
+            continue
+        }
+
+        // Check if the majority of the remaining words are already present in
+        // our current buffer – this is a strong indicator that we are looking
+        // at a pure repetition caused by the sliding-window nature of the
+        // captions.  In that case we simply drop the fragment.
+        if len(accumulatedWords) > 0 {
+            wordSet := make(map[string]struct{}, len(accumulatedWords))
+            for _, w := range accumulatedWords {
+                wordSet[strings.ToLower(w)] = struct{}{}
+            }
+
+            dupCnt := 0
+            for _, w := range words {
+                if _, ok := wordSet[strings.ToLower(w)]; ok {
+                    dupCnt++
+                }
+            }
+            if dupCnt*3 >= len(words)*2 { // > ~66% duplicates -> skip fragment
+                continue
+            }
+        }
+
+        for _, w := range words {
+            accumulatedWords = append(accumulatedWords, w)
+
+            if isSentenceTerminator(w) {
+                sentenceCount++
+                if sentenceCount >= maxSentencesPerSegment {
+                    flushChunk(&result, &accumulatedWords, &sentenceCount, &currentTime, segment.EndTime, seenChunks, &prevChunkTail)
+                }
+            }
+        }
+    }
+
+    // Flush whatever is left.
+    if len(accumulatedWords) > 0 {
+        flushChunk(&result, &accumulatedWords, &sentenceCount, &currentTime, segments[len(segments)-1].EndTime, seenChunks, &prevChunkTail)
+    }
+
+    return result
+}
+
+// postProcessSegments removes any segment that is a full substring of the very next
+// (longer) segment – this happens when the sliding-window ended a sentence midway and
+// we emitted it, but the following chunk already contains it fully.
+func postProcessSegments(segs []Segment) []Segment {
+    if len(segs) < 2 {
+        return segs
+    }
+    var out []Segment
+    for i := 0; i < len(segs); i++ {
+        if i < len(segs)-1 {
+            cur := strings.ToLower(strings.TrimSpace(segs[i].Text))
+            nxt := strings.ToLower(strings.TrimSpace(segs[i+1].Text))
+            if len(cur) < 60 && strings.Contains(nxt, cur) {
+                // Likely redundant stub – drop.
+                continue
+            }
+        }
+        out = append(out, segs[i])
+    }
+    return out
+}
+
+// flushChunk moves the words that are being built up into the results slice,
+// respecting global de-duplication.
+func flushChunk(result *[]Segment, accumulatedWords *[]string, sentenceCount *int, startTime *time.Duration, endTime time.Duration, seen map[string]struct{}, prevChunkTailPtr *[]string) {
+    if len(*accumulatedWords) == 0 {
+        *sentenceCount = 0
+        return
+    }
+
+    text := strings.Join(*accumulatedWords, " ")
+    cleaned := cleanRepeatedWords(strings.TrimSpace(text))
+    if cleaned == "" {
+        *accumulatedWords = nil
+        *sentenceCount = 0
+        return
+    }
+
+    if _, dup := seen[cleaned]; dup {
+        // Skip duplicate chunk.
+        *accumulatedWords = nil
+        *sentenceCount = 0
+        *startTime = endTime
+        return
+    }
+
+    *result = append(*result, Segment{
+        StartTime: *startTime,
+        EndTime:   endTime,
+        Text:      cleaned,
+    })
+
+    seen[cleaned] = struct{}{}
+
+    // Update the previous-chunk tail (last 20 words) so we can use it for
+    // cross-chunk de-duplication on the next pass.
+    words := strings.Fields(cleaned)
+    if len(words) > 20 {
+        words = words[len(words)-20:]
+    }
+    *prevChunkTailPtr = words
+
+    // Reset builders.
+    *accumulatedWords = nil
+    *sentenceCount = 0
+    *startTime = endTime
+}
+
+// isSentenceTerminator returns true if the supplied word concludes with a
+// sentence-ending punctuation mark.
+func isSentenceTerminator(word string) bool {
+    trimmed := strings.TrimSpace(word)
+    if trimmed == "" {
+        return false
+    }
+    last := trimmed[len(trimmed)-1]
+    return last == '.' || last == '!' || last == '?'
+}
+
+// cleanRepeatedWords removes immediate duplicate words (case-insensitive) and also trims
+// redundant "the the", "it's it's" style glitches that survive YouTube’s sliding window
+// captions.
+func cleanRepeatedWords(s string) string {
+    if s == "" {
+        return s
+    }
+    words := strings.Fields(s)
+    if len(words) < 2 {
+        return s
+    }
+    out := make([]string, 0, len(words))
+    prev := ""
+    for _, w := range words {
+        low := strings.ToLower(w)
+        if low == prev {
+            // skip duplicate
+            continue
+        }
+        out = append(out, w)
+        prev = low
+    }
+    return strings.Join(out, " ")
 }
 
 // findOverlapLength finds how many words from the beginning of newWords
