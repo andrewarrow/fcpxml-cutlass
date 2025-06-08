@@ -551,7 +551,10 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 
 	// Add dynamic time-based data (appearing for 3 seconds each)
 	if config.Style == StaticLeftAnimatedRight && len(config.TimeSegments) > 0 && len(cellTextPositions[0]) > 1 {
-		return generateAnimatedData(tableData, config, cellTextPositions, &nestedTitles, &laneCounter, maxRows)
+		err := generateAnimatedData(tableData, config, cellTextPositions, &nestedTitles, &laneCounter, maxRows)
+		if err != nil {
+			return err
+		}
 	}
 	
 	return generateFinalFCPXML(tableData, outputPath, totalDuration, nestedVideos, nestedTitles)
