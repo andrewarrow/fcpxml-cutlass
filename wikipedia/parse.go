@@ -241,8 +241,8 @@ func parseTableCells(line, delimiter string) []TableCell {
 	// Remove the leading delimiter
 	line = strings.TrimPrefix(line, delimiter)
 	
-	// Split by delimiter, but handle cases where delimiter appears in content
-	parts := strings.Split(line, delimiter)
+	// Smart split that considers template boundaries
+	parts := smartSplit(line, delimiter)
 	var cells []TableCell
 	
 	for _, part := range parts {
@@ -254,6 +254,62 @@ func parseTableCells(line, delimiter string) []TableCell {
 	}
 	
 	return cells
+}
+
+func smartSplit(text, delimiter string) []string {
+	var parts []string
+	var current strings.Builder
+	templateDepth := 0
+	linkDepth := 0
+	
+	i := 0
+	for i < len(text) {
+		char := text[i]
+		
+		// Track template depth {{...}}
+		if i < len(text)-1 && text[i:i+2] == "{{" {
+			templateDepth++
+			current.WriteString("{{")
+			i += 2
+			continue
+		} else if i < len(text)-1 && text[i:i+2] == "}}" {
+			templateDepth--
+			current.WriteString("}}")
+			i += 2
+			continue
+		}
+		
+		// Track link depth [[...]]
+		if i < len(text)-1 && text[i:i+2] == "[[" {
+			linkDepth++
+			current.WriteString("[[")
+			i += 2
+			continue
+		} else if i < len(text)-1 && text[i:i+2] == "]]" {
+			linkDepth--
+			current.WriteString("]]")
+			i += 2
+			continue
+		}
+		
+		// Check for delimiter
+		if string(char) == delimiter && templateDepth == 0 && linkDepth == 0 {
+			// Found a delimiter outside of templates/links
+			parts = append(parts, current.String())
+			current.Reset()
+		} else {
+			current.WriteByte(char)
+		}
+		
+		i++
+	}
+	
+	// Add the last part
+	if current.Len() > 0 {
+		parts = append(parts, current.String())
+	}
+	
+	return parts
 }
 
 func parseTableCell(cellContent string) TableCell {
@@ -368,36 +424,173 @@ func removeWikiMarkup(text string) string {
 		return ""
 	}
 	
-	// Remove links [[text|display]] -> display or [[text]] -> text
-	linkRegex := regexp.MustCompile(`\[\[([^|\]]+)(\|([^\]]+))?\]\]`)
-	text = linkRegex.ReplaceAllStringFunc(text, func(match string) string {
-		parts := linkRegex.FindStringSubmatch(match)
-		if len(parts) > 3 && parts[3] != "" {
-			return parts[3] // Use display text
-		}
-		return parts[1] // Use link text
-	})
+	var cleaned = text
 	
-	// Remove templates {{template}}
-	templateRegex := regexp.MustCompile(`\{\{[^}]*\}\}`)
-	text = templateRegex.ReplaceAllString(text, "")
+	// Remove templates with iterative approach like Swift code
+	cleaned = removeTemplates(cleaned)
 	
-	// Remove HTML-like tags
-	htmlRegex := regexp.MustCompile(`<[^>]*>`)
-	text = htmlRegex.ReplaceAllString(text, "")
+	// Remove references
+	cleaned = removeReferences(cleaned)
 	
-	// Remove HTML attributes that may appear in cell content
-	attrRegex := regexp.MustCompile(`\w+\s*=\s*"[^"]*"`)
-	text = attrRegex.ReplaceAllString(text, "")
+	// Clean up links
+	cleaned = cleanLinks(cleaned)
 	
-	// Remove formatting
-	text = strings.ReplaceAll(text, "'''", "")
-	text = strings.ReplaceAll(text, "''", "")
+	// Remove categories
+	cleaned = removeCategories(cleaned)
+	
+	// Process text formatting (bold, italic, headings)
+	cleaned = processTextFormatting(cleaned)
+	
+	// Remove HTML tags and decode entities
+	cleaned = strings.ReplaceAll(cleaned, "<br/>", " ")
+	cleaned = strings.ReplaceAll(cleaned, "<br>", " ")
+	htmlCommentRegex := regexp.MustCompile(`<!--.*?-->`)
+	cleaned = htmlCommentRegex.ReplaceAllString(cleaned, "")
+	subRegex := regexp.MustCompile(`<sub>.*?</sub>`)
+	cleaned = subRegex.ReplaceAllString(cleaned, "")
+	supRegex := regexp.MustCompile(`<sup>.*?</sup>`)
+	cleaned = supRegex.ReplaceAllString(cleaned, "")
+	sRegex := regexp.MustCompile(`<s>.*?</s>`)
+	cleaned = sRegex.ReplaceAllString(cleaned, "")
+	delRegex := regexp.MustCompile(`<del>.*?</del>`)
+	cleaned = delRegex.ReplaceAllString(cleaned, "")
+	uRegex := regexp.MustCompile(`<u>.*?</u>`)
+	cleaned = uRegex.ReplaceAllString(cleaned, "")
+	cleaned = strings.ReplaceAll(cleaned, "&nbsp;", " ")
+	cleaned = strings.ReplaceAll(cleaned, "\u00A0", " ")
+	cleaned = strings.ReplaceAll(cleaned, "&amp;", "&")
+	cleaned = strings.ReplaceAll(cleaned, "&lt;", "<")
+	cleaned = strings.ReplaceAll(cleaned, "&gt;", ">")
+	cleaned = strings.ReplaceAll(cleaned, "&quot;", "\"")
 	
 	// Remove extra whitespace
-	text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+	spaceRegex := regexp.MustCompile(`\s+`)
+	cleaned = spaceRegex.ReplaceAllString(cleaned, " ")
 	
-	return strings.TrimSpace(text)
+	return strings.TrimSpace(cleaned)
+}
+
+func removeTemplates(text string) string {
+	result := text
+	
+	// Handle special templates that should be converted rather than removed
+	langxRegex := regexp.MustCompile(`\{\{langx\|he\|([^}]+)\}\}`)
+	result = langxRegex.ReplaceAllString(result, "(Hebrew: $1)")
+	mklinkRegex := regexp.MustCompile(`\{\{MKlink\|id=([^}]+)\}\}`)
+	result = mklinkRegex.ReplaceAllString(result, "EXTLINK:Knesset Member Profile")
+	
+	// Handle date templates specially - extract the year from date templates
+	dtsRegex := regexp.MustCompile(`\{\{Dts\|(\d{4})\|(\d{1,2})\|(\d{1,2})\}\}`)
+	result = dtsRegex.ReplaceAllString(result, "$1-$2-$3")
+	
+	// Handle other date template formats
+	dtsShortRegex := regexp.MustCompile(`\{\{Dts\|(\d{4})\}\}`)
+	result = dtsShortRegex.ReplaceAllString(result, "$1")
+	
+	// More aggressive template removal for remaining templates
+	previousLength := 0
+	iterations := 0
+	maxIterations := 10
+	
+	for len(result) != previousLength && iterations < maxIterations {
+		previousLength = len(result)
+		iterations++
+		
+		// Remove simple templates (non-nested)
+		simpleTemplateRegex := regexp.MustCompile(`\{\{[^{}]*\}\}`)
+		result = simpleTemplateRegex.ReplaceAllString(result, "")
+		
+		// Remove any remaining opening/closing braces that might be unmatched
+		openBraceRegex := regexp.MustCompile(`\{\{`)
+		result = openBraceRegex.ReplaceAllString(result, "")
+		closeBraceRegex := regexp.MustCompile(`\}\}`)
+		result = closeBraceRegex.ReplaceAllString(result, "")
+	}
+	
+	// Also remove lines that look like template parameters but weren't caught
+	lines := strings.Split(result, "\n")
+	var filteredLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "|") && !strings.HasPrefix(trimmed, "Infobox") {
+			filteredLines = append(filteredLines, line)
+		}
+	}
+	result = strings.Join(filteredLines, "\n")
+	
+	return result
+}
+
+func removeReferences(text string) string {
+	result := text
+	// Remove <ref...>...</ref> and <ref ... />
+	refRegex := regexp.MustCompile(`<ref[^>]*>.*?</ref>`)
+	result = refRegex.ReplaceAllString(result, "")
+	refSelfClosingRegex := regexp.MustCompile(`<ref[^>]*/\>`)
+	result = refSelfClosingRegex.ReplaceAllString(result, "")
+	return result
+}
+
+func cleanLinks(text string) string {
+	result := text
+	
+	// Remove file/image links completely [[File:...]] or [[Image:...]]
+	fileImageRegex := regexp.MustCompile(`\[\[(?:File|Image):[^\]]*\]\]`)
+	result = fileImageRegex.ReplaceAllString(result, "")
+	
+	// Remove category links completely
+	categoryRegex := regexp.MustCompile(`\[\[Category:[^\]]*\]\]`)
+	result = categoryRegex.ReplaceAllString(result, "")
+	
+	// Handle piped links [[target|display]] -> keep as linkable text with special marker
+	pipedLinkRegex := regexp.MustCompile(`\[\[[^|\]]*\|([^\]]+)\]\]`)
+	result = pipedLinkRegex.ReplaceAllString(result, "WIKILINK:$1")
+	
+	// Handle simple links [[target]] -> keep as linkable text with special marker
+	simpleLinkRegex := regexp.MustCompile(`\[\[([^\]]+)\]\]`)
+	result = simpleLinkRegex.ReplaceAllString(result, "WIKILINK:$1")
+	
+	return result
+}
+
+func removeCategories(text string) string {
+	result := text
+	// Remove any remaining category lines that start with "Category:"
+	lines := strings.Split(result, "\n")
+	var filteredLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "Category:") {
+			filteredLines = append(filteredLines, line)
+		}
+	}
+	return strings.Join(filteredLines, "\n")
+}
+
+func processTextFormatting(text string) string {
+	result := text
+	
+	// Process headings first (6 levels: ======heading====== down to ==heading==)
+	for level := 6; level >= 2; level-- {
+		pattern := strings.Repeat("=", level) + "([^=]+)" + strings.Repeat("=", level)
+		headingRegex := regexp.MustCompile(pattern)
+		result = headingRegex.ReplaceAllString(result, "$1")
+	}
+	
+	// Process bold and italic formatting
+	// Handle bold-italic combination first: '''''text'''''  
+	boldItalicRegex := regexp.MustCompile(`'{5}([^']+)'{5}`)
+	result = boldItalicRegex.ReplaceAllString(result, "$1")
+	
+	// Handle bold: '''text'''
+	boldRegex := regexp.MustCompile(`'{3}([^']+)'{3}`)
+	result = boldRegex.ReplaceAllString(result, "$1")
+	
+	// Handle italic: ''text''
+	italicRegex := regexp.MustCompile(`'{2}([^']+)'{2}`)
+	result = italicRegex.ReplaceAllString(result, "$1")
+	
+	return result
 }
 
 func min(a, b int) int {
