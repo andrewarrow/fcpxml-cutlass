@@ -134,7 +134,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0 0.0 0.0"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -159,7 +159,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0 0.0 0.0"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -179,6 +179,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	// Add header text
 	for col := 0; col < maxCols && col < len(tableData.Headers); col++ {
 		if col < len(cellTextPositions[0]) {
+			styleID := fmt.Sprintf("header-style-%d", col+1)
 			headerTitle := Title{
 				Ref:      "r3",
 				Lane:     fmt.Sprintf("%d", laneCounter),
@@ -187,13 +188,24 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				Start:    "0s",
 				Duration: FormatDurationForFCPXML(totalDuration),
 				Params: []Param{
-					{Name: "Text", Key: "9999/999166631/999166633/1/100/101", Value: tableData.Headers[col]},
-					{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 24"},
-					{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
-					{Name: "Line Spacing", Key: "9999/999166631/999166633/2/354/19", Value: "1.08"},
-					{Name: "Tracking", Key: "9999/999166631/999166633/2/354/999169688/999169690/401", Value: "0"},
-					{Name: "Face", Key: "9999/999166631/999166633/2/360/999169588/999169590/401", Value: "Bold"},
 					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][col].X*10, cellTextPositions[0][col].Y*10)},
+				},
+				Text: &TitleText{
+					TextStyle: TextStyleRef{
+						Ref:  styleID,
+						Text: tableData.Headers[col],
+					},
+				},
+				TextStyleDef: &TextStyleDef{
+					ID: styleID,
+					TextStyle: TextStyle{
+						Font:        "Helvetica Neue",
+						FontSize:    "28",
+						FontColor:   "1 1 1 1",
+						Bold:        "1",
+						Alignment:   "center",
+						LineSpacing: "1.08",
+					},
 				},
 			}
 			nestedTitles = append(nestedTitles, headerTitle)
@@ -207,6 +219,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			if row+1 < len(cellTextPositions) && col < len(cellTextPositions[row+1]) {
 				cellContent := tableData.Rows[row].Cells[col].Content
 				if cellContent != "" {
+					cellStyleID := fmt.Sprintf("cell-style-%d-%d", row+1, col+1)
 					dataTitle := Title{
 						Ref:      "r3",
 						Lane:     fmt.Sprintf("%d", laneCounter),
@@ -215,13 +228,23 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 						Start:    "0s",
 						Duration: FormatDurationForFCPXML(totalDuration),
 						Params: []Param{
-							{Name: "Text", Key: "9999/999166631/999166633/1/100/101", Value: cellContent},
-							{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 20"},
-							{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
-							{Name: "Line Spacing", Key: "9999/999166631/999166633/2/354/19", Value: "1.08"},
-							{Name: "Tracking", Key: "9999/999166631/999166633/2/354/999169688/999169690/401", Value: "0"},
-							{Name: "Face", Key: "9999/999166631/999166633/2/360/999169588/999169590/401", Value: "Regular"},
 							{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
+						},
+						Text: &TitleText{
+							TextStyle: TextStyleRef{
+								Ref:  cellStyleID,
+								Text: cellContent,
+							},
+						},
+						TextStyleDef: &TextStyleDef{
+							ID: cellStyleID,
+							TextStyle: TextStyle{
+								Font:        "Helvetica Neue",
+								FontSize:    "18",
+								FontColor:   "1 1 1 1",
+								Alignment:   "center",
+								LineSpacing: "1.08",
+							},
 						},
 					}
 					nestedTitles = append(nestedTitles, dataTitle)
