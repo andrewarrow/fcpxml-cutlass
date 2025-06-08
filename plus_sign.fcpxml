@@ -17,15 +17,15 @@
                             <param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
                             <param name="Corners" key="9999/988461322/100/988469428/2/100" value="1 (Square)"/>
                             <adjust-transform position="0 0" scale="30 0.05" rotation="0" anchor="0 0"/>
-                        </video>
-                        
-                        <!-- Vertical line - stretched rectangle -->
-                        <video ref="r2" lane="1" offset="0s" duration="300300/30000s" name="Vertical Line">
-                            <param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
-                            <param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="1 0 0"/>
-                            <param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
-                            <param name="Corners" key="9999/988461322/100/988469428/2/100" value="1 (Square)"/>
-                            <adjust-transform position="0 0" scale="0.05 30" rotation="0" anchor="0 0"/>
+                            
+                            <!-- Vertical line - stretched rectangle NESTED for stacking -->
+                            <video ref="r2" lane="1" offset="0s" duration="300300/30000s" name="Vertical Line">
+                                <param name="Shape" key="9999/988461322/100/988461395/2/100" value="4 (Rectangle)"/>
+                                <param name="Fill Color" key="9999/988455508/988455699/2/353/113/111" value="1 0 0"/>
+                                <param name="Outline" key="9999/988461322/100/988464485/2/100" value="0"/>
+                                <param name="Corners" key="9999/988461322/100/988469428/2/100" value="1 (Square)"/>
+                                <adjust-transform position="0 0" scale="0.05 30" rotation="0" anchor="0 0"/>
+                            </video>
                         </video>
                     </spine>
                 </sequence>
