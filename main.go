@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"cutalyst/fcp"
-	"cutalyst/vtt"
-	"cutalyst/wikipedia"
-	"cutalyst/youtube"
+	"cutlass/fcp"
+	"cutlass/vtt"
+	"cutlass/wikipedia"
+	"cutlass/youtube"
 )
 
 func main() {
@@ -168,7 +168,7 @@ func parseFCPXML(filePath string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fcp.DisplayFCPXML(fcpxml)
 	return nil
 }
@@ -180,55 +180,55 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch Wikipedia source: %v", err)
 	}
-	
+
 	// Parse the source to extract tables
 	fmt.Printf("Parsing Wikipedia source for tables...\n")
 	data, err := wikipedia.ParseWikiSource(source)
 	if err != nil {
 		return fmt.Errorf("failed to parse Wikipedia source: %v", err)
 	}
-	
+
 	if len(data.Tables) == 0 {
 		return fmt.Errorf("no tables found in Wikipedia article")
 	}
-	
+
 	fmt.Printf("Found %d tables, selecting the best one for FCPXML generation\n", len(data.Tables))
-	
+
 	// Find the table with tournament data (look for year headers like 1986)
 	bestTableIndex := 0
 	maxScore := 0
 	for i, table := range data.Tables {
 		fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
 		fmt.Printf("  Headers: %v\n", table.Headers)
-		
+
 		score := 0
 		// Score based on headers containing years and tournaments
 		for _, header := range table.Headers {
-			if strings.Contains(header, "1986") || strings.Contains(header, "1987") || 
-			   strings.Contains(header, "Tournament") || strings.Contains(header, "Grand") {
+			if strings.Contains(header, "1986") || strings.Contains(header, "1987") ||
+				strings.Contains(header, "Tournament") || strings.Contains(header, "Grand") {
 				score += 10
 			}
 		}
 		// Score based on number of headers (more headers = likely the main table)
 		score += len(table.Headers)
-		
+
 		fmt.Printf("  Score: %d\n", score)
 		if score > maxScore {
 			maxScore = score
 			bestTableIndex = i
 		}
 	}
-	
+
 	table := data.Tables[bestTableIndex]
 	fmt.Printf("Table headers: %v\n", table.Headers)
 	fmt.Printf("Table has %d rows\n", len(table.Rows))
-	
+
 	// Convert the selected table to the structured TableData format
 	tableData := &fcp.TableData{
 		Headers: table.Headers,
 		Rows:    make([]fcp.TableRow, len(table.Rows)),
 	}
-	
+
 	for i, row := range table.Rows {
 		tableData.Rows[i] = fcp.TableRow{
 			Cells: make([]fcp.TableCell, len(row.Cells)),
@@ -244,14 +244,14 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 			}
 		}
 	}
-	
+
 	// Generate FCPXML
 	fmt.Printf("Generating FCPXML: %s\n", outputFile)
 	err = fcp.GenerateTableGridFCPXML(tableData, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
-	
+
 	fmt.Printf("Successfully generated Wikipedia table FCPXML: %s\n", outputFile)
 	return nil
 }

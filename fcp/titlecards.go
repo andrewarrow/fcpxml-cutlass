@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"cutalyst/vtt"
+	"cutlass/vtt"
 )
 
 func GenerateClipFCPXML(clips []vtt.Clip, videoPath, outputPath string) error {
@@ -81,7 +81,7 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 				},
 			},
 		}
-		
+
 		gapXML, err := xml.Marshal(gap)
 		if err != nil {
 			return FCPXML{}, fmt.Errorf("error marshaling gap XML: %v", err)
@@ -100,7 +100,7 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
 		}
-		
+
 		clipXML, err := xml.Marshal(assetClip)
 		if err != nil {
 			return FCPXML{}, fmt.Errorf("error marshaling asset clip XML: %v", err)
