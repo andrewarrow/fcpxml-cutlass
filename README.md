@@ -1,6 +1,12 @@
 # fcpxml-cutlass
 
-[![Go Version](https://img.shields.io/badge/go-1.23.5-blue.svg)](https://golang.org)
+https://fcp.cafe/developers/fcpxml/
+https://fcp.cafe/developer-case-studies/fcpxml/
+
+https://github.com/CommandPost/CommandPost/tree/develop/src/extensions/cp/apple/fcpxml/dtd
+https://github.com/orchetect/DAWFileKit
+
+https://developer.apple.com/documentation/professional-video-applications/fcpxml-reference
 
 ## 🎯 Overview
 
