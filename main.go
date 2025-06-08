@@ -19,10 +19,12 @@ func main() {
 	var segmentMode bool
 	var wikipediaMode bool
 	var parseMode bool
+	var tableMode bool
 	flag.StringVar(&inputFile, "i", "", "Input file (required)")
 	flag.BoolVar(&segmentMode, "s", false, "Segment mode: break into logical clips with title cards")
 	flag.BoolVar(&wikipediaMode, "w", false, "Wikipedia mode: create FCPXML from Wikipedia article tables")
 	flag.BoolVar(&parseMode, "p", false, "Parse mode: parse and display existing FCPXML file")
+	flag.BoolVar(&tableMode, "t", false, "Table mode: parse and display Wikipedia table data")
 	flag.Parse()
 
 	args := flag.Args()
@@ -31,6 +33,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  -s: Segment mode - break video into logical clips with title cards\n")
 		fmt.Fprintf(os.Stderr, "  -w: Wikipedia mode - create FCPXML from Wikipedia article tables\n")
 		fmt.Fprintf(os.Stderr, "  -p: Parse mode - parse and display existing FCPXML file\n")
+		fmt.Fprintf(os.Stderr, "  -t: Table mode - parse and display Wikipedia table data\n")
 		os.Exit(1)
 	}
 
@@ -46,6 +49,15 @@ func main() {
 	if parseMode {
 		if err := parseFCPXML(inputFile); err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing FCPXML: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Handle table mode
+	if tableMode {
+		if err := parseWikipediaTables(inputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing Wikipedia tables: %v\n", err)
 			os.Exit(1)
 		}
 		return
@@ -170,6 +182,63 @@ func parseFCPXML(filePath string) error {
 	}
 
 	fcp.DisplayFCPXML(fcpxml)
+	return nil
+}
+
+func parseWikipediaTables(articleTitle string) error {
+	// Fetch Wikipedia source
+	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
+	source, err := wikipedia.FetchWikipediaSource(articleTitle)
+	if err != nil {
+		return fmt.Errorf("failed to fetch Wikipedia source: %v", err)
+	}
+
+	// Parse the source to extract tables
+	fmt.Printf("Parsing Wikipedia source for tables...\n")
+	tables, err := wikipedia.ParseWikitableFromSource(source)
+	if err != nil {
+		return fmt.Errorf("failed to parse Wikipedia source: %v", err)
+	}
+
+	if len(tables) == 0 {
+		fmt.Printf("No tables found in Wikipedia article '%s'\n", articleTitle)
+		return nil
+	}
+
+	// Display all tables found
+	fmt.Printf("\n=== FOUND %d TABLES IN WIKIPEDIA ARTICLE '%s' ===\n\n", len(tables), articleTitle)
+	
+	for i, table := range tables {
+		fmt.Printf("TABLE %d:\n", i+1)
+		fmt.Printf("--------\n")
+		fmt.Printf("Headers (%d): %v\n", len(table.Headers), table.Headers)
+		fmt.Printf("Rows: %d\n", len(table.Rows))
+		
+		if len(table.Rows) > 0 {
+			fmt.Printf("\nFirst 5 rows:\n")
+			for j, row := range table.Rows {
+				if j >= 5 {
+					break
+				}
+				fmt.Printf("  Row %d: %v\n", j+1, row)
+			}
+			
+			if len(table.Rows) > 5 {
+				fmt.Printf("  ... (and %d more rows)\n", len(table.Rows)-5)
+			}
+		}
+		fmt.Printf("\n")
+	}
+
+	// Show best table selection
+	bestTable := wikipedia.SelectBestTable(tables)
+	if bestTable != nil {
+		fmt.Printf("=== BEST TABLE FOR FCPXML GENERATION ===\n")
+		fmt.Printf("Headers: %v\n", bestTable.Headers)
+		fmt.Printf("Total rows: %d\n", len(bestTable.Rows))
+		fmt.Printf("Table data is ready for FCPXML generation\n")
+	}
+
 	return nil
 }
 
