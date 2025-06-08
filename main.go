@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,8 @@ func main() {
 		handleTableCommand(args)
 	case "vtt":
 		handleVTTCommand(args)
+	case "vtt-clips":
+		handleVTTClipsCommand(args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -54,6 +57,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  parse <fcpxml-file>       Parse and display FCPXML contents\n")
 	fmt.Fprintf(os.Stderr, "  table <article-title>     Display Wikipedia table data\n")
 	fmt.Fprintf(os.Stderr, "  vtt <file>                Parse VTT file and display cleaned text\n")
+	fmt.Fprintf(os.Stderr, "  vtt-clips <vtt-file> <timecodes> Create FCPXML clips from VTT file at specified timecodes\n")
 	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	fmt.Fprintf(os.Stderr, "  -s, --segments           Break into logical clips with title cards (video/youtube)\n")
@@ -702,4 +706,205 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 
 	fmt.Printf("Successfully generated Wikipedia table FCPXML: %s\n", outputFile)
 	return nil
+}
+
+func handleVTTClipsCommand(args []string) {
+	fs := flag.NewFlagSet("vtt-clips", flag.ExitOnError)
+	var outputFile string
+	
+	fs.StringVar(&outputFile, "o", "", "Output file (default: <vtt-basename>_clips.fcpxml)")
+	fs.StringVar(&outputFile, "output", "", "Output file (default: <vtt-basename>_clips.fcpxml)")
+	
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	
+	if fs.NArg() < 2 {
+		fmt.Fprintf(os.Stderr, "Error: VTT file and timecodes required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s vtt-clips <vtt-file> <timecodes>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Example: %s vtt-clips IBnNedMh4Pg.en.vtt 01:21,02:20,03:34,05:07\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	vttFile := fs.Arg(0)
+	timecodesStr := fs.Arg(1)
+	
+	if _, err := os.Stat(vttFile); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: VTT file '%s' does not exist\n", vttFile)
+		os.Exit(1)
+	}
+	
+	if err := generateVTTClips(vttFile, timecodesStr, outputFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating VTT clips: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func generateVTTClips(vttFile, timecodesStr, outputFile string) error {
+	// Parse VTT filename to extract base ID (e.g., "IBnNedMh4Pg" from "IBnNedMh4Pg.en.vtt")
+	baseName := filepath.Base(vttFile)
+	
+	// Remove .en.vtt suffix
+	var videoID string
+	if strings.HasSuffix(baseName, ".en.vtt") {
+		videoID = strings.TrimSuffix(baseName, ".en.vtt")
+	} else if strings.HasSuffix(baseName, ".vtt") {
+		videoID = strings.TrimSuffix(baseName, ".vtt")
+	} else {
+		return fmt.Errorf("VTT file must end with .vtt or .en.vtt")
+	}
+	
+	// Find corresponding MOV file in same directory
+	vttDir := filepath.Dir(vttFile)
+	videoFile := filepath.Join(vttDir, videoID+".mov")
+	
+	if _, err := os.Stat(videoFile); os.IsNotExist(err) {
+		return fmt.Errorf("corresponding video file not found: %s", videoFile)
+	}
+	
+	// Parse timecodes (format: "01:21,02:20,03:34,05:07")
+	timecodeStrs := strings.Split(timecodesStr, ",")
+	if len(timecodeStrs) == 0 {
+		return fmt.Errorf("no timecodes provided")
+	}
+	
+	var timecodes []time.Duration
+	for _, tc := range timecodeStrs {
+		tc = strings.TrimSpace(tc)
+		duration, err := parseTimecode(tc)
+		if err != nil {
+			return fmt.Errorf("invalid timecode '%s': %v", tc, err)
+		}
+		timecodes = append(timecodes, duration)
+	}
+	
+	// Set default output file if not provided
+	if outputFile == "" {
+		outputFile = filepath.Join(vttDir, videoID+"_clips.fcpxml")
+	}
+	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
+		outputFile += ".fcpxml"
+	}
+	
+	// Parse VTT file to get all segments
+	segments, err := vtt.ParseFile(vttFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse VTT file: %v", err)
+	}
+	
+	// Create clips from timecodes
+	clips, err := createClipsFromTimecodes(segments, timecodes)
+	if err != nil {
+		return fmt.Errorf("failed to create clips: %v", err)
+	}
+	
+	// Generate FCPXML
+	fmt.Printf("Generating FCPXML with %d clips from %s\n", len(clips), videoFile)
+	err = fcp.GenerateClipFCPXML(clips, videoFile, outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to generate FCPXML: %v", err)
+	}
+	
+	fmt.Printf("Successfully generated %s with %d clips\n", outputFile, len(clips))
+	return nil
+}
+
+// parseTimecode parses MM:SS format timecode to time.Duration
+func parseTimecode(timecode string) (time.Duration, error) {
+	parts := strings.Split(timecode, ":")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("timecode must be in MM:SS format")
+	}
+	
+	minutes, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, fmt.Errorf("invalid minutes: %v", err)
+	}
+	
+	seconds, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("invalid seconds: %v", err)
+	}
+	
+	if minutes < 0 || seconds < 0 || seconds >= 60 {
+		return 0, fmt.Errorf("invalid time values")
+	}
+	
+	return time.Duration(minutes)*time.Minute + time.Duration(seconds)*time.Second, nil
+}
+
+// createClipsFromTimecodes creates clips starting at specified timecodes
+func createClipsFromTimecodes(segments []vtt.Segment, timecodes []time.Duration) ([]vtt.Clip, error) {
+	var clips []vtt.Clip
+	
+	for i, startTime := range timecodes {
+		// Find segments around this timecode
+		var clipSegments []vtt.Segment
+		var clipText []string
+		
+		// Find the first segment at or after the timecode
+		for _, segment := range segments {
+			if segment.StartTime >= startTime {
+				clipSegments = append(clipSegments, segment)
+				clipText = append(clipText, segment.Text)
+				break
+			}
+		}
+		
+		if len(clipSegments) == 0 {
+			// If no segment found at or after timecode, find the closest one before
+			var closestSegment *vtt.Segment
+			for _, segment := range segments {
+				if segment.EndTime <= startTime {
+					if closestSegment == nil || segment.StartTime > closestSegment.StartTime {
+						closestSegment = &segment
+					}
+				}
+			}
+			if closestSegment != nil {
+				clipSegments = append(clipSegments, *closestSegment)
+				clipText = append(clipText, closestSegment.Text)
+			} else {
+				return nil, fmt.Errorf("no VTT segment found near timecode %v", startTime)
+			}
+		}
+		
+		// Determine clip duration and end time
+		var endTime time.Duration
+		if i < len(timecodes)-1 {
+			// End at the next timecode
+			endTime = timecodes[i+1]
+		} else {
+			// For the last clip, extend by default duration or to the end of segments
+			if len(clipSegments) > 0 {
+				endTime = clipSegments[len(clipSegments)-1].EndTime + 10*time.Second
+			} else {
+				endTime = startTime + 30*time.Second // Default 30s clip
+			}
+		}
+		
+		// Ensure minimum clip duration
+		minDuration := 5 * time.Second
+		if endTime-startTime < minDuration {
+			endTime = startTime + minDuration
+		}
+		
+		firstSegmentText := ""
+		if len(clipSegments) > 0 {
+			firstSegmentText = clipSegments[0].Text
+		}
+		
+		clip := vtt.Clip{
+			StartTime:        startTime,
+			EndTime:          endTime,
+			Duration:         endTime - startTime,
+			Text:             strings.Join(clipText, " "),
+			FirstSegmentText: firstSegmentText,
+			ClipNum:          i + 1,
+		}
+		
+		clips = append(clips, clip)
+	}
+	
+	return clips, nil
 }

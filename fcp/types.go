@@ -88,6 +88,7 @@ type Spine struct {
 }
 
 type AssetClip struct {
+	XMLName   xml.Name `xml:"asset-clip"`
 	Ref       string `xml:"ref,attr"`
 	Offset    string `xml:"offset,attr"`
 	Name      string `xml:"name,attr"`
@@ -99,6 +100,7 @@ type AssetClip struct {
 }
 
 type Gap struct {
+	XMLName        xml.Name        `xml:"gap"`
 	Name           string          `xml:"name,attr"`
 	Offset         string          `xml:"offset,attr"`
 	Duration       string          `xml:"duration,attr"`

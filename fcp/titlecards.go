@@ -76,6 +76,7 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 							Font:      "Helvetica Neue",
 							FontSize:  "176.8",
 							FontColor: "1 1 1 1",
+							Alignment: "center",
 						},
 					},
 				},
@@ -97,6 +98,7 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 			Name:      fmt.Sprintf("%s Clip %d", nameWithoutExt, clip.ClipNum),
 			Start:     FormatDurationForFCPXML(clip.StartTime),
 			Duration:  FormatDurationForFCPXML(clip.Duration),
+			Format:    "r1",
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
 		}
@@ -111,7 +113,7 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 	}
 
 	return FCPXML{
-		Version: "1.11",
+		Version: "1.13",
 		Resources: Resources{
 			Formats: []Format{
 				{
