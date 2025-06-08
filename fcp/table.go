@@ -123,30 +123,32 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	fmt.Printf("DEBUG: Table has %d data rows + 1 header = %d total rows, so need %d horizontal lines\n", 
 		len(tableData.Rows), numRows, numRows+1)
 	
-	// Calculate positions for proper table grid with better spacing
-	tableTop := 0.1     // Start table near top of screen  
-	tableBottom := 0.9  // End table near bottom of screen - use more space
-	tableLeft := 0.05   // Start table near left edge
-	tableRight := 0.95  // End table near right edge
+	// Calculate positions using the proper method from long.fcpxml - position-based transforms from center
+	// All lines center at "0.5 0.5" and use adjust-transform position to move them
 	
-	// Limit rows and columns for text-friendly cells
-	maxVisibleRows := min(4, numRows)  // Show max 4 rows for larger cells
-	maxVisibleCols := min(5, len(tableData.Headers))  // Show max 5 columns for larger cells
+	// Limit rows and columns for much larger, text-friendly cells
+	maxVisibleRows := min(3, numRows)  // Show max 3 rows for much larger cells
+	maxVisibleCols := min(3, len(tableData.Headers))  // Show max 3 columns for much larger cells
 	
-	// Calculate horizontal line positions (rows) with increased spacing
-	var tableHorizontalPositions []float64
+	// Calculate horizontal line position offsets (Y-axis) - from center (0.5) using position transform
+	// Using larger spacing values like in long.fcpxml for full-screen coverage
+	var horizontalPositionOffsets []float64
+	totalHeight := 200.0  // Total span in position units (full screen height coverage)
 	for i := 0; i <= maxVisibleRows; i++ {
-		yPos := tableTop + (tableBottom-tableTop)*float64(i)/float64(maxVisibleRows)
-		tableHorizontalPositions = append(tableHorizontalPositions, yPos)
-		fmt.Printf("DEBUG: Horizontal line %d at Y=%.3f\n", i, yPos)
+		// Center around 0, spread over totalHeight
+		yOffset := -totalHeight/2 + totalHeight*float64(i)/float64(maxVisibleRows)
+		horizontalPositionOffsets = append(horizontalPositionOffsets, yOffset)
+		fmt.Printf("DEBUG: Horizontal line %d at position offset Y=%.1f\n", i, yOffset)
 	}
 	
-	// Calculate vertical line positions (columns) with increased spacing
-	var tableVerticalPositions []float64
+	// Calculate vertical line position offsets (X-axis) - from center (0.5) using position transform  
+	var verticalPositionOffsets []float64
+	totalWidth := 300.0   // Total span in position units (full screen width coverage)
 	for j := 0; j <= maxVisibleCols; j++ {
-		xPos := tableLeft + (tableRight-tableLeft)*float64(j)/float64(maxVisibleCols)
-		tableVerticalPositions = append(tableVerticalPositions, xPos)
-		fmt.Printf("DEBUG: Vertical line %d at X=%.3f\n", j, xPos)
+		// Center around 0, spread over totalWidth
+		xOffset := -totalWidth/2 + totalWidth*float64(j)/float64(maxVisibleCols)
+		verticalPositionOffsets = append(verticalPositionOffsets, xOffset)
+		fmt.Printf("DEBUG: Vertical line %d at position offset X=%.1f\n", j, xOffset)
 	}
 	
 	// Create ONE main video with ALL table lines as nested elements (following table.fcpxml pattern)
@@ -157,8 +159,8 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	var nestedTitles []Title
 	laneCounter := 1
 	
-	// Add all horizontal lines as nested videos in lanes
-	for i, yPos := range tableHorizontalPositions {
+	// Add all horizontal lines as nested videos in lanes - using proper position-based method
+	for i, yOffset := range horizontalPositionOffsets {
 		horizontalLine := Video{
 			Ref:      "r2",
 			Lane:     fmt.Sprintf("%d", laneCounter),
@@ -175,17 +177,17 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("0.5 %.3f", yPos)},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.5"},
 			},
-			AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "1 0.0394"},
+			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("0 %.1f", yOffset), Scale: "1 0.0394"},
 		}
 		nestedVideos = append(nestedVideos, horizontalLine)
 		laneCounter++
-		fmt.Printf("DEBUG: Added horizontal line %d at Y=%.3f in lane %d\n", i+1, yPos, horizontalLine.Lane)
+		fmt.Printf("DEBUG: Added horizontal line %d at Y offset=%.1f in lane %s\n", i+1, yOffset, horizontalLine.Lane)
 	}
 	
-	// Add all vertical lines as nested videos in lanes
-	for j, xPos := range tableVerticalPositions {
+	// Add all vertical lines as nested videos in lanes - using proper position-based method
+	for j, xOffset := range verticalPositionOffsets {
 		verticalLine := Video{
 			Ref:      "r2",
 			Lane:     fmt.Sprintf("%d", laneCounter),
@@ -202,13 +204,13 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: fmt.Sprintf("%.3f 0.5", xPos)},
+				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.5"},
 			},
-			AdjustTransform: &AdjustTransform{Position: "0 8.33333", Scale: "0.0394 1"},
+			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("%.1f 0", xOffset), Scale: "0.0394 1"},
 		}
 		nestedVideos = append(nestedVideos, verticalLine)
 		laneCounter++
-		fmt.Printf("DEBUG: Added vertical line %d at X=%.3f in lane %d\n", j+1, xPos, verticalLine.Lane)
+		fmt.Printf("DEBUG: Added vertical line %d at X offset=%.1f in lane %s\n", j+1, xOffset, verticalLine.Lane)
 	}
 	
 	// Create the main spine video with all lines nested inside (like table.fcpxml)
@@ -236,7 +238,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	
 	spineElements = append(spineElements, mainVideo)
 	fmt.Printf("DEBUG: Created ONE main video with %d nested horizontal lines and %d nested vertical lines\n", 
-		len(tableHorizontalPositions), len(tableVerticalPositions))
+		len(horizontalPositionOffsets), len(verticalPositionOffsets))
 
 	fmt.Printf("DEBUG: SUMMARY - Total spine elements created: %d\n", len(spineElements))
 	
