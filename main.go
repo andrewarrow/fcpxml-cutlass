@@ -276,6 +276,136 @@ func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataCol
 		strings.Repeat("-", dataWidth+2))
 }
 
+// detectTraditionalTable determines if a table should be displayed in traditional format
+// Traditional tables have diverse column types and don't repeat the same data structure
+// Tennis-style tables have years/dates as columns with similar tournament data
+func detectTraditionalTable(table *wikipedia.SimpleTable) bool {
+	if table == nil || len(table.Headers) < 3 {
+		return false
+	}
+	
+	// Check if headers contain year patterns (tennis-style indicator)
+	yearCount := 0
+	for _, header := range table.Headers[1:] { // Skip first header
+		// Check for 4-digit years
+		if len(header) == 4 && header >= "1900" && header <= "2100" {
+			yearCount++
+		}
+		// Check for year ranges like "2010-2020"
+		if strings.Contains(header, "-") && len(header) >= 4 {
+			parts := strings.Split(header, "-")
+			if len(parts) == 2 && len(parts[0]) == 4 && parts[0] >= "1900" {
+				yearCount++
+			}
+		}
+	}
+	
+	// If more than half the columns are years, it's likely tennis-style
+	if yearCount > len(table.Headers)/2 {
+		return false
+	}
+	
+	// Check for traditional table indicators
+	headerLower := strings.ToLower(strings.Join(table.Headers, " "))
+	traditionalKeywords := []string{
+		"date", "state", "magnitude", "location", "name", "type", 
+		"fatalities", "casualties", "article", "description", "result",
+	}
+	
+	matchCount := 0
+	for _, keyword := range traditionalKeywords {
+		if strings.Contains(headerLower, keyword) {
+			matchCount++
+		}
+	}
+	
+	// If we have traditional keywords and few/no years, it's traditional
+	return matchCount >= 2
+}
+
+// displayTraditionalTable displays each row as a separate 2-column table
+func displayTraditionalTable(table *wikipedia.SimpleTable) {
+	if table == nil || len(table.Headers) == 0 || len(table.Rows) == 0 {
+		fmt.Printf("No data to display\n")
+		return
+	}
+	
+	for rowIndex, row := range table.Rows {
+		fmt.Printf("--- ROW %d/%d ---\n", rowIndex+1, len(table.Rows))
+		
+		// Calculate max width for headers and data
+		headerWidth := 0
+		dataWidth := 0
+		
+		for i, header := range table.Headers {
+			if len(header) > headerWidth {
+				headerWidth = len(header)
+			}
+			if i < len(row) && len(row[i]) > dataWidth {
+				dataWidth = len(row[i])
+			}
+		}
+		
+		// Set reasonable limits
+		if headerWidth > 25 {
+			headerWidth = 25
+		}
+		if dataWidth > 50 {
+			dataWidth = 50
+		}
+		if headerWidth < 10 {
+			headerWidth = 10
+		}
+		if dataWidth < 10 {
+			dataWidth = 10
+		}
+		
+		// Print top border
+		fmt.Printf("+%s+%s+\n", 
+			strings.Repeat("-", headerWidth+2), 
+			strings.Repeat("-", dataWidth+2))
+		
+		// Print header row
+		fmt.Printf("| %-*s | %-*s |\n", headerWidth, "Field", dataWidth, "Value")
+		
+		// Print separator
+		fmt.Printf("+%s+%s+\n", 
+			strings.Repeat("=", headerWidth+2), 
+			strings.Repeat("=", dataWidth+2))
+		
+		// Print each field-value pair
+		for i, header := range table.Headers {
+			value := ""
+			if i < len(row) {
+				value = row[i]
+			}
+			
+			// Truncate if too long
+			truncatedHeader := header
+			if len(truncatedHeader) > headerWidth {
+				truncatedHeader = truncatedHeader[:headerWidth-3] + "..."
+			}
+			
+			truncatedValue := value
+			if len(truncatedValue) > dataWidth {
+				truncatedValue = truncatedValue[:dataWidth-3] + "..."
+			}
+			
+			fmt.Printf("| %-*s | %-*s |\n", headerWidth, truncatedHeader, dataWidth, truncatedValue)
+		}
+		
+		// Print bottom border
+		fmt.Printf("+%s+%s+\n", 
+			strings.Repeat("-", headerWidth+2), 
+			strings.Repeat("-", dataWidth+2))
+		
+		// Add spacing between rows (except after the last one)
+		if rowIndex < len(table.Rows)-1 {
+			fmt.Println()
+		}
+	}
+}
+
 func displayTableASCII(table *wikipedia.SimpleTable) {
 	if table == nil || len(table.Headers) == 0 {
 		fmt.Printf("No table data to display\n")
@@ -288,21 +418,29 @@ func displayTableASCII(table *wikipedia.SimpleTable) {
 		return
 	}
 
-	// Display leftmost column + each data column (skipping leftmost)
-	leftColIndex := 0
-	totalDataCols := len(table.Headers) - 1
+	// Detect table type: Traditional vs Tennis-style
+	isTraditionalTable := detectTraditionalTable(table)
 	
-	fmt.Printf("=== DISPLAYING %d COLUMN PAIRS (Leftmost + Each Data Column) ===\n\n", totalDataCols)
-	
-	for dataColIndex := 1; dataColIndex < len(table.Headers); dataColIndex++ {
-		fmt.Printf("--- TABLE %d/%d: %s + %s ---\n", 
-			dataColIndex, totalDataCols, table.Headers[leftColIndex], table.Headers[dataColIndex])
+	if isTraditionalTable {
+		fmt.Printf("=== TRADITIONAL TABLE: Each Row as 2-Column Format ===\n\n")
+		displayTraditionalTable(table)
+	} else {
+		// Tennis-style: Display leftmost column + each data column (skipping leftmost)
+		leftColIndex := 0
+		totalDataCols := len(table.Headers) - 1
 		
-		displaySingleColumnPair(table, leftColIndex, dataColIndex)
+		fmt.Printf("=== TENNIS-STYLE TABLE: %d COLUMN PAIRS (Leftmost + Each Data Column) ===\n\n", totalDataCols)
 		
-		// Add spacing between tables (except after the last one)
-		if dataColIndex < len(table.Headers)-1 {
-			fmt.Println()
+		for dataColIndex := 1; dataColIndex < len(table.Headers); dataColIndex++ {
+			fmt.Printf("--- TABLE %d/%d: %s + %s ---\n", 
+				dataColIndex, totalDataCols, table.Headers[leftColIndex], table.Headers[dataColIndex])
+			
+			displaySingleColumnPair(table, leftColIndex, dataColIndex)
+			
+			// Add spacing between tables (except after the last one)
+			if dataColIndex < len(table.Headers)-1 {
+				fmt.Println()
+			}
 		}
 	}
 }
