@@ -15,115 +15,218 @@ import (
 )
 
 func main() {
-	var inputFile string
-	var segmentMode bool
-	var wikipediaMode bool
-	var parseMode bool
-	var tableMode bool
-	var tableNumber int
-	flag.StringVar(&inputFile, "i", "", "Input file (required)")
-	flag.BoolVar(&segmentMode, "s", false, "Segment mode: break into logical clips with title cards")
-	flag.BoolVar(&wikipediaMode, "w", false, "Wikipedia mode: create FCPXML from Wikipedia article tables")
-	flag.BoolVar(&parseMode, "p", false, "Parse mode: parse and display existing FCPXML file")
-	flag.BoolVar(&tableMode, "t", false, "Table mode: parse and display Wikipedia table data")
-	flag.IntVar(&tableNumber, "table", 0, "Table number to display (0 for all, 1-N for specific table)")
-	flag.Parse()
-
-	args := flag.Args()
-	if inputFile == "" {
-		fmt.Fprintf(os.Stderr, "Usage: %s -i <input_file> [output_file]\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  -s: Segment mode - break video into logical clips with title cards\n")
-		fmt.Fprintf(os.Stderr, "  -w: Wikipedia mode - create FCPXML from Wikipedia article tables\n")
-		fmt.Fprintf(os.Stderr, "  -p: Parse mode - parse and display existing FCPXML file\n")
-		fmt.Fprintf(os.Stderr, "  -t: Table mode - parse and display Wikipedia table data\n")
-		fmt.Fprintf(os.Stderr, "  -table N: Display specific table number in ASCII format (use with -t)\n")
+	if len(os.Args) < 2 {
+		printUsage()
 		os.Exit(1)
 	}
 
-	outputFile := "test.fcpxml"
-	if len(args) > 0 {
-		outputFile = args[0]
+	command := os.Args[1]
+	args := os.Args[2:]
+
+	switch command {
+	case "video":
+		handleVideoCommand(args)
+	case "youtube":
+		handleYouTubeCommand(args)
+	case "wikipedia":
+		handleWikipediaCommand(args)
+	case "parse":
+		handleParseCommand(args)
+	case "table":
+		handleTableCommand(args)
+	case "help", "-h", "--help":
+		printUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", command)
+		printUsage()
+		os.Exit(1)
 	}
+}
+
+func printUsage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s <command> [options]\n\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Commands:\n")
+	fmt.Fprintf(os.Stderr, "  video <file>              Generate FCPXML from video file\n")
+	fmt.Fprintf(os.Stderr, "  youtube <video-id>        Download YouTube video and generate FCPXML\n")
+	fmt.Fprintf(os.Stderr, "  wikipedia <article-title> Generate FCPXML from Wikipedia tables\n")
+	fmt.Fprintf(os.Stderr, "  parse <fcpxml-file>       Parse and display FCPXML contents\n")
+	fmt.Fprintf(os.Stderr, "  table <article-title>     Display Wikipedia table data\n")
+	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
+	fmt.Fprintf(os.Stderr, "Options:\n")
+	fmt.Fprintf(os.Stderr, "  -s, --segments           Break into logical clips with title cards (video/youtube)\n")
+	fmt.Fprintf(os.Stderr, "  -o, --output <file>      Output file (default: test.fcpxml)\n")
+	fmt.Fprintf(os.Stderr, "  --table-num <N>          Display specific table number (table command)\n")
+}
+
+func handleVideoCommand(args []string) {
+	fs := flag.NewFlagSet("video", flag.ExitOnError)
+	var segmentMode bool
+	var outputFile string
+	
+	fs.BoolVar(&segmentMode, "s", false, "Break into logical clips with title cards")
+	fs.BoolVar(&segmentMode, "segments", false, "Break into logical clips with title cards")
+	fs.StringVar(&outputFile, "o", "test.fcpxml", "Output file")
+	fs.StringVar(&outputFile, "output", "test.fcpxml", "Output file")
+	
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	
+	if fs.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "Error: video file required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s video <file> [options]\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	inputFile := fs.Arg(0)
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
 	}
-
-	// Handle parse mode
-	if parseMode {
-		if err := parseFCPXML(inputFile); err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing FCPXML: %v\n", err)
-			os.Exit(1)
-		}
-		return
-	}
-
-	// Handle table mode
-	if tableMode {
-		if err := parseWikipediaTables(inputFile, tableNumber); err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing Wikipedia tables: %v\n", err)
-			os.Exit(1)
-		}
-		return
-	}
-
-	// Handle Wikipedia mode
-	if wikipediaMode {
-		fmt.Printf("Using Wikipedia mode to create FCPXML from article tables...\n")
-		if err := generateFromWikipedia(inputFile, outputFile); err != nil {
-			fmt.Fprintf(os.Stderr, "Error generating from Wikipedia: %v\n", err)
-			os.Exit(1)
-		}
-		return
-	}
-
-	// Check if input looks like a YouTube ID
-	youtubeID := ""
-	if youtube.IsYouTubeID(inputFile) {
-		youtubeID = inputFile
-		videoFile, err := youtube.DownloadVideo(inputFile)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
-			os.Exit(1)
-		}
-
-		if err := youtube.DownloadSubtitles(inputFile); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Could not download subtitles: %v\n", err)
-		}
-
-		inputFile = videoFile
-	}
-
+	
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error: Input file '%s' does not exist\n", inputFile)
 		os.Exit(1)
 	}
-
-	// Use segment mode if requested
+	
 	if segmentMode {
 		fmt.Printf("Using segment mode to break video into logical clips...\n")
-		if youtubeID != "" {
-			if err := breakIntoLogicalParts(youtubeID); err != nil {
-				fmt.Fprintf(os.Stderr, "Error breaking into logical parts: %v\n", err)
-				os.Exit(1)
-			}
-		} else {
-			// Handle local files in segment mode
-			baseID := strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
-			if err := breakIntoLogicalParts(baseID); err != nil {
-				fmt.Fprintf(os.Stderr, "Error breaking into logical parts: %v\n", err)
-				os.Exit(1)
-			}
+		baseID := strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
+		if err := breakIntoLogicalParts(baseID); err != nil {
+			fmt.Fprintf(os.Stderr, "Error breaking into logical parts: %v\n", err)
+			os.Exit(1)
 		}
 		return
 	}
-
-	// Standard mode - generate simple FCPXML
+	
 	if err := fcp.GenerateStandard(inputFile, outputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating FCPXML: %v\n", err)
 		os.Exit(1)
 	}
-
+	
 	fmt.Printf("Successfully converted '%s' to '%s'\n", inputFile, outputFile)
+}
+
+func handleYouTubeCommand(args []string) {
+	fs := flag.NewFlagSet("youtube", flag.ExitOnError)
+	var segmentMode bool
+	var outputFile string
+	
+	fs.BoolVar(&segmentMode, "s", false, "Break into logical clips with title cards")
+	fs.BoolVar(&segmentMode, "segments", false, "Break into logical clips with title cards")
+	fs.StringVar(&outputFile, "o", "test.fcpxml", "Output file")
+	fs.StringVar(&outputFile, "output", "test.fcpxml", "Output file")
+	
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	
+	if fs.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "Error: YouTube video ID required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s youtube <video-id> [options]\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	youtubeID := fs.Arg(0)
+	if !youtube.IsYouTubeID(youtubeID) {
+		fmt.Fprintf(os.Stderr, "Error: Invalid YouTube video ID: %s\n", youtubeID)
+		os.Exit(1)
+	}
+	
+	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
+		outputFile += ".fcpxml"
+	}
+	
+	videoFile, err := youtube.DownloadVideo(youtubeID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
+		os.Exit(1)
+	}
+	
+	if err := youtube.DownloadSubtitles(youtubeID); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Could not download subtitles: %v\n", err)
+	}
+	
+	if segmentMode {
+		fmt.Printf("Using segment mode to break video into logical clips...\n")
+		if err := breakIntoLogicalParts(youtubeID); err != nil {
+			fmt.Fprintf(os.Stderr, "Error breaking into logical parts: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	
+	if err := fcp.GenerateStandard(videoFile, outputFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating FCPXML: %v\n", err)
+		os.Exit(1)
+	}
+	
+	fmt.Printf("Successfully converted '%s' to '%s'\n", videoFile, outputFile)
+}
+
+func handleWikipediaCommand(args []string) {
+	fs := flag.NewFlagSet("wikipedia", flag.ExitOnError)
+	var outputFile string
+	
+	fs.StringVar(&outputFile, "o", "test.fcpxml", "Output file")
+	fs.StringVar(&outputFile, "output", "test.fcpxml", "Output file")
+	
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	
+	if fs.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "Error: Wikipedia article title required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s wikipedia <article-title> [options]\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	articleTitle := fs.Arg(0)
+	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
+		outputFile += ".fcpxml"
+	}
+	
+	fmt.Printf("Using Wikipedia mode to create FCPXML from article tables...\n")
+	if err := generateFromWikipedia(articleTitle, outputFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating from Wikipedia: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func handleParseCommand(args []string) {
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: FCPXML file required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s parse <fcpxml-file>\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	inputFile := args[0]
+	if err := parseFCPXML(inputFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing FCPXML: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func handleTableCommand(args []string) {
+	fs := flag.NewFlagSet("table", flag.ExitOnError)
+	var tableNumber int
+	
+	fs.IntVar(&tableNumber, "table-num", 0, "Table number to display (0 for all, 1-N for specific table)")
+	
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	
+	if fs.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "Error: Wikipedia article title required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s table <article-title> [--table-num N]\n", os.Args[0])
+		os.Exit(1)
+	}
+	
+	articleTitle := fs.Arg(0)
+	if err := parseWikipediaTables(articleTitle, tableNumber); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing Wikipedia tables: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func breakIntoLogicalParts(youtubeID string) error {
