@@ -783,6 +783,15 @@ func CleanWikiText(text string) string {
 	text = regexp.MustCompile(`<ref[^>]*>.*?</ref>`).ReplaceAllString(text, "")
 	text = regexp.MustCompile(`<ref[^>]*/?>`).ReplaceAllString(text, "")
 	
+	// Handle date templates specially BEFORE removing all templates
+	// Handle Dts templates: {{Dts|1585|06|11}} -> 1585-06-11
+	dtsRegex := regexp.MustCompile(`\{\{Dts\|(\d{4})\|(\d{1,2})\|(\d{1,2})\}\}`)
+	text = dtsRegex.ReplaceAllString(text, "$1-$2-$3")
+	
+	// Handle short Dts templates: {{Dts|1585}} -> 1585
+	dtsShortRegex := regexp.MustCompile(`\{\{Dts\|(\d{4})\}\}`)
+	text = dtsShortRegex.ReplaceAllString(text, "$1")
+	
 	// Remove templates with nested structure
 	for i := 0; i < 10; i++ { // Multiple passes to handle nested templates
 		oldText := text
