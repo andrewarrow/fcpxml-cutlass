@@ -3,7 +3,8 @@
 never generate xml from hard coded string templates with %s placeholders, use structs
 Always test for DTD validation after changing code. 
 
-go build && ./cutalyst -i "Andre_Agassi" -w tennis.fcpxml
+go build && ./cutlass -i "Andre_Agassi" -w tennis.fcpxml
+go build && ./cutlass -i "List_of_earthquakes_in_the_United_States" -w earthquakes.fcpxml
 
 and then look at tennis.fcpxml and making sure the xml is valid with:
 
