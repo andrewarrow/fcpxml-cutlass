@@ -24,9 +24,20 @@ This document captures key insights from the FCP Cafe developer case study on FC
 - Implement robust parsing for nested elements
 
 ### Time Representation
-- **Rational Numbers**: FCPXML uses rational number representations for precise frame rates
+- **Rational Numbers**: Final Cut Pro expresses time values as a rational number of seconds with a **64-bit numerator** and **32-bit denominator**
+- Time values are expressed as a fraction of seconds
+- Can represent whole seconds, fractional seconds, and special values like infinity
 - Convert rational time representations carefully to avoid timing drift
 - Critical for frame-accurate editing workflows
+
+#### Frame Rate Examples
+- **NTSC-compatible media** uses specific rational frame rates:
+  - **29.97 fps**: `1001/30000s` frame duration
+  - **59.94 fps**: `1001/60000s` frame duration
+- Standard frame rates:
+  - **30 fps**: `1/30s` frame duration  
+  - **24 fps**: `1/24s` frame duration
+  - **25 fps**: `1/25s` frame duration (PAL)
 
 ## Development Best Practices
 
@@ -43,12 +54,20 @@ This document captures key insights from the FCP Cafe developer case study on FC
 ### Testing and Validation
 - Always test for DTD validation after changing code
 - Use test command: `go build && ./cutalyst -i "Andre_Agassi" -w tennis.fcpxml`
+- **macOS XML Validation**: Use built-in xmllint tool for DTD validation
 - Validate XML structure: `xmllint --dtdvalid FCPXMLv1_13.dtd tennis.fcpxml`
+- General DTD validation command: `xmllint --dtdvalid "/path/to/FCPXMLv1_9.dtd" "/path/to/your/file.fcpxml"`
 
 ### Developer Tools
 - Use text editors with XML folding for easier reading of generated files
+- **BBEdit 14**: Recommended for XML editing and validation
+- **macOS xmllint**: Built-in XML validation tool
 - Implement debug output to trace XML generation steps
 - Test with actual Final Cut Pro imports to verify compatibility
+
+#### Recommended Libraries and Frameworks
+- **DAWFileKit**: Swift framework for DAW file format handling
+- **Pipeline Neo**: Additional library option for FCPXML processing
 
 ## Advantages Over Other Formats
 
@@ -89,19 +108,41 @@ This document captures key insights from the FCP Cafe developer case study on FC
 4. **Version Specification**: Using FCPXML version 1.13 consistently
 
 ### Areas for Enhancement
-1. **Version Detection**: Could add automatic FCP version detection
-2. **Path Validation**: Enhanced file path validation and escaping
-3. **Metadata Preservation**: Extended support for complex metadata
-4. **Cross-Platform Testing**: Testing on different operating systems
+1. **Rational Time Precision**: Implement proper 64-bit numerator / 32-bit denominator handling
+2. **NTSC Frame Rate Support**: Add support for 1001/30000s and 1001/60000s frame rates
+3. **Version Detection**: Could add automatic FCP version detection
+4. **Path Validation**: Enhanced file path validation and escaping
+5. **Metadata Preservation**: Extended support for complex metadata
+6. **Cross-Platform Testing**: Testing on different operating systems
+
+## FCPXML Structure
+
+### Primary Document Structure
+FCPXML consists of two primary sections:
+```xml
+<fcpxml version="1.11">
+    <resources/>
+    <project/>
+</fcpxml>
+```
+
+### Complexity Warning
+**Important**: FCPXML is described as "insanely complicated and confusing" by FCP Cafe developers. Proper understanding of rational number time representation and XML structure is essential.
 
 ## Technical Reference
 
 ### Time Format Examples
 ```xml
-<!-- 30fps frame duration -->
+<!-- NTSC 29.97fps frame duration (64-bit numerator, 32-bit denominator) -->
 <format frameDuration="1001/30000s" />
 
-<!-- 15 second duration -->
+<!-- NTSC 59.94fps frame duration -->
+<format frameDuration="1001/60000s" />
+
+<!-- Standard 30fps frame duration -->
+<format frameDuration="1/30s" />
+
+<!-- 15 second duration calculated for 30fps -->
 <sequence duration="449449/30000s" />
 ```
 
@@ -124,7 +165,9 @@ This document captures key insights from the FCP Cafe developer case study on FC
 The FCP Cafe insights emphasize the importance of precision, validation, and compatibility in FCPXML development. These practices align well with Cutalyst's current architecture and provide guidance for future enhancements.
 
 Key takeaways:
-1. **Precision matters**: Use proper time representations and validate all references
-2. **Compatibility is critical**: Test with target Final Cut Pro versions
-3. **Structure is essential**: Follow DTD requirements and use proper XML nesting
-4. **Validation is mandatory**: Always test generated XML before deployment
+1. **Precision matters**: Use proper 64-bit/32-bit rational time representations and validate all references
+2. **NTSC Compatibility**: Support industry-standard frame rates like 1001/30000s for 29.97fps
+3. **Complexity awareness**: FCPXML is "insanely complicated" - thorough testing is essential
+4. **Compatibility is critical**: Test with target Final Cut Pro versions
+5. **Structure is essential**: Follow DTD requirements and use proper XML nesting
+6. **Validation is mandatory**: Always test generated XML before deployment using xmllint
