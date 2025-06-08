@@ -18,9 +18,11 @@ func main() {
 	var inputFile string
 	var segmentMode bool
 	var wikipediaMode bool
+	var parseMode bool
 	flag.StringVar(&inputFile, "i", "", "Input file (required)")
 	flag.BoolVar(&segmentMode, "s", false, "Segment mode: break into logical clips with title cards")
 	flag.BoolVar(&wikipediaMode, "w", false, "Wikipedia mode: create FCPXML from Wikipedia article tables")
+	flag.BoolVar(&parseMode, "p", false, "Parse mode: parse and display existing FCPXML file")
 	flag.Parse()
 
 	args := flag.Args()
@@ -28,6 +30,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s -i <input_file> [output_file]\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "  -s: Segment mode - break video into logical clips with title cards\n")
 		fmt.Fprintf(os.Stderr, "  -w: Wikipedia mode - create FCPXML from Wikipedia article tables\n")
+		fmt.Fprintf(os.Stderr, "  -p: Parse mode - parse and display existing FCPXML file\n")
 		os.Exit(1)
 	}
 
@@ -37,6 +40,15 @@ func main() {
 	}
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
+	}
+
+	// Handle parse mode
+	if parseMode {
+		if err := parseFCPXML(inputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing FCPXML: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	// Handle Wikipedia mode
@@ -149,6 +161,16 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func parseFCPXML(filePath string) error {
+	fcpxml, err := fcp.ParseFCPXML(filePath)
+	if err != nil {
+		return err
+	}
+	
+	fcp.DisplayFCPXML(fcpxml)
+	return nil
 }
 
 func generateFromWikipedia(articleTitle, outputFile string) error {

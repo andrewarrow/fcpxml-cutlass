@@ -1,20 +1,7 @@
 # Project Context for AI Assistance
 
 never generate xml from hard coded string templates with %s placeholders, use structs
-
-Always test for DTD validation after changing code. I got:
-
-DTD validation failed. (Element resources content does not follow the DTD, expecting (asset | effect | format | media | locator)*, got (format effect generator )
-No declaration for element generator
-No declaration for attribute id of element generator
-No declaration for attribute name of element generator
-No declaration for attribute uid of element generator
-Element spine content does not follow the DTD, expecting (audio | video | clip | title | mc-clip | ref-clip | sync-clip | asset-clip | audition | gap | live-drawin...)
-
-and you should catch these by
-go build && ./cutalyst -i "Andre_Agassi" -w tennis.fcpxml
-and then looking at tennis.fcpxml and making sure the xml is valid
-use ./table.fcpxml as an example of working correct xml
+never run the program, just edit code, compile and fix errors
 
 
 ## Project Overview
