@@ -764,3 +764,413 @@ func getBoldForResult(result string) string {
 func GenerateWikipediaTableFCPXML(tableData *TableData, outputPath string) error {
 	return GenerateTableGridFCPXML(tableData, outputPath)
 }
+
+// WikiSimpleTable represents a simple table structure (matching wikipedia.SimpleTable)
+type WikiSimpleTable struct {
+	Headers []string
+	Rows    [][]string
+}
+
+// GenerateMultiTableFCPXML creates FCPXML with multiple table views showing sequentially for 3 seconds each
+func GenerateMultiTableFCPXML(table *WikiSimpleTable, outputPath string) error {
+	if table == nil || len(table.Headers) == 0 {
+		return fmt.Errorf("no table data provided")
+	}
+
+	// Determine table views to show (same logic as ASCII display)
+	var tableViews []TableView
+	
+	// Detect table type: Traditional vs Tennis-style
+	isTraditionalTable := detectTraditionalTable(table)
+	
+	if isTraditionalTable {
+		// Traditional table: Each row as a separate view for 3 seconds
+		for rowIndex, row := range table.Rows {
+			view := TableView{
+				Title:    fmt.Sprintf("Row %d/%d", rowIndex+1, len(table.Rows)),
+				Duration: 3 * time.Second,
+				Headers:  []string{"Field", "Value"},
+				Data:     make([][]string, len(table.Headers)),
+			}
+			
+			// Convert row to field-value pairs
+			for i, header := range table.Headers {
+				value := ""
+				if i < len(row) {
+					value = row[i]
+				}
+				view.Data[i] = []string{header, value}
+			}
+			
+			tableViews = append(tableViews, view)
+		}
+	} else {
+		// Tennis-style: Leftmost column + each data column (skipping leftmost)
+		leftColIndex := 0
+		
+		for dataColIndex := 1; dataColIndex < len(table.Headers); dataColIndex++ {
+			view := TableView{
+				Title:    fmt.Sprintf("Table %d/%d: %s + %s", dataColIndex, len(table.Headers)-1, table.Headers[leftColIndex], table.Headers[dataColIndex]),
+				Duration: 3 * time.Second,
+				Headers:  []string{table.Headers[leftColIndex], table.Headers[dataColIndex]},
+				Data:     make([][]string, len(table.Rows)),
+			}
+			
+			// Extract two-column data
+			for rowIndex, row := range table.Rows {
+				leftValue := ""
+				dataValue := ""
+				
+				if leftColIndex < len(row) {
+					leftValue = row[leftColIndex]
+				}
+				if dataColIndex < len(row) {
+					dataValue = row[dataColIndex]
+				}
+				
+				view.Data[rowIndex] = []string{leftValue, dataValue}
+			}
+			
+			tableViews = append(tableViews, view)
+		}
+	}
+
+	// Generate FCPXML with sequential table views
+	return generateSequentialTableFCPXML(tableViews, outputPath)
+}
+
+// TableView represents a single table view to display
+type TableView struct {
+	Title    string
+	Duration time.Duration
+	Headers  []string
+	Data     [][]string // Each row is a slice of cell values
+}
+
+// detectTraditionalTable determines if a table should be displayed in traditional format
+func detectTraditionalTable(table *WikiSimpleTable) bool {
+	if table == nil || len(table.Headers) < 3 {
+		return false
+	}
+	
+	// Check if headers contain year patterns (tennis-style indicator)
+	yearCount := 0
+	for _, header := range table.Headers[1:] { // Skip first header
+		// Check for 4-digit years
+		if len(header) == 4 && header >= "1900" && header <= "2100" {
+			yearCount++
+		}
+		// Check for year ranges like "2010-2020"
+		if strings.Contains(header, "-") && len(header) >= 4 {
+			parts := strings.Split(header, "-")
+			if len(parts) == 2 && len(parts[0]) == 4 && parts[0] >= "1900" {
+				yearCount++
+			}
+		}
+	}
+	
+	// If more than half the columns are years, it's likely tennis-style
+	if yearCount > len(table.Headers)/2 {
+		return false
+	}
+	
+	// Check for traditional table indicators
+	headerLower := strings.ToLower(strings.Join(table.Headers, " "))
+	traditionalKeywords := []string{
+		"date", "state", "magnitude", "location", "name", "type", 
+		"fatalities", "casualties", "article", "description", "result",
+	}
+	
+	matchCount := 0
+	for _, keyword := range traditionalKeywords {
+		if strings.Contains(headerLower, keyword) {
+			matchCount++
+		}
+	}
+	
+	// If we have traditional keywords and few/no years, it's traditional
+	return matchCount >= 2
+}
+
+// generateSequentialTableFCPXML creates FCPXML with multiple table views showing sequentially
+func generateSequentialTableFCPXML(tableViews []TableView, outputPath string) error {
+	if len(tableViews) == 0 {
+		return fmt.Errorf("no table views to generate")
+	}
+
+	// Calculate total duration
+	totalDuration := time.Duration(0)
+	for _, view := range tableViews {
+		totalDuration += view.Duration
+	}
+
+	// Create spine elements for each table view
+	var spineElements []interface{}
+	currentOffset := time.Duration(0)
+	
+	for i, view := range tableViews {
+		// Create a table grid for this view
+		tableData := &TableData{
+			Headers: view.Headers,
+			Rows:    make([]TableRow, len(view.Data)),
+		}
+		
+		// Convert data to TableRow format
+		for j, rowData := range view.Data {
+			tableData.Rows[j] = TableRow{
+				Cells: make([]TableCell, len(rowData)),
+			}
+			for k, cellValue := range rowData {
+				tableData.Rows[j].Cells[k] = TableCell{
+					Content: cellValue,
+				}
+			}
+		}
+		
+		// Generate table elements for this view
+		tableVideo := createTableVideoForView(tableData, view, currentOffset, i+1)
+		spineElements = append(spineElements, tableVideo)
+		
+		currentOffset += view.Duration
+	}
+
+	// Build spine content
+	spineContent := buildSpineContent(spineElements)
+
+	// Create FCPXML structure
+	fcpxml := FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat1080p2997",
+					FrameDuration: "1001/30000s",
+					Width:         "1920",
+					Height:        "1080",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Effects: []Effect{
+				{
+					ID:   "r2",
+					Name: "Shapes",
+					UID:  ".../Generators.localized/Elements.localized/Shapes.localized/Shapes.motn",
+				},
+				{
+					ID:   "r3",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+				},
+			},
+		},
+		Library: Library{
+			Location: "file:///Users/aa/Movies/Untitled.fcpbundle/",
+			Events: []Event{
+				{
+					Name: "Wikipedia Tables",
+					UID:  "54E7C4CB-8DAE-4E60-991A-DF2BA5646FF5",
+					Projects: []Project{
+						{
+							Name:    fmt.Sprintf("Wikipedia Tables (%d views)", len(tableViews)),
+							UID:     "F36A6990-2D89-4815-8065-5EF5D0C71948",
+							ModDate: "2025-06-07 08:38:19 -0700",
+							Sequences: []Sequence{
+								{
+									Format:      "r1",
+									Duration:    FormatDurationForFCPXML(totalDuration),
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine: Spine{
+										Content: spineContent,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Write FCPXML
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	xmlContent := xml.Header + "<!DOCTYPE fcpxml>\n" + string(output)
+	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
+}
+
+// createTableVideoForView creates a video element containing a complete table view
+func createTableVideoForView(tableData *TableData, view TableView, offset time.Duration, viewNumber int) Video {
+	// Calculate grid dimensions
+	maxRows := min(5, len(tableData.Rows))  // Limit rows for FCP
+	maxCols := len(tableData.Headers)       // Use actual column count for 2-column tables
+	totalRows := maxRows + 1                // Add 1 for header row
+	
+	// Create grid lines
+	var nestedVideos []Video
+	var nestedTitles []Title
+	laneCounter := 1
+	
+	// Calculate grid positions
+	horizontalPositionOffsets := make([]float64, totalRows+1)
+	startY := -100.0
+	endY := 100.0
+	stepY := (endY - startY) / float64(totalRows)
+	for i := 0; i <= totalRows; i++ {
+		horizontalPositionOffsets[i] = startY + float64(i)*stepY
+	}
+	
+	verticalPositionOffsets := make([]float64, maxCols+1)
+	startX := -150.0
+	endX := 150.0
+	stepX := (endX - startX) / float64(maxCols)
+	for i := 0; i <= maxCols; i++ {
+		verticalPositionOffsets[i] = startX + float64(i)*stepX
+	}
+	
+	// Add horizontal lines
+	for i, yOffset := range horizontalPositionOffsets {
+		horizontalLine := Video{
+			Ref:      "r2",
+			Lane:     fmt.Sprintf("%d", laneCounter),
+			Offset:   "0s",
+			Name:     fmt.Sprintf("H-Line %d-V%d", i+1, viewNumber),
+			Start:    "0s",
+			Duration: FormatDurationForFCPXML(view.Duration),
+			Params: []Param{
+				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1 0 0"},
+				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			},
+			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("0 %.1f", yOffset), Scale: "30 0.05"},
+		}
+		nestedVideos = append(nestedVideos, horizontalLine)
+		laneCounter++
+	}
+	
+	// Add vertical lines
+	for j, xOffset := range verticalPositionOffsets {
+		verticalLine := Video{
+			Ref:      "r2",
+			Lane:     fmt.Sprintf("%d", laneCounter),
+			Offset:   "0s",
+			Name:     fmt.Sprintf("V-Line %d-V%d", j+1, viewNumber),
+			Start:    "0s",
+			Duration: FormatDurationForFCPXML(view.Duration),
+			Params: []Param{
+				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1 0 0"},
+				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
+			},
+			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("%.1f 0", xOffset), Scale: "0.0081 30"},
+		}
+		nestedVideos = append(nestedVideos, verticalLine)
+		laneCounter++
+	}
+	
+	// Calculate cell positions
+	cellTextPositions := calculateCellTextPositions(horizontalPositionOffsets, verticalPositionOffsets)
+	
+	// Add headers
+	for i, header := range tableData.Headers {
+		if i < len(cellTextPositions[0]) {
+			headerStyleID := fmt.Sprintf("header-style-v%d-%d", viewNumber, i)
+			headerTitle := Title{
+				Ref:      "r3",
+				Lane:     fmt.Sprintf("%d", laneCounter),
+				Offset:   "0s",
+				Name:     fmt.Sprintf("Header %s V%d", header, viewNumber),
+				Start:    "0s",
+				Duration: FormatDurationForFCPXML(view.Duration),
+				Params: []Param{
+					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][i].X*10, cellTextPositions[0][i].Y*10)},
+				},
+				Text: &TitleText{
+					TextStyle: TextStyleRef{
+						Ref:  headerStyleID,
+						Text: header,
+					},
+				},
+				TextStyleDef: &TextStyleDef{
+					ID: headerStyleID,
+					TextStyle: TextStyle{
+						Font:        "Helvetica Neue",
+						FontSize:    "150",
+						FontColor:   "1 1 1 1",
+						Bold:        "1",
+						Alignment:   "center",
+						LineSpacing: "1.08",
+					},
+				},
+			}
+			nestedTitles = append(nestedTitles, headerTitle)
+			laneCounter++
+		}
+	}
+	
+	// Add data cells
+	for row := 0; row < maxRows && row < len(tableData.Rows); row++ {
+		for col := 0; col < len(tableData.Rows[row].Cells) && col < len(cellTextPositions[row+1]); col++ {
+			cellContent := tableData.Rows[row].Cells[col].Content
+			if cellContent != "" {
+				cellStyleID := fmt.Sprintf("cell-style-v%d-%d-%d", viewNumber, row+1, col+1)
+				cellTitle := Title{
+					Ref:      "r3",
+					Lane:     fmt.Sprintf("%d", laneCounter),
+					Offset:   "0s",
+					Name:     fmt.Sprintf("Cell V%d-R%d-C%d", viewNumber, row+1, col+1),
+					Start:    "0s",
+					Duration: FormatDurationForFCPXML(view.Duration),
+					Params: []Param{
+						{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
+					},
+					Text: &TitleText{
+						TextStyle: TextStyleRef{
+							Ref:  cellStyleID,
+							Text: cellContent,
+						},
+					},
+					TextStyleDef: &TextStyleDef{
+						ID: cellStyleID,
+						TextStyle: TextStyle{
+							Font:        "Helvetica Neue",
+							FontSize:    "120",
+							FontColor:   "0.9 0.9 0.9 1",
+							Alignment:   "center",
+							LineSpacing: "1.08",
+						},
+					},
+				}
+				nestedTitles = append(nestedTitles, cellTitle)
+				laneCounter++
+			}
+		}
+	}
+	
+	// Create main video with all nested elements
+	return Video{
+		Ref:      "r2",
+		Offset:   FormatDurationForFCPXML(offset),
+		Name:     fmt.Sprintf("Table View %d: %s", viewNumber, view.Title),
+		Start:    "0s",
+		Duration: FormatDurationForFCPXML(view.Duration),
+		Params: []Param{
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "0"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0 0 0"},
+			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
+			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
+		},
+		AdjustTransform: &AdjustTransform{Scale: "0 0"},  // Invisible base
+		NestedVideos:    nestedVideos,
+		NestedTitles:    nestedTitles,
+	}
+}

@@ -562,9 +562,15 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 		}
 	}
 
-	// Generate FCPXML
+	// Convert to fcp-compatible format
+	fcpTable := &fcp.WikiSimpleTable{
+		Headers: bestTable.Headers,
+		Rows:    bestTable.Rows,
+	}
+
+	// Generate FCPXML with multiple table views
 	fmt.Printf("Generating FCPXML: %s\n", outputFile)
-	err = fcp.GenerateTableGridFCPXML(tableData, outputFile)
+	err = fcp.GenerateMultiTableFCPXML(fcpTable, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
