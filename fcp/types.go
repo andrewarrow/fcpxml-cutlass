@@ -139,6 +139,7 @@ type AdjustTransform struct {
 	Scale    string `xml:"scale,attr,omitempty"`
 }
 
+
 type GeneratorClip struct {
 	Ref      string  `xml:"ref,attr"`
 	Lane     string  `xml:"lane,attr,omitempty"`
@@ -150,8 +151,18 @@ type GeneratorClip struct {
 }
 
 type Param struct {
-	Name  string `xml:"name,attr"`
-	Key   string `xml:"key,attr"`
+	Name               string              `xml:"name,attr"`
+	Key                string              `xml:"key,attr"`
+	Value              string              `xml:"value,attr"`
+	KeyframeAnimation  *KeyframeAnimation  `xml:"keyframeAnimation,omitempty"`
+}
+
+type KeyframeAnimation struct {
+	Keyframes []Keyframe `xml:"keyframe"`
+}
+
+type Keyframe struct {
+	Time  string `xml:"time,attr"`
 	Value string `xml:"value,attr"`
 }
 
