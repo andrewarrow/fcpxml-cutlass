@@ -257,8 +257,8 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 
 	// Add year headers (one for each 10-second segment)
 	for i, year := range []int{1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004} {
-		yearOffset := fmt.Sprintf("%ds", i*10)
-		yearDuration := "10s"
+		yearOffset := FormatDurationForFCPXML(time.Duration(i*10) * time.Second)
+		yearDuration := FormatDurationForFCPXML(10 * time.Second)
 		yearHeaderTitle := Title{
 			Ref:      "r3",
 			Lane:     fmt.Sprintf("%d", laneCounter),
@@ -330,8 +330,8 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 
 	// Add dynamic results data for each year (appearing for 10 seconds each)
 	for i, year := range []int{1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004} {
-		yearOffset := fmt.Sprintf("%ds", i*10)
-		yearDuration := "10s"
+		yearOffset := FormatDurationForFCPXML(time.Duration(i*10) * time.Second)
+		yearDuration := FormatDurationForFCPXML(10 * time.Second)
 		
 		if results, exists := yearsData[year]; exists {
 			for row, result := range results {
