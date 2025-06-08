@@ -268,10 +268,11 @@ func parseTableCell(cellContent string) TableCell {
 	
 	// Check if cell has attributes (contains = before |)
 	if strings.Contains(content, "=") && strings.Contains(content, "|") {
-		parts := strings.SplitN(content, "|", 2)
-		if len(parts) == 2 {
-			attributesPart := strings.TrimSpace(parts[0])
-			cell.Content = strings.TrimSpace(parts[1])
+		// Find the last | to separate attributes from content
+		lastPipeIndex := strings.LastIndex(content, "|")
+		if lastPipeIndex > 0 && lastPipeIndex < len(content)-1 {
+			attributesPart := strings.TrimSpace(content[:lastPipeIndex])
+			cell.Content = strings.TrimSpace(content[lastPipeIndex+1:])
 			
 			// Parse attributes
 			parseHTMLAttributes(attributesPart, &cell)

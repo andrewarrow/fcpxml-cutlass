@@ -48,6 +48,33 @@ type TableResult struct {
 	Style   map[string]string
 }
 
+type Position struct {
+	X, Y float64
+}
+
+func calculateCellTextPositions(horizontalOffsets, verticalOffsets []float64) [][]Position {
+	var positions [][]Position
+	
+	// Calculate the center position of each cell formed by the grid lines
+	for row := 0; row < len(horizontalOffsets)-1; row++ {
+		var rowPositions []Position
+		for col := 0; col < len(verticalOffsets)-1; col++ {
+			// Calculate center X position between two vertical lines
+			centerX := (verticalOffsets[col] + verticalOffsets[col+1]) / 2
+			// Calculate center Y position between two horizontal lines
+			centerY := (horizontalOffsets[row] + horizontalOffsets[row+1]) / 2
+			
+			rowPositions = append(rowPositions, Position{
+				X: centerX,
+				Y: centerY,
+			})
+		}
+		positions = append(positions, rowPositions)
+	}
+	
+	return positions
+}
+
 func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	fmt.Printf("DEBUG: GenerateTableGridFCPXML called with outputPath: %s\n", outputPath)
 	
@@ -55,10 +82,10 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	if tableData == nil {
 		fmt.Printf("DEBUG: tableData is nil, using default data\n")
 		tableData = &TableData{
-			Headers: []string{"Column 1", "Column 2"},
+			Headers: []string{"Tournament", "Result"},
 			Rows: []TableRow{
-				{Cells: []TableCell{{Content: "Sample Item", Style: map[string]string{"background": "#f0f0f0"}}, {Content: "Sample Value"}}},
-				{Cells: []TableCell{{Content: "Another Item"}, {Content: "Another Value"}}},
+				{Cells: []TableCell{{Content: "Grand Slam"}, {Content: "Champion"}}},
+				{Cells: []TableCell{{Content: "Masters Cup"}, {Content: "Runner-up"}}},
 			},
 		}
 	} else {
@@ -66,112 +93,48 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		fmt.Printf("DEBUG: Headers: %v\n", tableData.Headers)
 	}
 
-	// Convert TableData to the format expected by the rest of the function
-	var tableResults []TableResult
-	for _, row := range tableData.Rows {
-		if len(row.Cells) >= 2 {
-			tableResults = append(tableResults, TableResult{
-				Column1: row.Cells[0].Content,
-				Column2: row.Cells[1].Content,
-				Style:   row.Cells[1].Style,
-			})
-		} else if len(row.Cells) == 1 {
-			tableResults = append(tableResults, TableResult{
-				Column1: row.Cells[0].Content,
-				Column2: "",
-				Style:   row.Cells[0].Style,
-			})
-		}
-	}
-
-	if len(tableResults) == 0 {
-		tableResults = []TableResult{
-			{Column1: "Sample Item", Column2: "Sample Value", Style: map[string]string{"background": "#f0f0f0"}},
-			{Column1: "Another Item", Column2: "Another Value", Style: map[string]string{}},
-		}
-	}
-
 	totalDuration := 15 * time.Second
-	currentOffset := time.Duration(0)
-
-	numRows := len(tableResults) + 1
-	numCols := 2
 	
-	fmt.Printf("DEBUG: numRows=%d (data rows + 1 header), numCols=%d\n", numRows, numCols)
-	fmt.Printf("DEBUG: totalDuration=%v, currentOffset=%v\n", totalDuration, currentOffset)
-
-	var horizontalPositions []float64
-	startY := 0.500  // Center the lines around middle of screen like in table.fcpxml
-	rowSpacing := 0.080  // Smaller spacing to keep lines visible
-	fmt.Printf("DEBUG: Calculating horizontal positions with startY=%.3f, rowSpacing=%.3f\n", startY, rowSpacing)
-	for i := 0; i <= min(3, numRows); i++ {  // Only create a few key horizontal lines like the reference
-		pos := startY + rowSpacing*float64(i-1)  // Center around startY
-		horizontalPositions = append(horizontalPositions, pos)
-		fmt.Printf("DEBUG: horizontalPositions[%d] = %.3f\n", i, pos)
-	}
-
-	verticalPositions := []float64{0.100, 0.500, 0.900}
-	fmt.Printf("DEBUG: verticalPositions: %v\n", verticalPositions)
-
-	// Removed unused header variables for minimal test
-
-	var spineElements []interface{}
-
-	// Create proper table grid with many lines
-	fmt.Printf("DEBUG: Creating full table grid structure\n")
-	fmt.Printf("DEBUG: Table has %d headers, so need %d vertical lines\n", len(tableData.Headers), len(tableData.Headers)+1)
-	fmt.Printf("DEBUG: Table has %d data rows + 1 header = %d total rows, so need %d horizontal lines\n", 
-		len(tableData.Rows), numRows, numRows+1)
+	// Calculate grid dimensions - limit for readability
+	maxRows := min(3, len(tableData.Rows))     // Limit to 3 data rows for readability
+	maxCols := min(3, len(tableData.Headers))  // Limit to 3 columns for readability
+	totalRows := maxRows + 1  // Add 1 for header row
 	
-	// Calculate positions using the proper method from long.fcpxml - position-based transforms from center
-	// All lines center at "0.5 0.5" and use adjust-transform position to move them
+	fmt.Printf("DEBUG: Creating %dx%d table (including header)\n", totalRows, maxCols)
 	
-	// Limit rows and columns for much larger, text-friendly cells  
-	maxVisibleRows := min(4, numRows)    // Show max 4 rows for much larger cells (need 1 more line than rows)
-	maxVisibleCols := min(4, len(tableData.Headers))  // Show max 4 columns for much larger cells (need 1 more line than cols)
-	
-	// Use exact positioning values from wide.fcpxml for perfect edge-to-edge coverage
-	// These values were extracted from the working wide.fcpxml file
+	// Use exact positioning values from LINES.md for perfect edge-to-edge coverage
 	horizontalPositionOffsets := []float64{-100, -46.5928, 48.0135, 100}
 	verticalPositionOffsets := []float64{-150, -73.3652, 73.3319, 150}
 	
-	// Trim to actual number of lines needed
-	if len(horizontalPositionOffsets) > maxVisibleRows+1 {
-		horizontalPositionOffsets = horizontalPositionOffsets[:maxVisibleRows+1]
+	// Trim to actual number of lines needed (rows+1 lines for rows, cols+1 lines for columns)
+	if len(horizontalPositionOffsets) > totalRows+1 {
+		horizontalPositionOffsets = horizontalPositionOffsets[:totalRows+1]
 	}
-	if len(verticalPositionOffsets) > maxVisibleCols+1 {
-		verticalPositionOffsets = verticalPositionOffsets[:maxVisibleCols+1]
-	}
-	
-	fmt.Printf("DEBUG: Using exact positions from wide.fcpxml\n")
-	for i, yOffset := range horizontalPositionOffsets {
-		fmt.Printf("DEBUG: Horizontal line %d at Y position offset=%.4f\n", i, yOffset)
-	}
-	for j, xOffset := range verticalPositionOffsets {
-		fmt.Printf("DEBUG: Vertical line %d at X position offset=%.4f\n", j, xOffset)
+	if len(verticalPositionOffsets) > maxCols+1 {
+		verticalPositionOffsets = verticalPositionOffsets[:maxCols+1]
 	}
 	
-	// Create ONE main video with ALL table lines as nested elements (following table.fcpxml pattern)
-	fmt.Printf("DEBUG: Creating ONE main video with all table lines nested inside\n")
+	fmt.Printf("DEBUG: Using %d horizontal lines and %d vertical lines\n", 
+		len(horizontalPositionOffsets), len(verticalPositionOffsets))
 	
 	// Create all nested elements for the main video
 	var nestedVideos []Video
 	var nestedTitles []Title
 	laneCounter := 1
 	
-	// Add all horizontal lines as nested videos in lanes - using proper position-based method
+	// Add all horizontal lines as nested videos
 	for i, yOffset := range horizontalPositionOffsets {
 		horizontalLine := Video{
 			Ref:      "r2",
 			Lane:     fmt.Sprintf("%d", laneCounter),
-			Offset:   "108108000/30000s",
+			Offset:   "0s",
 			Name:     fmt.Sprintf("Horizontal Line %d", i+1),
-			Start:    "108108000/30000s",
+			Start:    "0s",
 			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -182,22 +145,21 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		}
 		nestedVideos = append(nestedVideos, horizontalLine)
 		laneCounter++
-		fmt.Printf("DEBUG: Added horizontal line %d at Y offset=%.1f in lane %s\n", i+1, yOffset, horizontalLine.Lane)
 	}
 	
-	// Add all vertical lines as nested videos in lanes - using proper position-based method
+	// Add all vertical lines as nested videos
 	for j, xOffset := range verticalPositionOffsets {
 		verticalLine := Video{
 			Ref:      "r2",
 			Lane:     fmt.Sprintf("%d", laneCounter),
-			Offset:   "108108000/30000s",
+			Offset:   "0s",
 			Name:     fmt.Sprintf("Vertical Line %d", j+1),
-			Start:    "108108000/30000s",
+			Start:    "0s",
 			Duration: FormatDurationForFCPXML(totalDuration),
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -208,31 +170,87 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		}
 		nestedVideos = append(nestedVideos, verticalLine)
 		laneCounter++
-		fmt.Printf("DEBUG: Added vertical line %d at X offset=%.1f in lane %s\n", j+1, xOffset, verticalLine.Lane)
 	}
 	
-	// Create the main spine video with all lines nested inside (like table.fcpxml)
+	// Calculate cell positions for text placement
+	// Position text in the center of each cell based on grid lines
+	cellTextPositions := calculateCellTextPositions(horizontalPositionOffsets, verticalPositionOffsets)
+	
+	// Add header text
+	for col := 0; col < maxCols && col < len(tableData.Headers); col++ {
+		if col < len(cellTextPositions[0]) {
+			headerTitle := Title{
+				Ref:      "r3",
+				Lane:     fmt.Sprintf("%d", laneCounter),
+				Offset:   "0s",
+				Name:     fmt.Sprintf("Header %d", col+1),
+				Start:    "0s",
+				Duration: FormatDurationForFCPXML(totalDuration),
+				Params: []Param{
+					{Name: "Text", Key: "9999/999166631/999166633/1/100/101", Value: tableData.Headers[col]},
+					{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 48"},
+					{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
+					{Name: "Line Spacing", Key: "9999/999166631/999166633/2/354/19", Value: "1.08"},
+					{Name: "Tracking", Key: "9999/999166631/999166633/2/354/999169688/999169690/401", Value: "0"},
+					{Name: "Face", Key: "9999/999166631/999166633/2/360/999169588/999169590/401", Value: "Bold"},
+					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][col].X*10, cellTextPositions[0][col].Y*10)},
+				},
+			}
+			nestedTitles = append(nestedTitles, headerTitle)
+			laneCounter++
+		}
+	}
+	
+	// Add data cell text
+	for row := 0; row < maxRows && row < len(tableData.Rows); row++ {
+		for col := 0; col < maxCols && col < len(tableData.Rows[row].Cells); col++ {
+			if row+1 < len(cellTextPositions) && col < len(cellTextPositions[row+1]) {
+				cellContent := tableData.Rows[row].Cells[col].Content
+				if cellContent != "" {
+					dataTitle := Title{
+						Ref:      "r3",
+						Lane:     fmt.Sprintf("%d", laneCounter),
+						Offset:   "0s",
+						Name:     fmt.Sprintf("Cell %d-%d", row+1, col+1),
+						Start:    "0s",
+						Duration: FormatDurationForFCPXML(totalDuration),
+						Params: []Param{
+							{Name: "Text", Key: "9999/999166631/999166633/1/100/101", Value: cellContent},
+							{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 40"},
+							{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
+							{Name: "Line Spacing", Key: "9999/999166631/999166633/2/354/19", Value: "1.08"},
+							{Name: "Tracking", Key: "9999/999166631/999166633/2/354/999169688/999169690/401", Value: "0"},
+							{Name: "Face", Key: "9999/999166631/999166633/2/360/999169588/999169590/401", Value: "Regular"},
+							{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
+						},
+					}
+					nestedTitles = append(nestedTitles, dataTitle)
+					laneCounter++
+				}
+			}
+		}
+	}
+	
+	// Create the main spine video with all lines and text nested inside
 	mainVideo := Video{
 		Ref:      "r2",
 		Offset:   "0s",
 		Name:     "Table Grid Base",
-		Start:    "108108000/30000s",
+		Start:    "0s",
 		Duration: FormatDurationForFCPXML(totalDuration),
 		Params: []Param{
-			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
-			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
-			{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
+			{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0"},
+			{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "0"},
+			{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0 0 0"},
 			{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
-			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
-			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
 		},
-		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
+		AdjustTransform: &AdjustTransform{Scale: "0 0"},  // Invisible base
 		NestedVideos:    nestedVideos,
 		NestedTitles:    nestedTitles,
 	}
 	
+	var spineElements []interface{}
 	spineElements = append(spineElements, mainVideo)
 	fmt.Printf("DEBUG: Created ONE main video with %d nested horizontal lines and %d nested vertical lines\n", 
 		len(horizontalPositionOffsets), len(verticalPositionOffsets))
@@ -269,12 +287,16 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			},
 		},
 		Library: Library{
+			Location: "file:///Users/aa/Movies/Untitled.fcpbundle/",
 			Events: []Event{
 				{
-					Name: "Table View",
+					Name: "Wikipedia Table",
+					UID:  "54E7C4CB-8DAE-4E60-991A-DF2BA5646FF5",
 					Projects: []Project{
 						{
-							Name: "Data Table",
+							Name:    "Wikipedia Table Reveal",
+							UID:     "F36A6990-2D89-4815-8065-5EF5D0C71948",
+							ModDate: "2025-06-07 08:38:19 -0700",
 							Sequences: []Sequence{
 								{
 									Format:      "r1",

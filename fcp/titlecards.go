@@ -64,13 +64,13 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 					Name:     "Graphic Text Block",
 					Start:    FormatDurationForFCPXML(360 * time.Millisecond),
 					Duration: FormatDurationForFCPXML(10*time.Second - 133*time.Millisecond),
-					Text: TitleText{
+					Text: &TitleText{
 						TextStyle: TextStyleRef{
 							Ref:  fmt.Sprintf("ts%d", i+1),
 							Text: escapedText,
 						},
 					},
-					TextStyleDef: TextStyleDef{
+					TextStyleDef: &TextStyleDef{
 						ID: fmt.Sprintf("ts%d", i+1),
 						TextStyle: TextStyle{
 							Font:      "Helvetica Neue",

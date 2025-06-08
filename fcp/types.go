@@ -13,9 +13,8 @@ type FCPXML struct {
 
 type Resources struct {
 	Assets     []Asset     `xml:"asset,omitempty"`
-	Effects    []Effect    `xml:"effect,omitempty"`
 	Formats    []Format    `xml:"format"`
-	// Remove generators as they should be effects
+	Effects    []Effect    `xml:"effect,omitempty"`
 }
 
 // Effect represents a Motion or standard FCP title effect referenced by <title ref="…"> elements.
@@ -56,16 +55,20 @@ type MediaRep struct {
 }
 
 type Library struct {
-	Events []Event `xml:"event"`
+	Location string  `xml:"location,attr,omitempty"`
+	Events   []Event `xml:"event"`
 }
 
 type Event struct {
 	Name     string    `xml:"name,attr"`
+	UID      string    `xml:"uid,attr,omitempty"`
 	Projects []Project `xml:"project"`
 }
 
 type Project struct {
 	Name      string     `xml:"name,attr"`
+	UID       string     `xml:"uid,attr,omitempty"`
+	ModDate   string     `xml:"modDate,attr,omitempty"`
 	Sequences []Sequence `xml:"sequence"`
 }
 
@@ -105,15 +108,15 @@ type Gap struct {
 
 type Title struct {
 	XMLName xml.Name `xml:"title"`
-	Ref          string       `xml:"ref,attr"`
-	Lane         string       `xml:"lane,attr,omitempty"`
-	Offset       string       `xml:"offset,attr"`
-	Name         string       `xml:"name,attr"`
-	Duration     string       `xml:"duration,attr"`
-	Start        string       `xml:"start,attr,omitempty"`
-	Params       []Param      `xml:"param,omitempty"`
-	Text         TitleText    `xml:"text,omitempty"`
-	TextStyleDef TextStyleDef `xml:"text-style-def,omitempty"`
+	Ref          string        `xml:"ref,attr"`
+	Lane         string        `xml:"lane,attr,omitempty"`
+	Offset       string        `xml:"offset,attr"`
+	Name         string        `xml:"name,attr"`
+	Duration     string        `xml:"duration,attr"`
+	Start        string        `xml:"start,attr,omitempty"`
+	Params       []Param       `xml:"param,omitempty"`
+	Text         *TitleText    `xml:"text,omitempty"`      // Pointer so it can be nil
+	TextStyleDef *TextStyleDef `xml:"text-style-def,omitempty"` // Pointer so it can be nil
 }
 
 // Video represents a video element (shapes, colors, etc.)
