@@ -214,8 +214,8 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	// Create more lines for proper table grid
 	// Generate horizontal lines: top border, header separator, row separators, bottom border
 	horizontalPositionOffsets := make([]float64, totalRows+1)
-	startY := -100.0
-	endY := 100.0
+	startY := 100.0  // Start from top (positive Y in FCP)
+	endY := -100.0   // End at bottom (negative Y in FCP)
 	stepY := (endY - startY) / float64(totalRows)
 	for i := 0; i <= totalRows; i++ {
 		horizontalPositionOffsets[i] = startY + float64(i)*stepY
@@ -500,15 +500,17 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				
 				if timeColIndex >= 0 {
 					for row := 0; row < maxRows && row < len(tableData.Rows); row++ {
-						if timeColIndex < len(tableData.Rows[row].Cells) && row+1 < len(cellTextPositions) && len(cellTextPositions[row+1]) > 1 {
-							cellContent := tableData.Rows[row].Cells[timeColIndex].Content
+						// Reverse the row index for data access to match ASCII order
+						reversedRow := maxRows - 1 - row
+						if reversedRow >= 0 && reversedRow < len(tableData.Rows) && timeColIndex < len(tableData.Rows[reversedRow].Cells) && row+1 < len(cellTextPositions) && len(cellTextPositions[row+1]) > 1 {
+							cellContent := tableData.Rows[reversedRow].Cells[timeColIndex].Content
 							if cellContent != "" {
-								cellStyleID := fmt.Sprintf("time-cell-style-%s-%d", timeHeader, row+1)
+								cellStyleID := fmt.Sprintf("time-cell-style-%s-%d", timeHeader, reversedRow+1)
 								timeCellTitle := Title{
 									Ref:      "r3",
 									Lane:     fmt.Sprintf("%d", laneCounter),
 									Offset:   timeOffset,
-									Name:     fmt.Sprintf("Time Cell %s-%d", timeHeader, row+1),
+									Name:     fmt.Sprintf("Time Cell %s-%d", timeHeader, reversedRow+1),
 									Start:    "0s",
 									Duration: timeDuration,
 									Params: []Param{
@@ -1019,8 +1021,8 @@ func createTableVideoForView(tableData *TableData, view TableView, offset time.D
 	
 	// Calculate grid positions
 	horizontalPositionOffsets := make([]float64, totalRows+1)
-	startY := -100.0
-	endY := 100.0
+	startY := 100.0  // Start from top (positive Y in FCP)
+	endY := -100.0   // End at bottom (negative Y in FCP)
 	stepY := (endY - startY) / float64(totalRows)
 	for i := 0; i <= totalRows; i++ {
 		horizontalPositionOffsets[i] = startY + float64(i)*stepY
@@ -1116,7 +1118,7 @@ func createTableVideoForView(tableData *TableData, view TableView, offset time.D
 		}
 	}
 	
-	// Add data cells
+	// Add data cells - display in natural order to match ASCII display
 	for row := 0; row < maxRows && row < len(tableData.Rows); row++ {
 		for col := 0; col < len(tableData.Rows[row].Cells) && col < len(cellTextPositions[row+1]); col++ {
 			cellContent := tableData.Rows[row].Cells[col].Content
