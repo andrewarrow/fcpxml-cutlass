@@ -330,12 +330,40 @@ func postProcessSegments(segs []Segment) []Segment {
     }
     var out []Segment
     for i := 0; i < len(segs); i++ {
+        wordCount := len(strings.Fields(segs[i].Text))
+        if wordCount < 5 {
+            // Too short – likely artifact unless the next segment is simply a continuation.
+            if i < len(segs)-1 {
+                continue
+            }
+        }
+
         if i < len(segs)-1 {
             cur := strings.ToLower(strings.TrimSpace(segs[i].Text))
             nxt := strings.ToLower(strings.TrimSpace(segs[i+1].Text))
             if len(cur) < 60 && strings.Contains(nxt, cur) {
                 // Likely redundant stub – drop.
                 continue
+            }
+
+            // Fuzzy containment – if at least 80% of current words are present in
+            // the next longer segment, treat as duplicate.
+            curWords := strings.Fields(cur)
+            nxtWords := strings.Fields(nxt)
+            if len(curWords) > 0 && len(nxtWords) > len(curWords) {
+                wordSet := make(map[string]struct{}, len(nxtWords))
+                for _, w := range nxtWords {
+                    wordSet[w] = struct{}{}
+                }
+                kept := 0
+                for _, w := range curWords {
+                    if _, ok := wordSet[w]; ok {
+                        kept++
+                    }
+                }
+                if kept*5 >= len(curWords)*4 { // >=80%
+                    continue
+                }
             }
         }
         out = append(out, segs[i])
