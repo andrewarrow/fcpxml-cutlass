@@ -95,12 +95,32 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 
 	totalDuration := 15 * time.Second
 	
-	// Calculate grid dimensions - show more data for a proper table
-	maxRows := min(8, len(tableData.Rows))     // Show up to 8 data rows
-	maxCols := min(6, len(tableData.Headers))  // Show up to 6 columns
+	// Calculate grid dimensions with FCP layer limits in mind
+	// FCP has a practical limit of ~50-60 nested elements before performance issues
+	// Each row+col creates multiple elements (lines + text), so limit conservatively
+	const maxFCPRows = 5    // Maximum 5 data rows + 1 header = 6 total rows
+	const maxFCPCols = 4    // Maximum 4 columns to stay within layer limits
+	
+	maxRows := min(maxFCPRows, len(tableData.Rows))     // Limit rows for FCP
+	maxCols := min(maxFCPCols, len(tableData.Headers))  // Limit columns for FCP
 	totalRows := maxRows + 1  // Add 1 for header row
 	
+	// Calculate and warn about element counts
+	totalHorizontalLines := totalRows + 1  // rows + 1 for borders
+	totalVerticalLines := maxCols + 1      // cols + 1 for borders  
+	totalLines := totalHorizontalLines + totalVerticalLines
+	totalTextElements := (maxCols) + (maxRows * maxCols) // headers + data cells
+	totalElements := totalLines + totalTextElements
+	
 	fmt.Printf("DEBUG: Creating %dx%d table (including header)\n", totalRows, maxCols)
+	fmt.Printf("DEBUG: Element count - Lines: %d, Text: %d, Total: %d\n", totalLines, totalTextElements, totalElements)
+	
+	if len(tableData.Rows) > maxFCPRows {
+		fmt.Printf("DEBUG: Limited rows from %d to %d for FCP compatibility\n", len(tableData.Rows), maxFCPRows)
+	}
+	if len(tableData.Headers) > maxFCPCols {
+		fmt.Printf("DEBUG: Limited columns from %d to %d for FCP compatibility\n", len(tableData.Headers), maxFCPCols)
+	}
 	
 	// Create more lines for proper table grid
 	// Generate horizontal lines: top border, header separator, row separators, bottom border
