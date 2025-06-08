@@ -378,41 +378,39 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 			}
 		}
 	case AllColumnsAnimated:
-		// Static table: show all headers
-		for i, staticColIndex := range config.StaticColumns {
-			if i < len(cellTextPositions[0]) && i < maxCols && staticColIndex < len(tableData.Headers) {
-				headerStyleID := fmt.Sprintf("static-header-style-%d", i)
-				headerTitle := Title{
-					Ref:      "r3",
-					Lane:     fmt.Sprintf("%d", laneCounter),
-					Offset:   "0s",
-					Name:     fmt.Sprintf("Static Header %d", i+1),
-					Start:    "0s",
-					Duration: FormatDurationForFCPXML(totalDuration),
-					Params: []Param{
-						{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][i].X*10, cellTextPositions[0][i].Y*10)},
+		// Static table: show all headers (for traditional tables like earthquakes)
+		for i := 0; i < len(tableData.Headers) && i < maxCols && i < len(cellTextPositions[0]); i++ {
+			headerStyleID := fmt.Sprintf("static-header-style-%d", i)
+			headerTitle := Title{
+				Ref:      "r3",
+				Lane:     fmt.Sprintf("%d", laneCounter),
+				Offset:   "0s",
+				Name:     fmt.Sprintf("Static Header %d", i+1),
+				Start:    "0s",
+				Duration: FormatDurationForFCPXML(totalDuration),
+				Params: []Param{
+					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][i].X*10, cellTextPositions[0][i].Y*10)},
+				},
+				Text: &TitleText{
+					TextStyle: TextStyleRef{
+						Ref:  headerStyleID,
+						Text: tableData.Headers[i],
 					},
-					Text: &TitleText{
-						TextStyle: TextStyleRef{
-							Ref:  headerStyleID,
-							Text: tableData.Headers[staticColIndex],
-						},
+				},
+				TextStyleDef: &TextStyleDef{
+					ID: headerStyleID,
+					TextStyle: TextStyle{
+						Font:        "Helvetica Neue",
+						FontSize:    "150",
+						FontColor:   "1 1 1 1",
+						Bold:        "1",
+						Alignment:   "center",
+						LineSpacing: "1.08",
 					},
-					TextStyleDef: &TextStyleDef{
-						ID: headerStyleID,
-						TextStyle: TextStyle{
-							Font:        "Helvetica Neue",
-							FontSize:    "150",
-							FontColor:   "1 1 1 1",
-							Bold:        "1",
-							Alignment:   "center",
-							LineSpacing: "1.08",
-						},
-					},
-				}
-				nestedTitles = append(nestedTitles, headerTitle)
-				laneCounter++
+				},
 			}
+			nestedTitles = append(nestedTitles, headerTitle)
+			laneCounter++
 		}
 	}
 
@@ -507,51 +505,19 @@ func generateTableWithConfig(tableData *TableData, outputPath string, config Tab
 			}
 		}
 	case AllColumnsAnimated:
-		// Static table: show all static data cells
-		for row := 0; row < maxRows && row < len(tableData.Rows); row++ {
-			for colIdx, staticColIndex := range config.StaticColumns {
-				if colIdx < maxCols && staticColIndex < len(tableData.Rows[row].Cells) && row+1 < len(cellTextPositions) && colIdx < len(cellTextPositions[row+1]) {
-					cellContent := tableData.Rows[row].Cells[staticColIndex].Content
-					if cellContent != "" {
-						cellStyleID := fmt.Sprintf("static-cell-style-%d-%d", row+1, colIdx+1)
-						staticCellTitle := Title{
-							Ref:      "r3",
-							Lane:     fmt.Sprintf("%d", laneCounter),
-							Offset:   "0s",
-							Name:     fmt.Sprintf("Static Cell %d-%d", row+1, colIdx+1),
-							Start:    "0s",
-							Duration: FormatDurationForFCPXML(totalDuration),
-							Params: []Param{
-								{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][colIdx].X*10, cellTextPositions[row+1][colIdx].Y*10)},
-							},
-							Text: &TitleText{
-								TextStyle: TextStyleRef{
-									Ref:  cellStyleID,
-									Text: cellContent,
-								},
-							},
-							TextStyleDef: &TextStyleDef{
-								ID: cellStyleID,
-								TextStyle: TextStyle{
-									Font:        "Helvetica Neue",
-									FontSize:    "120",
-									FontColor:   "0.9 0.9 0.9 1",
-									Alignment:   "center",
-									LineSpacing: "1.08",
-								},
-							},
-						}
-						nestedTitles = append(nestedTitles, staticCellTitle)
-						laneCounter++
-					}
-				}
-			}
-		}
+		// For AllColumnsAnimated (traditional tables), don't show static data cells
+		// All data will be shown via animation in generateTraditionalAnimatedData
 	}
 
-	// Add dynamic time-based data (appearing for 3 seconds each)
+	// Add dynamic time-based data for appropriate table styles
 	if config.Style == StaticLeftAnimatedRight && len(config.TimeSegments) > 0 && len(cellTextPositions[0]) > 1 {
 		err := generateAnimatedData(tableData, config, cellTextPositions, &nestedTitles, &laneCounter, maxRows)
+		if err != nil {
+			return err
+		}
+	} else if config.Style == AllColumnsAnimated && len(config.TimeSegments) > 0 {
+		// For traditional tables with time segments (like earthquakes), show each row sequentially
+		err := generateTraditionalAnimatedData(tableData, config, cellTextPositions, &nestedTitles, &laneCounter, maxRows, maxCols)
 		if err != nil {
 			return err
 		}
@@ -687,6 +653,78 @@ func generateAnimatedData(tableData *TableData, config TableConfig, cellTextPosi
 							}
 							rowCounter++
 						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// generateTraditionalAnimatedData handles animated data for traditional tables (like earthquakes)
+// Shows each complete row for 3 seconds with all columns visible
+func generateTraditionalAnimatedData(tableData *TableData, config TableConfig, cellTextPositions [][]Position, nestedTitles *[]Title, laneCounter *int, maxRows, maxCols int) error {
+	for i, timeHeader := range config.TimeSegments {
+		timeOffset := FormatDurationForFCPXML(time.Duration(i*3) * time.Second)
+		timeDuration := FormatDurationForFCPXML(3 * time.Second)
+		
+		// Find the row that corresponds to this time segment (year)
+		rowIndex := -1
+		for r, row := range tableData.Rows {
+			if r < len(tableData.Rows) && len(row.Cells) > 0 {
+				// Check if the first cell (date) contains this year
+				dateContent := row.Cells[0].Content
+				if strings.Contains(dateContent, timeHeader) {
+					rowIndex = r
+					break
+				}
+			}
+		}
+		
+		if rowIndex >= 0 && rowIndex < len(tableData.Rows) {
+			// Display all columns for this row in the first data row position (traditional table style)
+			for colIdx := 0; colIdx < len(tableData.Headers) && colIdx < maxCols; colIdx++ {
+				if colIdx < len(tableData.Rows[rowIndex].Cells) && len(cellTextPositions) > 1 && colIdx < len(cellTextPositions[1]) {
+					cellContent := tableData.Rows[rowIndex].Cells[colIdx].Content
+					if cellContent != "" {
+						cellStyleID := fmt.Sprintf("traditional-cell-style-%s-%d", timeHeader, colIdx)
+						traditionalCellTitle := Title{
+							Ref:      "r3",
+							Lane:     fmt.Sprintf("%d", *laneCounter),
+							Offset:   timeOffset,
+							Name:     fmt.Sprintf("Traditional Cell %s-C%d", timeHeader, colIdx),
+							Start:    "0s",
+							Duration: timeDuration,
+							Params: []Param{
+								{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[1][colIdx].X*10, cellTextPositions[1][colIdx].Y*10)},
+								{Name: "Opacity", Key: "9999/10003/1/100/101", Value: "0", KeyframeAnimation: &KeyframeAnimation{
+									Keyframes: []Keyframe{
+										{Time: "0s", Value: "0"},
+										{Time: "15/30000s", Value: "1"},
+										{Time: "75/30000s", Value: "1"},
+										{Time: "90/30000s", Value: "0"},
+									},
+								}},
+							},
+							Text: &TitleText{
+								TextStyle: TextStyleRef{
+									Ref:  cellStyleID,
+									Text: cellContent,
+								},
+							},
+							TextStyleDef: &TextStyleDef{
+								ID: cellStyleID,
+								TextStyle: TextStyle{
+									Font:        "Helvetica Neue",
+									FontSize:    "120",
+									FontColor:   "0.9 0.9 0.9 1",
+									Alignment:   "center",
+									LineSpacing: "1.08",
+								},
+							},
+						}
+						*nestedTitles = append(*nestedTitles, traditionalCellTitle)
+						(*laneCounter)++
 					}
 				}
 			}
