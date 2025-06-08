@@ -165,15 +165,115 @@ func DisplayFCPXML(fcpxml *FCPXML) {
 				
 				spineContent := strings.TrimSpace(sequence.Spine.Content)
 				if spineContent != "" {
-					fmt.Printf("            Spine Content:\n")
-					lines := strings.Split(spineContent, "\n")
-					for _, line := range lines {
-						if strings.TrimSpace(line) != "" {
-							fmt.Printf("              %s\n", strings.TrimSpace(line))
-						}
-					}
+					fmt.Printf("            Timeline Elements:\n")
+					parseSpineContent(spineContent, "              ")
 				}
 			}
 		}
+	}
+}
+
+func parseSpineContent(content, indent string) {
+	// Wrap content in a root element to make it valid XML
+	wrappedContent := "<spine>" + content + "</spine>"
+	
+	var spineData struct {
+		Videos     []Video     `xml:"video"`
+		Titles     []Title     `xml:"title"`
+		AssetClips []AssetClip `xml:"asset-clip"`
+		Gaps       []Gap       `xml:"gap"`
+	}
+	
+	err := xml.Unmarshal([]byte(wrappedContent), &spineData)
+	if err != nil {
+		fmt.Printf("%sError parsing spine content: %v\n", indent, err)
+		return
+	}
+	
+	// Display asset clips (main video/audio clips)
+	for i, clip := range spineData.AssetClips {
+		fmt.Printf("%sAsset Clip %d: %s\n", indent, i+1, clip.Name)
+		fmt.Printf("%s  Reference: %s\n", indent, clip.Ref)
+		fmt.Printf("%s  Offset: %s\n", indent, clip.Offset)
+		fmt.Printf("%s  Duration: %s\n", indent, clip.Duration)
+		if clip.Start != "" {
+			fmt.Printf("%s  Start: %s\n", indent, clip.Start)
+		}
+	}
+	
+	// Display video elements (shapes, generators, etc.)
+	for i, video := range spineData.Videos {
+		displayVideoElement(video, i+1, indent, 0)
+	}
+	
+	// Display title elements
+	for i, title := range spineData.Titles {
+		fmt.Printf("%sTitle %d: %s\n", indent, i+1, title.Name)
+		fmt.Printf("%s  Reference: %s\n", indent, title.Ref)
+		fmt.Printf("%s  Offset: %s\n", indent, title.Offset)
+		fmt.Printf("%s  Duration: %s\n", indent, title.Duration)
+		if title.Lane != "" {
+			fmt.Printf("%s  Lane: %s\n", indent, title.Lane)
+		}
+	}
+	
+	// Display gaps
+	for i, gap := range spineData.Gaps {
+		fmt.Printf("%sGap %d: %s\n", indent, i+1, gap.Name)
+		fmt.Printf("%s  Offset: %s\n", indent, gap.Offset)
+		fmt.Printf("%s  Duration: %s\n", indent, gap.Duration)
+	}
+}
+
+func displayVideoElement(video Video, index int, baseIndent string, level int) {
+	indent := baseIndent + strings.Repeat("  ", level)
+	
+	if level == 0 {
+		fmt.Printf("%sVideo Element %d: %s\n", indent, index, video.Name)
+	} else {
+		fmt.Printf("%sNested Video (Lane %s): %s\n", indent, video.Lane, video.Name)
+	}
+	
+	fmt.Printf("%s  Reference: %s\n", indent, video.Ref)
+	fmt.Printf("%s  Offset: %s\n", indent, video.Offset)
+	fmt.Printf("%s  Duration: %s\n", indent, video.Duration)
+	if video.Lane != "" && level == 0 {
+		fmt.Printf("%s  Lane: %s\n", indent, video.Lane)
+	}
+	if video.Start != "" {
+		fmt.Printf("%s  Start: %s\n", indent, video.Start)
+	}
+	
+	// Show key parameters
+	keyParams := []string{"Shape", "Fill Color", "Center", "Outline"}
+	for _, param := range video.Params {
+		for _, key := range keyParams {
+			if strings.Contains(param.Name, key) {
+				fmt.Printf("%s  %s: %s\n", indent, param.Name, param.Value)
+				break
+			}
+		}
+	}
+	
+	// Show transform info
+	if video.AdjustTransform != nil {
+		if video.AdjustTransform.Position != "" {
+			fmt.Printf("%s  Position: %s\n", indent, video.AdjustTransform.Position)
+		}
+		if video.AdjustTransform.Scale != "" {
+			fmt.Printf("%s  Scale: %s\n", indent, video.AdjustTransform.Scale)
+		}
+	}
+	
+	// Display nested elements
+	for i, nestedVideo := range video.NestedVideos {
+		displayVideoElement(nestedVideo, i+1, baseIndent, level+1)
+	}
+	
+	for _, nestedTitle := range video.NestedTitles {
+		fmt.Printf("%sNested Title (Lane %s): %s\n", indent+"  ", nestedTitle.Lane, nestedTitle.Name)
+		fmt.Printf("%s  Reference: %s\n", indent+"  ", nestedTitle.Ref)
+		fmt.Printf("%s  Offset: %s\n", indent+"  ", nestedTitle.Offset)
+		fmt.Printf("%s  Duration: %s\n", indent+"  ", nestedTitle.Duration)
 	}
 }
