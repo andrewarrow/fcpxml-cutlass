@@ -126,29 +126,29 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	// Calculate positions using the proper method from long.fcpxml - position-based transforms from center
 	// All lines center at "0.5 0.5" and use adjust-transform position to move them
 	
-	// Limit rows and columns for much larger, text-friendly cells
-	maxVisibleRows := min(3, numRows)  // Show max 3 rows for much larger cells
-	maxVisibleCols := min(3, len(tableData.Headers))  // Show max 3 columns for much larger cells
+	// Limit rows and columns for much larger, text-friendly cells  
+	maxVisibleRows := min(4, numRows)    // Show max 4 rows for much larger cells (need 1 more line than rows)
+	maxVisibleCols := min(4, len(tableData.Headers))  // Show max 4 columns for much larger cells (need 1 more line than cols)
 	
-	// Calculate horizontal line position offsets (Y-axis) - from center (0.5) using position transform
-	// Using larger spacing values like in long.fcpxml for full-screen coverage
-	var horizontalPositionOffsets []float64
-	totalHeight := 200.0  // Total span in position units (full screen height coverage)
-	for i := 0; i <= maxVisibleRows; i++ {
-		// Center around 0, spread over totalHeight
-		yOffset := -totalHeight/2 + totalHeight*float64(i)/float64(maxVisibleRows)
-		horizontalPositionOffsets = append(horizontalPositionOffsets, yOffset)
-		fmt.Printf("DEBUG: Horizontal line %d at position offset Y=%.1f\n", i, yOffset)
+	// Use exact positioning values from wide.fcpxml for perfect edge-to-edge coverage
+	// These values were extracted from the working wide.fcpxml file
+	horizontalPositionOffsets := []float64{-100, -46.5928, 48.0135, 100}
+	verticalPositionOffsets := []float64{-150, -73.3652, 73.3319, 150}
+	
+	// Trim to actual number of lines needed
+	if len(horizontalPositionOffsets) > maxVisibleRows+1 {
+		horizontalPositionOffsets = horizontalPositionOffsets[:maxVisibleRows+1]
+	}
+	if len(verticalPositionOffsets) > maxVisibleCols+1 {
+		verticalPositionOffsets = verticalPositionOffsets[:maxVisibleCols+1]
 	}
 	
-	// Calculate vertical line position offsets (X-axis) - from center (0.5) using position transform  
-	var verticalPositionOffsets []float64
-	totalWidth := 300.0   // Total span in position units (full screen width coverage)
-	for j := 0; j <= maxVisibleCols; j++ {
-		// Center around 0, spread over totalWidth
-		xOffset := -totalWidth/2 + totalWidth*float64(j)/float64(maxVisibleCols)
-		verticalPositionOffsets = append(verticalPositionOffsets, xOffset)
-		fmt.Printf("DEBUG: Vertical line %d at position offset X=%.1f\n", j, xOffset)
+	fmt.Printf("DEBUG: Using exact positions from wide.fcpxml\n")
+	for i, yOffset := range horizontalPositionOffsets {
+		fmt.Printf("DEBUG: Horizontal line %d at Y position offset=%.4f\n", i, yOffset)
+	}
+	for j, xOffset := range verticalPositionOffsets {
+		fmt.Printf("DEBUG: Vertical line %d at X position offset=%.4f\n", j, xOffset)
 	}
 	
 	// Create ONE main video with ALL table lines as nested elements (following table.fcpxml pattern)
@@ -177,7 +177,6 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.5"},
 			},
 			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("0 %.1f", yOffset), Scale: "1 0.0394"},
 		}
@@ -204,7 +203,6 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 				{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 				{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-				{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.5"},
 			},
 			AdjustTransform: &AdjustTransform{Position: fmt.Sprintf("%.1f 0", xOffset), Scale: "0.0394 1"},
 		}
@@ -229,7 +227,6 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
 			{Name: "Outline Width", Key: "9999/988461322/100/988467855/2/100", Value: "0.338788"},
 			{Name: "Corners", Key: "9999/988461322/100/988469428/2/100", Value: "1 (Square)"},
-			{Name: "Center", Key: "9999/988469355/988469353/3/988469357/1", Value: "0.5 0.5"},
 		},
 		AdjustTransform: &AdjustTransform{Scale: "1 0.0395"},
 		NestedVideos:    nestedVideos,
