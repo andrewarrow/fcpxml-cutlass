@@ -20,11 +20,13 @@ func main() {
 	var wikipediaMode bool
 	var parseMode bool
 	var tableMode bool
+	var tableNumber int
 	flag.StringVar(&inputFile, "i", "", "Input file (required)")
 	flag.BoolVar(&segmentMode, "s", false, "Segment mode: break into logical clips with title cards")
 	flag.BoolVar(&wikipediaMode, "w", false, "Wikipedia mode: create FCPXML from Wikipedia article tables")
 	flag.BoolVar(&parseMode, "p", false, "Parse mode: parse and display existing FCPXML file")
 	flag.BoolVar(&tableMode, "t", false, "Table mode: parse and display Wikipedia table data")
+	flag.IntVar(&tableNumber, "table", 0, "Table number to display (0 for all, 1-N for specific table)")
 	flag.Parse()
 
 	args := flag.Args()
@@ -34,6 +36,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  -w: Wikipedia mode - create FCPXML from Wikipedia article tables\n")
 		fmt.Fprintf(os.Stderr, "  -p: Parse mode - parse and display existing FCPXML file\n")
 		fmt.Fprintf(os.Stderr, "  -t: Table mode - parse and display Wikipedia table data\n")
+		fmt.Fprintf(os.Stderr, "  -table N: Display specific table number in ASCII format (use with -t)\n")
 		os.Exit(1)
 	}
 
@@ -56,7 +59,7 @@ func main() {
 
 	// Handle table mode
 	if tableMode {
-		if err := parseWikipediaTables(inputFile); err != nil {
+		if err := parseWikipediaTables(inputFile, tableNumber); err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing Wikipedia tables: %v\n", err)
 			os.Exit(1)
 		}
@@ -185,7 +188,94 @@ func parseFCPXML(filePath string) error {
 	return nil
 }
 
-func parseWikipediaTables(articleTitle string) error {
+func displayTableASCII(table *wikipedia.SimpleTable) {
+	if table == nil || len(table.Headers) == 0 {
+		fmt.Printf("No table data to display\n")
+		return
+	}
+
+	// Calculate column widths
+	colWidths := make([]int, len(table.Headers))
+	
+	// Initialize with header widths
+	for i, header := range table.Headers {
+		colWidths[i] = len(header)
+	}
+	
+	// Check row data for max widths
+	for _, row := range table.Rows {
+		for i, cell := range row {
+			if i < len(colWidths) {
+				if len(cell) > colWidths[i] {
+					colWidths[i] = len(cell)
+				}
+			}
+		}
+	}
+	
+	// Limit column width to reasonable max (40 chars) for readability
+	for i := range colWidths {
+		if colWidths[i] > 40 {
+			colWidths[i] = 40
+		}
+		if colWidths[i] < 3 {
+			colWidths[i] = 3
+		}
+	}
+	
+	// Print top border
+	fmt.Print("+")
+	for _, width := range colWidths {
+		fmt.Print(strings.Repeat("-", width+2) + "+")
+	}
+	fmt.Println()
+	
+	// Print headers
+	fmt.Print("|")
+	for i, header := range table.Headers {
+		truncated := header
+		if len(truncated) > colWidths[i] {
+			truncated = truncated[:colWidths[i]-3] + "..."
+		}
+		fmt.Printf(" %-*s |", colWidths[i], truncated)
+	}
+	fmt.Println()
+	
+	// Print header separator
+	fmt.Print("+")
+	for _, width := range colWidths {
+		fmt.Print(strings.Repeat("=", width+2) + "+")
+	}
+	fmt.Println()
+	
+	// Print rows
+	for _, row := range table.Rows {
+		fmt.Print("|")
+		for i := 0; i < len(colWidths); i++ {
+			cell := ""
+			if i < len(row) {
+				cell = row[i]
+			}
+			
+			// Truncate if too long
+			if len(cell) > colWidths[i] {
+				cell = cell[:colWidths[i]-3] + "..."
+			}
+			
+			fmt.Printf(" %-*s |", colWidths[i], cell)
+		}
+		fmt.Println()
+	}
+	
+	// Print bottom border
+	fmt.Print("+")
+	for _, width := range colWidths {
+		fmt.Print(strings.Repeat("-", width+2) + "+")
+	}
+	fmt.Println()
+}
+
+func parseWikipediaTables(articleTitle string, tableNumber int) error {
 	// Fetch Wikipedia source
 	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
 	source, err := wikipedia.FetchWikipediaSource(articleTitle)
@@ -205,7 +295,21 @@ func parseWikipediaTables(articleTitle string) error {
 		return nil
 	}
 
-	// Display all tables found
+	// If specific table number requested
+	if tableNumber > 0 {
+		if tableNumber > len(tables) {
+			return fmt.Errorf("table %d not found. Article has %d tables", tableNumber, len(tables))
+		}
+		
+		selectedTable := &tables[tableNumber-1]
+		fmt.Printf("\n=== TABLE %d FROM WIKIPEDIA ARTICLE '%s' ===\n", tableNumber, articleTitle)
+		fmt.Printf("Headers: %d, Rows: %d\n\n", len(selectedTable.Headers), len(selectedTable.Rows))
+		
+		displayTableASCII(selectedTable)
+		return nil
+	}
+
+	// Display all tables found (summary mode)
 	fmt.Printf("\n=== FOUND %d TABLES IN WIKIPEDIA ARTICLE '%s' ===\n\n", len(tables), articleTitle)
 	
 	for i, table := range tables {
@@ -237,6 +341,7 @@ func parseWikipediaTables(articleTitle string) error {
 		fmt.Printf("Headers: %v\n", bestTable.Headers)
 		fmt.Printf("Total rows: %d\n", len(bestTable.Rows))
 		fmt.Printf("Table data is ready for FCPXML generation\n")
+		fmt.Printf("\nTo view a specific table in ASCII format, use: -table N (where N is 1-%d)\n", len(tables))
 	}
 
 	return nil
