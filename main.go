@@ -188,91 +188,123 @@ func parseFCPXML(filePath string) error {
 	return nil
 }
 
+func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataColIndex int) {
+	if table == nil || len(table.Headers) == 0 {
+		fmt.Printf("No table data to display\n")
+		return
+	}
+
+	// Only display two columns: leftmost + one data column
+	leftHeader := table.Headers[leftColIndex]
+	dataHeader := table.Headers[dataColIndex]
+	
+	// Calculate column widths for these two columns
+	leftWidth := len(leftHeader)
+	dataWidth := len(dataHeader)
+	
+	// Check row data for max widths
+	for _, row := range table.Rows {
+		if leftColIndex < len(row) && len(row[leftColIndex]) > leftWidth {
+			leftWidth = len(row[leftColIndex])
+		}
+		if dataColIndex < len(row) && len(row[dataColIndex]) > dataWidth {
+			dataWidth = len(row[dataColIndex])
+		}
+	}
+	
+	// Limit column width to reasonable max (40 chars) for readability
+	if leftWidth > 40 {
+		leftWidth = 40
+	}
+	if dataWidth > 40 {
+		dataWidth = 40
+	}
+	if leftWidth < 3 {
+		leftWidth = 3
+	}
+	if dataWidth < 3 {
+		dataWidth = 3
+	}
+	
+	// Print top border
+	fmt.Printf("+%s+%s+\n", 
+		strings.Repeat("-", leftWidth+2), 
+		strings.Repeat("-", dataWidth+2))
+	
+	// Print headers
+	leftTruncated := leftHeader
+	if len(leftTruncated) > leftWidth {
+		leftTruncated = leftTruncated[:leftWidth-3] + "..."
+	}
+	dataTruncated := dataHeader
+	if len(dataTruncated) > dataWidth {
+		dataTruncated = dataTruncated[:dataWidth-3] + "..."
+	}
+	fmt.Printf("| %-*s | %-*s |\n", leftWidth, leftTruncated, dataWidth, dataTruncated)
+	
+	// Print header separator
+	fmt.Printf("+%s+%s+\n", 
+		strings.Repeat("=", leftWidth+2), 
+		strings.Repeat("=", dataWidth+2))
+	
+	// Print rows
+	for _, row := range table.Rows {
+		leftCell := ""
+		dataCell := ""
+		
+		if leftColIndex < len(row) {
+			leftCell = row[leftColIndex]
+		}
+		if dataColIndex < len(row) {
+			dataCell = row[dataColIndex]
+		}
+		
+		// Truncate if too long
+		if len(leftCell) > leftWidth {
+			leftCell = leftCell[:leftWidth-3] + "..."
+		}
+		if len(dataCell) > dataWidth {
+			dataCell = dataCell[:dataWidth-3] + "..."
+		}
+		
+		fmt.Printf("| %-*s | %-*s |\n", leftWidth, leftCell, dataWidth, dataCell)
+	}
+	
+	// Print bottom border
+	fmt.Printf("+%s+%s+\n", 
+		strings.Repeat("-", leftWidth+2), 
+		strings.Repeat("-", dataWidth+2))
+}
+
 func displayTableASCII(table *wikipedia.SimpleTable) {
 	if table == nil || len(table.Headers) == 0 {
 		fmt.Printf("No table data to display\n")
 		return
 	}
 
-	// Calculate column widths
-	colWidths := make([]int, len(table.Headers))
-	
-	// Initialize with header widths
-	for i, header := range table.Headers {
-		colWidths[i] = len(header)
+	// If table has 2 or fewer columns, display normally
+	if len(table.Headers) <= 2 {
+		displaySingleColumnPair(table, 0, len(table.Headers)-1)
+		return
 	}
+
+	// Display leftmost column + each data column (skipping leftmost)
+	leftColIndex := 0
+	totalDataCols := len(table.Headers) - 1
 	
-	// Check row data for max widths
-	for _, row := range table.Rows {
-		for i, cell := range row {
-			if i < len(colWidths) {
-				if len(cell) > colWidths[i] {
-					colWidths[i] = len(cell)
-				}
-			}
+	fmt.Printf("=== DISPLAYING %d COLUMN PAIRS (Leftmost + Each Data Column) ===\n\n", totalDataCols)
+	
+	for dataColIndex := 1; dataColIndex < len(table.Headers); dataColIndex++ {
+		fmt.Printf("--- TABLE %d/%d: %s + %s ---\n", 
+			dataColIndex, totalDataCols, table.Headers[leftColIndex], table.Headers[dataColIndex])
+		
+		displaySingleColumnPair(table, leftColIndex, dataColIndex)
+		
+		// Add spacing between tables (except after the last one)
+		if dataColIndex < len(table.Headers)-1 {
+			fmt.Println()
 		}
 	}
-	
-	// Limit column width to reasonable max (40 chars) for readability
-	for i := range colWidths {
-		if colWidths[i] > 40 {
-			colWidths[i] = 40
-		}
-		if colWidths[i] < 3 {
-			colWidths[i] = 3
-		}
-	}
-	
-	// Print top border
-	fmt.Print("+")
-	for _, width := range colWidths {
-		fmt.Print(strings.Repeat("-", width+2) + "+")
-	}
-	fmt.Println()
-	
-	// Print headers
-	fmt.Print("|")
-	for i, header := range table.Headers {
-		truncated := header
-		if len(truncated) > colWidths[i] {
-			truncated = truncated[:colWidths[i]-3] + "..."
-		}
-		fmt.Printf(" %-*s |", colWidths[i], truncated)
-	}
-	fmt.Println()
-	
-	// Print header separator
-	fmt.Print("+")
-	for _, width := range colWidths {
-		fmt.Print(strings.Repeat("=", width+2) + "+")
-	}
-	fmt.Println()
-	
-	// Print rows
-	for _, row := range table.Rows {
-		fmt.Print("|")
-		for i := 0; i < len(colWidths); i++ {
-			cell := ""
-			if i < len(row) {
-				cell = row[i]
-			}
-			
-			// Truncate if too long
-			if len(cell) > colWidths[i] {
-				cell = cell[:colWidths[i]-3] + "..."
-			}
-			
-			fmt.Printf(" %-*s |", colWidths[i], cell)
-		}
-		fmt.Println()
-	}
-	
-	// Print bottom border
-	fmt.Print("+")
-	for _, width := range colWidths {
-		fmt.Print(strings.Repeat("-", width+2) + "+")
-	}
-	fmt.Println()
 }
 
 func parseWikipediaTables(articleTitle string, tableNumber int) error {
