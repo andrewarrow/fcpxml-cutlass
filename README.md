@@ -10,6 +10,10 @@
 
 [apple doc](https://developer.apple.com/documentation/professional-video-applications/fcpxml-reference)
 
+## Table Example
+
+![table](https://i.imgur.com/mcAUx49.png)
+
 ## 🎯 Overview
 
 Cutalyst is a powerful command-line tool that converts video files into Final Cut Pro XML (FCPXML) format, making it effortless to import media into Final Cut Pro for editing. It supports both local video files and YouTube videos, automatically downloading them with subtitles when needed.

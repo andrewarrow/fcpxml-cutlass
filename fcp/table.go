@@ -78,14 +78,16 @@ func calculateCellTextPositions(horizontalOffsets, verticalOffsets []float64) []
 func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	fmt.Printf("DEBUG: GenerateTableGridFCPXML called with outputPath: %s\n", outputPath)
 	
-	// Use default data if tableData is nil
+	// Use default tennis data if tableData is nil - Andre Agassi tournament results by year
 	if tableData == nil {
-		fmt.Printf("DEBUG: tableData is nil, using default data\n")
+		fmt.Printf("DEBUG: tableData is nil, using default tennis data\n")
 		tableData = &TableData{
-			Headers: []string{"Tournament", "Result"},
+			Headers: []string{"Tournament", "1986"},
 			Rows: []TableRow{
-				{Cells: []TableCell{{Content: "Grand Slam"}, {Content: "Champion"}}},
-				{Cells: []TableCell{{Content: "Masters Cup"}, {Content: "Runner-up"}}},
+				{Cells: []TableCell{{Content: "Australian Open"}, {Content: "NH"}}},
+				{Cells: []TableCell{{Content: "French Open"}, {Content: "A"}}},
+				{Cells: []TableCell{{Content: "Wimbledon"}, {Content: "A"}}},
+				{Cells: []TableCell{{Content: "US Open"}, {Content: "1R"}}},
 			},
 		}
 	} else {
@@ -93,7 +95,8 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 		fmt.Printf("DEBUG: Headers: %v\n", tableData.Headers)
 	}
 
-	totalDuration := 15 * time.Second
+	// Total duration: 190 seconds (19 years * 10 seconds each)
+	totalDuration := 190 * time.Second
 	
 	// Calculate grid dimensions with FCP layer limits in mind
 	// FCP has a practical limit of ~50-60 nested elements before performance issues
@@ -197,64 +200,157 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	// Position text in the center of each cell based on grid lines
 	cellTextPositions := calculateCellTextPositions(horizontalPositionOffsets, verticalPositionOffsets)
 	
-	// Add header text
-	for col := 0; col < maxCols && col < len(tableData.Headers); col++ {
-		if col < len(cellTextPositions[0]) {
-			styleID := fmt.Sprintf("header-style-%d", col+1)
-			headerTitle := Title{
+	// Tennis tournament data by year (1986-2004)
+	yearsData := map[int][]string{
+		1986: {"NH", "A", "A", "1R"},
+		1987: {"A", "2R", "1R", "1R"},
+		1988: {"A", "SF", "A", "SF"},
+		1989: {"A", "3R", "A", "SF"},
+		1990: {"A", "F", "A", "F"},
+		1991: {"A", "F", "QF", "1R"},
+		1992: {"A", "SF", "W", "QF"},
+		1993: {"A", "A", "QF", "1R"},
+		1994: {"A", "2R", "4R", "W"},
+		1995: {"W", "QF", "SF", "F"},
+		1996: {"SF", "2R", "1R", "SF"},
+		1997: {"A", "A", "A", "4R"},
+		1998: {"A", "1R", "2R", "4R"},
+		1999: {"4R", "W", "F", "W"},
+		2000: {"A", "2R", "SF", "2R"},
+		2001: {"W", "QF", "SF", "QF"},
+		2002: {"A", "QF", "2R", "F"},
+		2003: {"W", "QF", "4R", "SF"},
+		2004: {"A", "1R", "A", "QF"},
+	}
+
+	// Add static Tournament column header (always visible)
+	tournamentHeaderTitle := Title{
+		Ref:      "r3",
+		Lane:     fmt.Sprintf("%d", laneCounter),
+		Offset:   "0s",
+		Name:     "Tournament Header",
+		Start:    "0s",
+		Duration: FormatDurationForFCPXML(totalDuration),
+		Params: []Param{
+			{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][0].X*10, cellTextPositions[0][0].Y*10)},
+		},
+		Text: &TitleText{
+			TextStyle: TextStyleRef{
+				Ref:  "tournament-header-style",
+				Text: "Tournament",
+			},
+		},
+		TextStyleDef: &TextStyleDef{
+			ID: "tournament-header-style",
+			TextStyle: TextStyle{
+				Font:        "Helvetica Neue",
+				FontSize:    "150",
+				FontColor:   "1 1 1 1",
+				Bold:        "1",
+				Alignment:   "center",
+				LineSpacing: "1.08",
+			},
+		},
+	}
+	nestedTitles = append(nestedTitles, tournamentHeaderTitle)
+	laneCounter++
+
+	// Add year headers (one for each 10-second segment)
+	for i, year := range []int{1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004} {
+		yearOffset := fmt.Sprintf("%ds", i*10)
+		yearDuration := "10s"
+		yearHeaderTitle := Title{
+			Ref:      "r3",
+			Lane:     fmt.Sprintf("%d", laneCounter),
+			Offset:   yearOffset,
+			Name:     fmt.Sprintf("Year Header %d", year),
+			Start:    "0s",
+			Duration: yearDuration,
+			Params: []Param{
+				{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][1].X*10, cellTextPositions[0][1].Y*10)},
+			},
+			Text: &TitleText{
+				TextStyle: TextStyleRef{
+					Ref:  fmt.Sprintf("year-header-style-%d", year),
+					Text: fmt.Sprintf("%d", year),
+				},
+			},
+			TextStyleDef: &TextStyleDef{
+				ID: fmt.Sprintf("year-header-style-%d", year),
+				TextStyle: TextStyle{
+					Font:        "Helvetica Neue",
+					FontSize:    "150",
+					FontColor:   "0.5 0.8 1 1",
+					Bold:        "1",
+					Alignment:   "center",
+					LineSpacing: "1.08",
+				},
+			},
+		}
+		nestedTitles = append(nestedTitles, yearHeaderTitle)
+	}
+	laneCounter++
+	
+	// Add static tournament names (always visible)
+	tournaments := []string{"Australian Open", "French Open", "Wimbledon", "US Open"}
+	for row, tournament := range tournaments {
+		if row+1 < len(cellTextPositions) {
+			tournamentStyleID := fmt.Sprintf("tournament-style-%d", row+1)
+			tournamentTitle := Title{
 				Ref:      "r3",
 				Lane:     fmt.Sprintf("%d", laneCounter),
 				Offset:   "0s",
-				Name:     fmt.Sprintf("Header %d", col+1),
+				Name:     fmt.Sprintf("Tournament %d", row+1),
 				Start:    "0s",
 				Duration: FormatDurationForFCPXML(totalDuration),
 				Params: []Param{
-					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][col].X*10, cellTextPositions[0][col].Y*10)},
+					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][0].X*10, cellTextPositions[row+1][0].Y*10)},
 				},
 				Text: &TitleText{
 					TextStyle: TextStyleRef{
-						Ref:  styleID,
-						Text: tableData.Headers[col],
+						Ref:  tournamentStyleID,
+						Text: tournament,
 					},
 				},
 				TextStyleDef: &TextStyleDef{
-					ID: styleID,
+					ID: tournamentStyleID,
 					TextStyle: TextStyle{
 						Font:        "Helvetica Neue",
-						FontSize:    "150",
-						FontColor:   "1 1 1 1",
-						Bold:        "1",
+						FontSize:    "120",
+						FontColor:   "0.9 0.9 0.9 1",
 						Alignment:   "center",
 						LineSpacing: "1.08",
 					},
 				},
 			}
-			nestedTitles = append(nestedTitles, headerTitle)
+			nestedTitles = append(nestedTitles, tournamentTitle)
 			laneCounter++
 		}
 	}
-	
-	// Add data cell text
-	for row := 0; row < maxRows && row < len(tableData.Rows); row++ {
-		for col := 0; col < maxCols && col < len(tableData.Rows[row].Cells); col++ {
-			if row+1 < len(cellTextPositions) && col < len(cellTextPositions[row+1]) {
-				cellContent := tableData.Rows[row].Cells[col].Content
-				if cellContent != "" {
-					cellStyleID := fmt.Sprintf("cell-style-%d-%d", row+1, col+1)
-					dataTitle := Title{
+
+	// Add dynamic results data for each year (appearing for 10 seconds each)
+	for i, year := range []int{1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004} {
+		yearOffset := fmt.Sprintf("%ds", i*10)
+		yearDuration := "10s"
+		
+		if results, exists := yearsData[year]; exists {
+			for row, result := range results {
+				if row+1 < len(cellTextPositions) && len(cellTextPositions[row+1]) > 1 {
+					cellStyleID := fmt.Sprintf("result-style-%d-%d", year, row+1)
+					resultTitle := Title{
 						Ref:      "r3",
 						Lane:     fmt.Sprintf("%d", laneCounter),
-						Offset:   "0s",
-						Name:     fmt.Sprintf("Cell %d-%d", row+1, col+1),
+						Offset:   yearOffset,
+						Name:     fmt.Sprintf("Result %d-%d", year, row+1),
 						Start:    "0s",
-						Duration: FormatDurationForFCPXML(totalDuration),
+						Duration: yearDuration,
 						Params: []Param{
-							{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
+							{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][1].X*10, cellTextPositions[row+1][1].Y*10)},
 						},
 						Text: &TitleText{
 							TextStyle: TextStyleRef{
 								Ref:  cellStyleID,
-								Text: cellContent,
+								Text: result,
 							},
 						},
 						TextStyleDef: &TextStyleDef{
@@ -262,13 +358,14 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 							TextStyle: TextStyle{
 								Font:        "Helvetica Neue",
 								FontSize:    "120",
-								FontColor:   "1 1 1 1",
+								FontColor:   getResultColor(result),
+								Bold:        getBoldForResult(result),
 								Alignment:   "center",
 								LineSpacing: "1.08",
 							},
 						},
 					}
-					nestedTitles = append(nestedTitles, dataTitle)
+					nestedTitles = append(nestedTitles, resultTitle)
 					laneCounter++
 				}
 			}
@@ -410,6 +507,38 @@ func getBackgroundColor(content string, style map[string]string) string {
 	}
 
 	return "0.95 0.95 0.95"
+}
+
+func getResultColor(result string) string {
+	switch result {
+	case "W":
+		return "0.2 0.8 0.2 1" // Green for wins
+	case "F":
+		return "1 1 0.2 1" // Yellow for finals
+	case "SF":
+		return "1 0.6 0.2 1" // Orange for semifinals
+	case "QF":
+		return "0.6 0.8 1 1" // Light blue for quarterfinals
+	case "4R", "3R", "2R", "1R":
+		return "0.9 0.9 0.9 1" // Light gray for early rounds
+	case "A":
+		return "0.6 0.6 0.6 1" // Darker gray for absent
+	case "NH":
+		return "0.4 0.4 0.4 1" // Dark gray for not held
+	default:
+		return "1 1 1 1" // White for default
+	}
+}
+
+func getBoldForResult(result string) string {
+	switch result {
+	case "W":
+		return "1" // Bold for wins
+	case "F":
+		return "1" // Bold for finals
+	default:
+		return "0" // Normal weight for others
+	}
 }
 
 func GenerateWikipediaTableFCPXML(tableData *TableData, outputPath string) error {
