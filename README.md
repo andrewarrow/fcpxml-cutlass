@@ -24,7 +24,7 @@ You can also run:
 
 And get a completely different wikipedia table in this format.
 
-## Sources
+## How I learned about the fcpxml format
 
 [https://fcp.cafe/developers/fcpxml/](https://fcp.cafe/developers/fcpxml/)
 
