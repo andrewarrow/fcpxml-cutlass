@@ -87,8 +87,11 @@ func FetchSource(articleTitle string) (string, error) {
 	}
 	wikiSource = strings.ReplaceAll(wikiSource, "&lt;", "<")
 	wikiSource = strings.ReplaceAll(wikiSource, "&gt;", ">")
-	wikiSource = strings.ReplaceAll(wikiSource, "&amp;", "&")
 	wikiSource = strings.ReplaceAll(wikiSource, "&quot;", "\"")
+	wikiSource = strings.ReplaceAll(wikiSource, "&#34;", "\"")
+	wikiSource = strings.ReplaceAll(wikiSource, "&apos;", "'")
+	wikiSource = strings.ReplaceAll(wikiSource, "&#39;", "'")
+	wikiSource = strings.ReplaceAll(wikiSource, "&amp;", "&") // Decode &amp; last
 	
 	return wikiSource, nil
 }
@@ -757,6 +760,7 @@ func CleanWikiText(text string) string {
 		return ""
 	}
 	
+	
 	// Handle cell content that starts with HTML attributes
 	// Look for pattern: style="..." | actual_content or align=... | actual_content
 	if strings.Contains(text, "|") && (strings.Contains(text, "style=") || strings.Contains(text, "align=") || strings.Contains(text, "class=")) {
@@ -779,9 +783,19 @@ func CleanWikiText(text string) string {
 	// Handle simple links [[target]] -> keep only target text
 	text = regexp.MustCompile(`\[\[([^\]]+)\]\]`).ReplaceAllString(text, "$1")
 	
-	// Remove ref tags
-	text = regexp.MustCompile(`<ref[^>]*>.*?</ref>`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`<ref[^>]*/?>`).ReplaceAllString(text, "")
+	// First decode HTML entities properly (decode &amp; last to avoid double-decoding)
+	text = strings.ReplaceAll(text, "&lt;", "<")
+	text = strings.ReplaceAll(text, "&gt;", ">")
+	text = strings.ReplaceAll(text, "&quot;", "\"")
+	text = strings.ReplaceAll(text, "&#34;", "\"")
+	text = strings.ReplaceAll(text, "&apos;", "'")
+	text = strings.ReplaceAll(text, "&#39;", "'")
+	text = strings.ReplaceAll(text, "&amp;", "&") // Decode &amp; last
+	
+	// Then remove ref tags after decoding
+	text = regexp.MustCompile(`(?s)<ref[^>]*>.*?</ref>`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`<ref[^>]*/>`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`<ref[^>]*>`).ReplaceAllString(text, "")
 	
 	// Handle date templates specially BEFORE removing all templates
 	// Handle Dts templates: {{Dts|1585|06|11}} -> 1585-06-11
@@ -828,6 +842,7 @@ func CleanWikiText(text string) string {
 	// Remove any remaining brackets
 	text = strings.ReplaceAll(text, "[", "")
 	text = strings.ReplaceAll(text, "]", "")
+	
 	
 	return text
 }
