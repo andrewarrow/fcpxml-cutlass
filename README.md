@@ -1,9 +1,11 @@
 # fcpxml-cutlass
 
 [https://fcp.cafe/developers/fcpxml/](https://fcp.cafe/developers/fcpxml/)
+
 [https://fcp.cafe/developer-case-studies/fcpxml/](https://fcp.cafe/developer-case-studies/fcpxml/)
 
 [fcpxml/dtd](https://github.com/CommandPost/CommandPost/tree/develop/src/extensions/cp/apple/fcpxml/dtd)
+
 [https://github.com/orchetect/DAWFileKit](https://github.com/orchetect/DAWFileKit)
 
 [apple doc](https://developer.apple.com/documentation/professional-video-applications/fcpxml-reference)
