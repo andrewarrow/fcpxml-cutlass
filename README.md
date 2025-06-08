@@ -1,5 +1,12 @@
 # fcpxml-cutlass
 
+## Table Example
+
+![table](https://i.imgur.com/mcAUx49.png)
+![fcp1](https://i.imgur.com/8CQmlQ4.png)
+
+## Sources
+
 [https://fcp.cafe/developers/fcpxml/](https://fcp.cafe/developers/fcpxml/)
 
 [https://fcp.cafe/developer-case-studies/fcpxml/](https://fcp.cafe/developer-case-studies/fcpxml/)
@@ -9,10 +16,6 @@
 [https://github.com/orchetect/DAWFileKit](https://github.com/orchetect/DAWFileKit)
 
 [apple doc](https://developer.apple.com/documentation/professional-video-applications/fcpxml-reference)
-
-## Table Example
-
-![table](https://i.imgur.com/mcAUx49.png)
 
 ## 🎯 Overview
 
