@@ -176,71 +176,44 @@ func parseFCPXML(filePath string) error {
 func generateFromWikipedia(articleTitle, outputFile string) error {
 	// Fetch Wikipedia source
 	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
-	source, err := wikipedia.FetchSource(articleTitle)
+	source, err := wikipedia.FetchWikipediaSource(articleTitle)
 	if err != nil {
 		return fmt.Errorf("failed to fetch Wikipedia source: %v", err)
 	}
 
 	// Parse the source to extract tables
 	fmt.Printf("Parsing Wikipedia source for tables...\n")
-	data, err := wikipedia.ParseWikiSource(source)
+	tables, err := wikipedia.ParseWikitableFromSource(source)
 	if err != nil {
 		return fmt.Errorf("failed to parse Wikipedia source: %v", err)
 	}
 
-	if len(data.Tables) == 0 {
+	if len(tables) == 0 {
 		return fmt.Errorf("no tables found in Wikipedia article")
 	}
 
-	fmt.Printf("Found %d tables, selecting the best one for FCPXML generation\n", len(data.Tables))
-
-	// Find the table with tournament data (look for year headers like 1986)
-	bestTableIndex := 0
-	maxScore := 0
-	for i, table := range data.Tables {
-		fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
-		fmt.Printf("  Headers: %v\n", table.Headers)
-
-		score := 0
-		// Score based on headers containing years and tournaments
-		for _, header := range table.Headers {
-			if strings.Contains(header, "1986") || strings.Contains(header, "1987") ||
-				strings.Contains(header, "Tournament") || strings.Contains(header, "Grand") {
-				score += 10
-			}
-		}
-		// Score based on number of headers (more headers = likely the main table)
-		score += len(table.Headers)
-
-		fmt.Printf("  Score: %d\n", score)
-		if score > maxScore {
-			maxScore = score
-			bestTableIndex = i
-		}
+	// Select best table
+	bestTable := wikipedia.SelectBestTable(tables)
+	if bestTable == nil {
+		return fmt.Errorf("no suitable table found")
 	}
 
-	table := data.Tables[bestTableIndex]
-	fmt.Printf("Table headers: %v\n", table.Headers)
-	fmt.Printf("Table has %d rows\n", len(table.Rows))
+	fmt.Printf("Table headers: %v\n", bestTable.Headers)
+	fmt.Printf("Table has %d rows\n", len(bestTable.Rows))
 
 	// Convert the selected table to the structured TableData format
 	tableData := &fcp.TableData{
-		Headers: table.Headers,
-		Rows:    make([]fcp.TableRow, len(table.Rows)),
+		Headers: bestTable.Headers,
+		Rows:    make([]fcp.TableRow, len(bestTable.Rows)),
 	}
 
-	for i, row := range table.Rows {
+	for i, row := range bestTable.Rows {
 		tableData.Rows[i] = fcp.TableRow{
-			Cells: make([]fcp.TableCell, len(row.Cells)),
+			Cells: make([]fcp.TableCell, len(row)),
 		}
-		for j, cell := range row.Cells {
+		for j, cell := range row {
 			tableData.Rows[i].Cells[j] = fcp.TableCell{
-				Content:    cell.Content,
-				Style:      cell.Style,
-				Class:      cell.Class,
-				ColSpan:    cell.ColSpan,
-				RowSpan:    cell.RowSpan,
-				Attributes: cell.Attributes,
+				Content: cell,
 			}
 		}
 	}

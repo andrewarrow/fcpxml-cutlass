@@ -593,6 +593,303 @@ func processTextFormatting(text string) string {
 	return result
 }
 
+// Simple table structure for compatibility
+type SimpleTable struct {
+	Headers []string
+	Rows    [][]string
+}
+
+// ParseWikitableFromSource extracts and parses wikitable from source - simplified version
+func ParseWikitableFromSource(source string) ([]SimpleTable, error) {
+	fmt.Printf("Parsing Wikipedia source for tables...\n")
+	fmt.Printf("Source length: %d characters\n", len(source))
+	fmt.Printf("First 500 characters of source:\n%s\n", source[:min(500, len(source))])
+	
+	// Find all table start markers
+	tableStarts := regexp.MustCompile(`\{\|`).FindAllStringIndex(source, -1)
+	fmt.Printf("Found %d {| table start markers\n", len(tableStarts))
+	
+	// Check for wikitable class
+	if strings.Contains(source, "wikitable") {
+		fmt.Printf("Found 'wikitable' in source\n")
+	}
+	
+	// More robust table pattern matching
+	tablePatterns := []string{
+		`(?s)\{\|.*?class=".*?wikitable.*?\n\|\}`,
+		`(?s)\{\|.*?wikitable.*?\n\|\}`,
+		`(?s)\{\|[^}]*class="[^"]*wikitable[^"]*".*?\|\}`,
+	}
+	
+	var allTables []SimpleTable
+	tableMatches := make(map[string]bool) // To avoid duplicates
+	
+	for _, pattern := range tablePatterns {
+		regex := regexp.MustCompile(pattern)
+		matches := regex.FindAllString(source, -1)
+		fmt.Printf("Found %d tables with pattern: %s\n", len(matches), pattern)
+		
+		for _, match := range matches {
+			// Create a hash to avoid duplicates
+			hash := fmt.Sprintf("%d", len(match))
+			if tableMatches[hash] {
+				continue
+			}
+			tableMatches[hash] = true
+			
+			table := parseSimpleWikitableContent(match)
+			if len(table.Headers) > 0 {
+				allTables = append(allTables, table)
+			}
+		}
+	}
+	
+	fmt.Printf("Total found %d unique tables in Wikipedia source\n", len(allTables))
+	
+	// Debug output for each table
+	for i, table := range allTables {
+		fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
+	}
+	
+	return allTables, nil
+}
+
+// parseSimpleWikitableContent parses a single wikitable to simple format
+func parseSimpleWikitableContent(tableSource string) SimpleTable {
+	var table SimpleTable
+	
+	lines := strings.Split(tableSource, "\n")
+	var isInHeader bool
+	var currentRow []string
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		
+		// Skip empty lines and table markup
+		if line == "" || strings.HasPrefix(line, "{|") || line == "|}" {
+			continue
+		}
+		
+		// Header row
+		if strings.HasPrefix(line, "!") {
+			if len(currentRow) > 0 {
+				// Finish previous row
+				if len(table.Headers) == 0 {
+					table.Headers = currentRow
+				} else {
+					table.Rows = append(table.Rows, currentRow)
+				}
+				currentRow = nil
+			}
+			
+			isInHeader = true
+			// Split headers by !! or !
+			headerText := strings.TrimPrefix(line, "!")
+			headers := regexp.MustCompile(`\s*!!\s*|\s*!\s*`).Split(headerText, -1)
+			
+			for _, header := range headers {
+				header = CleanWikiText(header)
+				if header != "" {
+					currentRow = append(currentRow, header)
+				}
+			}
+		} else if strings.HasPrefix(line, "|-") {
+			// Row separator
+			if len(currentRow) > 0 {
+				if isInHeader && len(table.Headers) == 0 {
+					table.Headers = currentRow
+				} else {
+					table.Rows = append(table.Rows, currentRow)
+				}
+				currentRow = nil
+			}
+			isInHeader = false
+		} else if strings.HasPrefix(line, "|") && !strings.HasPrefix(line, "|+") {
+			// Data row
+			if len(currentRow) > 0 && isInHeader && len(table.Headers) == 0 {
+				table.Headers = currentRow
+				currentRow = nil
+			}
+			isInHeader = false
+			
+			// Split cells by || or |
+			cellText := strings.TrimPrefix(line, "|")
+			cells := regexp.MustCompile(`\s*\|\|\s*|\s*\|\s*`).Split(cellText, -1)
+			
+			for _, cell := range cells {
+				cell = CleanWikiText(cell)
+				currentRow = append(currentRow, cell)
+			}
+		}
+	}
+	
+	// Add final row
+	if len(currentRow) > 0 {
+		if len(table.Headers) == 0 {
+			table.Headers = currentRow
+		} else {
+			table.Rows = append(table.Rows, currentRow)
+		}
+	}
+	
+	return table
+}
+
+// CleanWikiText removes wiki markup from text
+func CleanWikiText(text string) string {
+	// Remove WIKILINK: prefixes
+	text = regexp.MustCompile(`WIKILINK:`).ReplaceAllString(text, "")
+	
+	// Remove file/image links completely [[File:...]] or [[Image:...]]
+	text = regexp.MustCompile(`\[\[(?:File|Image):[^\]]*\]\]`).ReplaceAllString(text, "")
+	
+	// Remove category links completely
+	text = regexp.MustCompile(`\[\[Category:[^\]]*\]\]`).ReplaceAllString(text, "")
+	
+	// Handle piped links [[target|display]] -> keep only display text
+	text = regexp.MustCompile(`\[\[[^|\]]*\|([^\]]+)\]\]`).ReplaceAllString(text, "$1")
+	
+	// Handle simple links [[target]] -> keep only target text
+	text = regexp.MustCompile(`\[\[([^\]]+)\]\]`).ReplaceAllString(text, "$1")
+	
+	// Remove any remaining brackets (safety net) - multiple passes to handle nested brackets
+	for i := 0; i < 5; i++ {
+		oldText := text
+		text = strings.ReplaceAll(text, "[[", "")
+		text = strings.ReplaceAll(text, "]]", "")
+		text = strings.ReplaceAll(text, "[", "")
+		text = strings.ReplaceAll(text, "]", "")
+		if text == oldText {
+			break
+		}
+	}
+	
+	// Remove ref tags
+	text = regexp.MustCompile(`<ref[^>]*>.*?</ref>`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`<ref[^>]*/?>`).ReplaceAllString(text, "")
+	
+	// Remove templates with nested structure
+	for i := 0; i < 10; i++ { // Multiple passes to handle nested templates
+		oldText := text
+		text = regexp.MustCompile(`\{\{[^{}]*\}\}`).ReplaceAllString(text, "")
+		if text == oldText {
+			break // No more changes
+		}
+	}
+	
+	// Remove any remaining template brackets
+	text = strings.ReplaceAll(text, "{{", "")
+	text = strings.ReplaceAll(text, "}}", "")
+	text = strings.ReplaceAll(text, "{", "")
+	text = strings.ReplaceAll(text, "}", "")
+	
+	// Remove HTML attributes and markup
+	text = regexp.MustCompile(`style="[^"]*"`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`class="[^"]*"`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`scope="[^"]*"`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`align="?[^"]*"?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`colspan="?[^"]*"?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`rowspan="?[^"]*"?`).ReplaceAllString(text, "")
+	
+	// Remove wiki formatting
+	text = regexp.MustCompile(`'''([^']+)'''`).ReplaceAllString(text, "$1") // Bold
+	text = regexp.MustCompile(`''([^']+)''`).ReplaceAllString(text, "$1")   // Italic
+	
+	// Clean up whitespace and pipes
+	text = regexp.MustCompile(`\s*\|\s*`).ReplaceAllString(text, " ")
+	text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
+	text = strings.TrimSpace(text)
+	
+	return text
+}
+
+// SelectBestTable selects the most suitable table for FCPXML generation
+func SelectBestTable(tables []SimpleTable) *SimpleTable {
+	if len(tables) == 0 {
+		return nil
+	}
+	
+	fmt.Printf("Found %d tables, selecting the best one for FCPXML generation\n", len(tables))
+	
+	bestTable := &tables[0]
+	bestScore := 0
+	
+	for i, table := range tables {
+		// Score based on number of headers and data richness
+		score := len(table.Headers)
+		
+		// Bonus for tables with meaningful data
+		if len(table.Rows) > 5 {
+			score += 5
+		}
+		if len(table.Rows) > 20 {
+			score += 10
+		}
+		
+		// Bonus for tables with date/year columns
+		for _, header := range table.Headers {
+			headerLower := strings.ToLower(header)
+			if strings.Contains(headerLower, "date") || 
+			   strings.Contains(headerLower, "year") ||
+			   regexp.MustCompile(`^\d{4}$`).MatchString(header) {
+				score += 5
+			}
+		}
+		
+		// Penalty for single-column tables
+		if len(table.Headers) == 1 {
+			score -= 10
+		}
+		
+		fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
+		fmt.Printf("  Headers: %v\n", table.Headers)
+		fmt.Printf("  Score: %d\n", score)
+		
+		if score > bestScore {
+			bestScore = score
+			bestTable = &tables[i]
+		}
+	}
+	
+	return bestTable
+}
+
+// FetchWikipediaSource fetches the source of a Wikipedia article
+func FetchWikipediaSource(articleTitle string) (string, error) {
+	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
+	
+	url := fmt.Sprintf("https://en.wikipedia.org/w/index.php?title=%s&action=edit", articleTitle)
+	fmt.Printf("Fetching Wikipedia source from: %s\n", url)
+	
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch Wikipedia page: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %v", err)
+	}
+	
+	source := string(body)
+	
+	// Extract content from textarea
+	start := strings.Index(source, "<textarea")
+	if start == -1 {
+		return "", fmt.Errorf("could not find textarea in Wikipedia edit page")
+	}
+	
+	start = strings.Index(source[start:], ">") + start + 1
+	end := strings.Index(source[start:], "</textarea>") + start
+	
+	if end <= start {
+		return "", fmt.Errorf("could not find end of textarea")
+	}
+	
+	return source[start:end], nil
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a
