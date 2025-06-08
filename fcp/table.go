@@ -102,17 +102,26 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 	
 	fmt.Printf("DEBUG: Creating %dx%d table (including header)\n", totalRows, maxCols)
 	
-	// Use exact positioning values from LINES.md for perfect edge-to-edge coverage
-	horizontalPositionOffsets := []float64{-100, -46.5928, 48.0135, 100}
-	verticalPositionOffsets := []float64{-150, -73.3652, 73.3319, 150}
+	// Create more lines for proper table grid
+	// Generate horizontal lines: top border, header separator, row separators, bottom border
+	horizontalPositionOffsets := make([]float64, totalRows+1)
+	startY := -100.0
+	endY := 100.0
+	stepY := (endY - startY) / float64(totalRows)
+	for i := 0; i <= totalRows; i++ {
+		horizontalPositionOffsets[i] = startY + float64(i)*stepY
+	}
 	
-	// Trim to actual number of lines needed (rows+1 lines for rows, cols+1 lines for columns)
-	if len(horizontalPositionOffsets) > totalRows+1 {
-		horizontalPositionOffsets = horizontalPositionOffsets[:totalRows+1]
+	// Generate vertical lines: left border, column separators, right border
+	verticalPositionOffsets := make([]float64, maxCols+1)
+	startX := -150.0
+	endX := 150.0
+	stepX := (endX - startX) / float64(maxCols)
+	for i := 0; i <= maxCols; i++ {
+		verticalPositionOffsets[i] = startX + float64(i)*stepX
 	}
-	if len(verticalPositionOffsets) > maxCols+1 {
-		verticalPositionOffsets = verticalPositionOffsets[:maxCols+1]
-	}
+	
+	// Lines are already generated with exact count needed
 	
 	fmt.Printf("DEBUG: Using %d horizontal lines and %d vertical lines\n", 
 		len(horizontalPositionOffsets), len(verticalPositionOffsets))

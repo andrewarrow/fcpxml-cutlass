@@ -1,7 +1,6 @@
-# Cutalyst
+# fcpxml-cutlass
 
 [![Go Version](https://img.shields.io/badge/go-1.23.5-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## 🎯 Overview
 
