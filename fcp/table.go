@@ -134,7 +134,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -159,7 +159,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0817 -0.0799793 -0.145856"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -200,7 +200,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 					ID: styleID,
 					TextStyle: TextStyle{
 						Font:        "Helvetica Neue",
-						FontSize:    "28",
+						FontSize:    "150",
 						FontColor:   "1 1 1 1",
 						Bold:        "1",
 						Alignment:   "center",
@@ -240,7 +240,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 							ID: cellStyleID,
 							TextStyle: TextStyle{
 								Font:        "Helvetica Neue",
-								FontSize:    "18",
+								FontSize:    "120",
 								FontColor:   "1 1 1 1",
 								Alignment:   "center",
 								LineSpacing: "1.08",
