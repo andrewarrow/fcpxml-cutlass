@@ -286,6 +286,11 @@ func parseTableCell(cellContent string) TableCell {
 	// Clean up content
 	cell.Content = removeWikiMarkup(cell.Content)
 	
+	// If content is empty or only contains HTML attributes, try to skip it
+	if cell.Content == "" || (strings.Contains(cell.Content, "=") && !strings.Contains(cell.Content, " ")) {
+		cell.Content = ""
+	}
+	
 	return cell
 }
 
@@ -358,6 +363,11 @@ func parseInt(s string) int {
 
 
 func removeWikiMarkup(text string) string {
+	// Skip if text is clearly just HTML attributes
+	if regexp.MustCompile(`^[a-zA-Z]+="[^"]*"(\s+[a-zA-Z]+="[^"]*")*$`).MatchString(text) {
+		return ""
+	}
+	
 	// Remove links [[text|display]] -> display or [[text]] -> text
 	linkRegex := regexp.MustCompile(`\[\[([^|\]]+)(\|([^\]]+))?\]\]`)
 	text = linkRegex.ReplaceAllStringFunc(text, func(match string) string {
@@ -375,6 +385,10 @@ func removeWikiMarkup(text string) string {
 	// Remove HTML-like tags
 	htmlRegex := regexp.MustCompile(`<[^>]*>`)
 	text = htmlRegex.ReplaceAllString(text, "")
+	
+	// Remove HTML attributes that may appear in cell content
+	attrRegex := regexp.MustCompile(`\w+\s*=\s*"[^"]*"`)
+	text = attrRegex.ReplaceAllString(text, "")
 	
 	// Remove formatting
 	text = strings.ReplaceAll(text, "'''", "")

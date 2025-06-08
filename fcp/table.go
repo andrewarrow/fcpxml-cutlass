@@ -134,7 +134,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0 0.0 0.0"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -159,7 +159,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 			Params: []Param{
 				{Name: "Drop Shadow Opacity", Key: "9999/988455508/1/208/211", Value: "0.7426"},
 				{Name: "Feather", Key: "9999/988455508/988455699/2/353/102", Value: "3"},
-				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "0.2 0.2 0.2"},
+				{Name: "Fill Color", Key: "9999/988455508/988455699/2/353/113/111", Value: "1.0 0.0 0.0"},
 				{Name: "Falloff", Key: "9999/988455508/988455699/2/353/158", Value: "-2"},
 				{Name: "Shape", Key: "9999/988461322/100/988461395/2/100", Value: "4 (Rectangle)"},
 				{Name: "Outline", Key: "9999/988461322/100/988464485/2/100", Value: "0"},
@@ -188,7 +188,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 				Duration: FormatDurationForFCPXML(totalDuration),
 				Params: []Param{
 					{Name: "Text", Key: "9999/999166631/999166633/1/100/101", Value: tableData.Headers[col]},
-					{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 48"},
+					{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 24"},
 					{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
 					{Name: "Line Spacing", Key: "9999/999166631/999166633/2/354/19", Value: "1.08"},
 					{Name: "Tracking", Key: "9999/999166631/999166633/2/354/999169688/999169690/401", Value: "0"},
@@ -216,7 +216,7 @@ func GenerateTableGridFCPXML(tableData *TableData, outputPath string) error {
 						Duration: FormatDurationForFCPXML(totalDuration),
 						Params: []Param{
 							{Name: "Text", Key: "9999/999166631/999166633/1/100/101", Value: cellContent},
-							{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 40"},
+							{Name: "Font", Key: "9999/999166631/999166633/2/360", Value: "Helvetica 20"},
 							{Name: "Alignment", Key: "9999/999166631/999166633/2/354/999169573/401", Value: "1 (Center)"},
 							{Name: "Line Spacing", Key: "9999/999166631/999166633/2/354/19", Value: "1.08"},
 							{Name: "Tracking", Key: "9999/999166631/999166633/2/354/999169688/999169690/401", Value: "0"},
