@@ -712,13 +712,29 @@ func parseSimpleWikitableContent(tableSource string) SimpleTable {
 			}
 			isInHeader = false
 			
-			// Split cells by || or |
+			// Split cells by || but be smarter about it
 			cellText := strings.TrimPrefix(line, "|")
-			cells := regexp.MustCompile(`\s*\|\|\s*|\s*\|\s*`).Split(cellText, -1)
+			
+			// Use a more sophisticated split that handles style attributes
+			var cells []string
+			if strings.Contains(cellText, "||") {
+				cells = strings.Split(cellText, "||")
+			} else {
+				// Single cell in this line
+				cells = []string{cellText}
+			}
 			
 			for _, cell := range cells {
-				cell = CleanWikiText(cell)
-				currentRow = append(currentRow, cell)
+				cell = strings.TrimSpace(cell)
+				if cell != "" {
+					cleanedCell := CleanWikiText(cell)
+					if cleanedCell != "" {
+						currentRow = append(currentRow, cleanedCell)
+					} else {
+						// Even if content is empty after cleaning, keep the cell structure
+						currentRow = append(currentRow, "")
+					}
+				}
 			}
 		}
 	}
@@ -737,8 +753,19 @@ func parseSimpleWikitableContent(tableSource string) SimpleTable {
 
 // CleanWikiText removes wiki markup from text
 func CleanWikiText(text string) string {
-	// Remove WIKILINK: prefixes
-	text = regexp.MustCompile(`WIKILINK:`).ReplaceAllString(text, "")
+	if strings.TrimSpace(text) == "" {
+		return ""
+	}
+	
+	// Handle cell content that starts with HTML attributes
+	// Look for pattern: style="..." | actual_content or align=... | actual_content
+	if strings.Contains(text, "|") && (strings.Contains(text, "style=") || strings.Contains(text, "align=") || strings.Contains(text, "class=")) {
+		parts := strings.Split(text, "|")
+		if len(parts) > 1 {
+			// Take the last part as the actual content
+			text = parts[len(parts)-1]
+		}
+	}
 	
 	// Remove file/image links completely [[File:...]] or [[Image:...]]
 	text = regexp.MustCompile(`\[\[(?:File|Image):[^\]]*\]\]`).ReplaceAllString(text, "")
@@ -751,18 +778,6 @@ func CleanWikiText(text string) string {
 	
 	// Handle simple links [[target]] -> keep only target text
 	text = regexp.MustCompile(`\[\[([^\]]+)\]\]`).ReplaceAllString(text, "$1")
-	
-	// Remove any remaining brackets (safety net) - multiple passes to handle nested brackets
-	for i := 0; i < 5; i++ {
-		oldText := text
-		text = strings.ReplaceAll(text, "[[", "")
-		text = strings.ReplaceAll(text, "]]", "")
-		text = strings.ReplaceAll(text, "[", "")
-		text = strings.ReplaceAll(text, "]", "")
-		if text == oldText {
-			break
-		}
-	}
 	
 	// Remove ref tags
 	text = regexp.MustCompile(`<ref[^>]*>.*?</ref>`).ReplaceAllString(text, "")
@@ -783,22 +798,27 @@ func CleanWikiText(text string) string {
 	text = strings.ReplaceAll(text, "{", "")
 	text = strings.ReplaceAll(text, "}", "")
 	
-	// Remove HTML attributes and markup
-	text = regexp.MustCompile(`style="[^"]*"`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`class="[^"]*"`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`scope="[^"]*"`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`align="?[^"]*"?`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`colspan="?[^"]*"?`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`rowspan="?[^"]*"?`).ReplaceAllString(text, "")
+	// Remove HTML attributes and markup - be more aggressive
+	text = regexp.MustCompile(`style\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`class\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`scope\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`align\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`colspan\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`rowspan\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	text = regexp.MustCompile(`color\s*:\s*[^|]*\|?`).ReplaceAllString(text, "")
 	
 	// Remove wiki formatting
 	text = regexp.MustCompile(`'''([^']+)'''`).ReplaceAllString(text, "$1") // Bold
 	text = regexp.MustCompile(`''([^']+)''`).ReplaceAllString(text, "$1")   // Italic
 	
-	// Clean up whitespace and pipes
+	// Clean up whitespace and remaining pipes
 	text = regexp.MustCompile(`\s*\|\s*`).ReplaceAllString(text, " ")
 	text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
 	text = strings.TrimSpace(text)
+	
+	// Remove any remaining brackets
+	text = strings.ReplaceAll(text, "[", "")
+	text = strings.ReplaceAll(text, "]", "")
 	
 	return text
 }
