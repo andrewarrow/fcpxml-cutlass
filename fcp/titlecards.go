@@ -35,62 +35,16 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 	videoName := filepath.Base(absVideoPath)
 	nameWithoutExt := strings.TrimSuffix(videoName, filepath.Ext(videoName))
 
-	// Calculate total duration - textblock, clip, textblock, clip pattern
+	// Calculate total duration - just video clips
 	var totalDuration time.Duration
 	for _, clip := range clips {
-		totalDuration += clip.Duration + 10*time.Second // Add 10s for textblock
+		totalDuration += clip.Duration
 	}
-	totalDuration += 10 * time.Second // Add final textblock
 
 	var spineContent strings.Builder
 	currentOffset := time.Duration(0)
 
-	for i, clip := range clips {
-		// Textblock gap before each clip - show just the first segment of what's coming next
-		clipText := clip.FirstSegmentText
-
-		escapedText := escapeXMLText(clipText)
-
-		// Create gap with title element
-		gap := Gap{
-			Name:     "Gap",
-			Offset:   FormatDurationForFCPXML(currentOffset),
-			Duration: FormatDurationForFCPXML(10 * time.Second),
-			Titles: []Title{
-				{
-					Ref:      "r2",
-					Lane:     "1",
-					Offset:   FormatDurationForFCPXML(360 * time.Millisecond),
-					Name:     "Graphic Text Block",
-					Start:    FormatDurationForFCPXML(360 * time.Millisecond),
-					Duration: FormatDurationForFCPXML(10*time.Second - 133*time.Millisecond),
-					Text: &TitleText{
-						TextStyle: TextStyleRef{
-							Ref:  fmt.Sprintf("ts%d", i+1),
-							Text: escapedText,
-						},
-					},
-					TextStyleDef: &TextStyleDef{
-						ID: fmt.Sprintf("ts%d", i+1),
-						TextStyle: TextStyle{
-							Font:      "Helvetica Neue",
-							FontSize:  "176.8",
-							FontColor: "1 1 1 1",
-							Alignment: "center",
-						},
-					},
-				},
-			},
-		}
-
-		gapXML, err := xml.Marshal(gap)
-		if err != nil {
-			return FCPXML{}, fmt.Errorf("error marshaling gap XML: %v", err)
-		}
-		spineContent.Write(gapXML)
-
-		currentOffset += 10 * time.Second
-
+	for _, clip := range clips {
 		// Video clip
 		assetClip := AssetClip{
 			Ref:       "r3",
@@ -142,13 +96,6 @@ func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
 						Sig:  absVideoPath,
 						Src:  "file://" + absVideoPath,
 					},
-				},
-			},
-			Effects: []Effect{
-				{
-					ID:   "r2",
-					Name: "Graphic Text Block",
-					UID:  ".../Titles.localized/Basic Text.localized/Graphic Text Block.localized/Graphic Text Block.moti",
 				},
 			},
 		},

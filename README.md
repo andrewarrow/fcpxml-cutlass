@@ -7,7 +7,7 @@
 ^ this is from [Andre_Agassi Wikipedia](https://en.wikipedia.org/wiki/Andre_Agassi#Career_statistics)
 
 ```
-./cutlass -i "Andre_Agassi" -w tennis.fcpxml
+./cutlass wikipedia "Andre_Agassi" -w tennis.fcpxml
 ```
 
 And after running cutlass you get `tennis.fcpxml` which opened in fcp looks like:
