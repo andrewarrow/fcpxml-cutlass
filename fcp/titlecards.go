@@ -7,11 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"cutlass/vtt"
 )
 
-func GenerateClipFCPXML(clips []vtt.Clip, videoPath, outputPath string) error {
+func GenerateClipFCPXML(clips []Clip, videoPath, outputPath string) error {
 	fcpxml, err := BuildClipFCPXML(clips, videoPath)
 	if err != nil {
 		return err
@@ -26,7 +24,7 @@ func GenerateClipFCPXML(clips []vtt.Clip, videoPath, outputPath string) error {
 	return os.WriteFile(outputPath, []byte(xmlContent), 0644)
 }
 
-func BuildClipFCPXML(clips []vtt.Clip, videoPath string) (FCPXML, error) {
+func BuildClipFCPXML(clips []Clip, videoPath string) (FCPXML, error) {
 	absVideoPath, err := filepath.Abs(videoPath)
 	if err != nil {
 		return FCPXML{}, err

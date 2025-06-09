@@ -1,5 +1,17 @@
 package fcp
 
+import "time"
+
+// Clip represents a video clip with timing information
+type Clip struct {
+	StartTime        time.Duration
+	EndTime          time.Duration
+	Duration         time.Duration
+	Text             string
+	FirstSegmentText string // Just the first VTT segment for previews
+	ClipNum          int
+}
+
 // TableData represents the data structure for table generation
 type TableData struct {
 	Headers []string    `json:"headers"`

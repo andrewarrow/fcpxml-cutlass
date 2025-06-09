@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"cutlass/fcp"
 )
 
-func BreakIntoLogicalParts(youtubeID string) ([]Clip, string, string, error) {
+func BreakIntoLogicalParts(youtubeID string) ([]fcp.Clip, string, string, error) {
 	vttPath := fmt.Sprintf("%s.en.vtt", youtubeID)
 	videoPath := fmt.Sprintf("%s.mov", youtubeID)
 	outputPath := fmt.Sprintf("%s_clips.fcpxml", youtubeID)

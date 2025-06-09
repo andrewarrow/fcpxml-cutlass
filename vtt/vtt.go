@@ -2,7 +2,6 @@ package vtt
 
 import (
 	"bufio"
-	"cutlass/fcp"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cutlass/fcp"
 )
 
 type Segment struct {
@@ -20,14 +21,6 @@ type Segment struct {
 	Text      string
 }
 
-type Clip struct {
-	StartTime        time.Duration
-	EndTime          time.Duration
-	Duration         time.Duration
-	Text             string
-	FirstSegmentText string // Just the first VTT segment for previews
-	ClipNum          int
-}
 
 type SilenceGap struct {
 	Start    time.Duration
@@ -119,8 +112,8 @@ func ParseFile(vttPath string) ([]Segment, error) {
 	return segments, scanner.Err()
 }
 
-func SegmentIntoClips(segments []Segment, minDuration, maxDuration time.Duration) []Clip {
-	var clips []Clip
+func SegmentIntoClips(segments []Segment, minDuration, maxDuration time.Duration) []fcp.Clip {
+	var clips []fcp.Clip
 	clipNum := 1
 
 	// Sort segments by start time
@@ -170,7 +163,7 @@ func SegmentIntoClips(segments []Segment, minDuration, maxDuration time.Duration
 			}
 		}
 
-		clips = append(clips, Clip{
+		clips = append(clips, fcp.Clip{
 			StartTime:        clipStart,
 			EndTime:          clipEnd,
 			Duration:         clipEnd - clipStart,
@@ -1232,20 +1225,20 @@ func GenerateVTTClips(vttFile, timecodesStr, outputFile string) error {
 		return fmt.Errorf("failed to create clips: %v", err)
 	}
 
-	// Need to import fcp package - for now return with message
+	// Generate FCPXML with clips
 	fmt.Printf("Generating FCPXML with %d clips from %s\n", len(clips), videoFile)
 	err = fcp.GenerateClipFCPXML(clips, videoFile, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
 
-	fmt.Printf("Would generate %s with %d clips\n", outputFile, len(clips))
+	fmt.Printf("Successfully generated %s with %d clips\n", outputFile, len(clips))
 	return nil
 }
 
 // CreateClipsFromTimecodes creates clips starting at specified timecodes
-func CreateClipsFromTimecodes(segments []Segment, timecodes []time.Duration) ([]Clip, error) {
-	var clips []Clip
+func CreateClipsFromTimecodes(segments []Segment, timecodes []time.Duration) ([]fcp.Clip, error) {
+	var clips []fcp.Clip
 
 	for i, startTime := range timecodes {
 		// Find segments around this timecode
@@ -1304,7 +1297,7 @@ func CreateClipsFromTimecodes(segments []Segment, timecodes []time.Duration) ([]
 			firstSegmentText = clipSegments[0].Text
 		}
 
-		clip := Clip{
+		clip := fcp.Clip{
 			StartTime:        startTime,
 			EndTime:          endTime,
 			Duration:         endTime - startTime,
@@ -1320,8 +1313,8 @@ func CreateClipsFromTimecodes(segments []Segment, timecodes []time.Duration) ([]
 }
 
 // CreateClipsFromTimecodesWithDuration creates clips with specified start times and durations
-func CreateClipsFromTimecodesWithDuration(segments []Segment, timecodes []TimecodeWithDuration) ([]Clip, error) {
-	var clips []Clip
+func CreateClipsFromTimecodesWithDuration(segments []Segment, timecodes []TimecodeWithDuration) ([]fcp.Clip, error) {
+	var clips []fcp.Clip
 
 	for i, timecode := range timecodes {
 		startTime := timecode.Start
@@ -1373,7 +1366,7 @@ func CreateClipsFromTimecodesWithDuration(segments []Segment, timecodes []Timeco
 			}
 		}
 
-		clip := Clip{
+		clip := fcp.Clip{
 			StartTime:        startTime,
 			EndTime:          endTime,
 			Duration:         timecode.Duration,
