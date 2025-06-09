@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,6 +31,8 @@ func main() {
 		handleVideoCommand(args)
 	case "youtube":
 		handleYouTubeCommand(args)
+	case "youtube-bulk":
+		handleYouTubeBulkCommand(args)
 	case "wikipedia":
 		handleWikipediaCommand(args)
 	case "parse":
@@ -53,6 +57,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "Commands:\n")
 	fmt.Fprintf(os.Stderr, "  video <file>              Generate FCPXML from video file\n")
 	fmt.Fprintf(os.Stderr, "  youtube <video-id>        Download YouTube video and generate FCPXML\n")
+	fmt.Fprintf(os.Stderr, "  youtube-bulk <ids-file>   Download multiple YouTube videos from file\n")
 	fmt.Fprintf(os.Stderr, "  wikipedia <article-title> Generate FCPXML from Wikipedia tables\n")
 	fmt.Fprintf(os.Stderr, "  parse <fcpxml-file>       Parse and display FCPXML contents\n")
 	fmt.Fprintf(os.Stderr, "  table <article-title>     Display Wikipedia table data\n")
@@ -71,32 +76,32 @@ func handleVideoCommand(args []string) {
 	fs := flag.NewFlagSet("video", flag.ExitOnError)
 	var segmentMode bool
 	var outputFile string
-	
+
 	fs.BoolVar(&segmentMode, "s", false, "Break into logical clips with title cards")
 	fs.BoolVar(&segmentMode, "segments", false, "Break into logical clips with title cards")
 	fs.StringVar(&outputFile, "o", "test.fcpxml", "Output file")
 	fs.StringVar(&outputFile, "output", "test.fcpxml", "Output file")
-	
+
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-	
+
 	if fs.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "Error: video file required\n")
 		fmt.Fprintf(os.Stderr, "Usage: %s video <file> [options]\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	inputFile := fs.Arg(0)
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
 	}
-	
+
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error: Input file '%s' does not exist\n", inputFile)
 		os.Exit(1)
 	}
-	
+
 	if segmentMode {
 		fmt.Printf("Using segment mode to break video into logical clips...\n")
 		baseID := strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
@@ -106,48 +111,48 @@ func handleVideoCommand(args []string) {
 		}
 		return
 	}
-	
+
 	if err := fcp.GenerateStandard(inputFile, outputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating FCPXML: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	fmt.Printf("Successfully converted '%s' to '%s'\n", inputFile, outputFile)
 }
 
 func handleYouTubeCommand(args []string) {
 	fs := flag.NewFlagSet("youtube", flag.ExitOnError)
 	var segmentMode bool
-	
+
 	fs.BoolVar(&segmentMode, "s", false, "Break into logical clips with title cards")
 	fs.BoolVar(&segmentMode, "segments", false, "Break into logical clips with title cards")
-	
+
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-	
+
 	if fs.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "Error: YouTube video ID required\n")
 		fmt.Fprintf(os.Stderr, "Usage: %s youtube <video-id> [options]\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	youtubeID := fs.Arg(0)
 	if !youtube.IsYouTubeID(youtubeID) {
 		fmt.Fprintf(os.Stderr, "Error: Invalid YouTube video ID: %s\n", youtubeID)
 		os.Exit(1)
 	}
-	
+
 	_, err := youtube.DownloadVideo(youtubeID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	if err := youtube.DownloadSubtitles(youtubeID); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Could not download subtitles: %v\n", err)
 	}
-	
+
 	if segmentMode {
 		fmt.Printf("Using segment mode to break video into logical clips...\n")
 		if err := breakIntoLogicalParts(youtubeID); err != nil {
@@ -161,29 +166,29 @@ func handleYouTubeCommand(args []string) {
 func handleWikipediaCommand(args []string) {
 	fs := flag.NewFlagSet("wikipedia", flag.ExitOnError)
 	var outputFile string
-	
+
 	fs.StringVar(&outputFile, "o", "", "Output file")
 	fs.StringVar(&outputFile, "output", "", "Output file")
-	
+
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-	
+
 	if fs.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "Error: Wikipedia article title required\n")
 		fmt.Fprintf(os.Stderr, "Usage: %s wikipedia <article-title> [options]\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	articleTitle := fs.Arg(0)
-	
+
 	// If no output file specified, use article title as filename
 	if outputFile == "" {
 		outputFile = articleTitle + ".fcpxml"
 	} else if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
 	}
-	
+
 	fmt.Printf("Using Wikipedia mode to create FCPXML from article tables...\n")
 	if err := generateFromWikipedia(articleTitle, outputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating from Wikipedia: %v\n", err)
@@ -197,7 +202,7 @@ func handleParseCommand(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: %s parse <fcpxml-file>\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	inputFile := args[0]
 	if err := parseFCPXML(inputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing FCPXML: %v\n", err)
@@ -208,19 +213,19 @@ func handleParseCommand(args []string) {
 func handleTableCommand(args []string) {
 	fs := flag.NewFlagSet("table", flag.ExitOnError)
 	var tableNumber int
-	
+
 	fs.IntVar(&tableNumber, "table-num", 0, "Table number to display (0 for all, 1-N for specific table)")
-	
+
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-	
+
 	if fs.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "Error: Wikipedia article title required\n")
 		fmt.Fprintf(os.Stderr, "Usage: %s table <article-title> [--table-num N]\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	articleTitle := fs.Arg(0)
 	if err := parseWikipediaTables(articleTitle, tableNumber); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing Wikipedia tables: %v\n", err)
@@ -296,13 +301,13 @@ func handleVTTCommand(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: %s vtt <file>\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	inputFile := args[0]
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error: VTT file '%s' does not exist\n", inputFile)
 		os.Exit(1)
 	}
-	
+
 	if err := vtt.ParseAndDisplayCleanText(inputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing VTT file: %v\n", err)
 		os.Exit(1)
@@ -318,11 +323,11 @@ func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataCol
 	// Only display two columns: leftmost + one data column
 	leftHeader := table.Headers[leftColIndex]
 	dataHeader := table.Headers[dataColIndex]
-	
+
 	// Calculate column widths for these two columns
 	leftWidth := len(leftHeader)
 	dataWidth := len(dataHeader)
-	
+
 	// Check row data for max widths
 	for _, row := range table.Rows {
 		if leftColIndex < len(row) && len(row[leftColIndex]) > leftWidth {
@@ -332,7 +337,7 @@ func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataCol
 			dataWidth = len(row[dataColIndex])
 		}
 	}
-	
+
 	// Limit column width to reasonable max (40 chars) for readability
 	if leftWidth > 40 {
 		leftWidth = 40
@@ -346,12 +351,12 @@ func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataCol
 	if dataWidth < 3 {
 		dataWidth = 3
 	}
-	
+
 	// Print top border
-	fmt.Printf("+%s+%s+\n", 
-		strings.Repeat("-", leftWidth+2), 
+	fmt.Printf("+%s+%s+\n",
+		strings.Repeat("-", leftWidth+2),
 		strings.Repeat("-", dataWidth+2))
-	
+
 	// Print headers
 	leftTruncated := leftHeader
 	if len(leftTruncated) > leftWidth {
@@ -362,24 +367,24 @@ func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataCol
 		dataTruncated = dataTruncated[:dataWidth-3] + "..."
 	}
 	fmt.Printf("| %-*s | %-*s |\n", leftWidth, leftTruncated, dataWidth, dataTruncated)
-	
+
 	// Print header separator
-	fmt.Printf("+%s+%s+\n", 
-		strings.Repeat("=", leftWidth+2), 
+	fmt.Printf("+%s+%s+\n",
+		strings.Repeat("=", leftWidth+2),
 		strings.Repeat("=", dataWidth+2))
-	
+
 	// Print rows
 	for _, row := range table.Rows {
 		leftCell := ""
 		dataCell := ""
-		
+
 		if leftColIndex < len(row) {
 			leftCell = row[leftColIndex]
 		}
 		if dataColIndex < len(row) {
 			dataCell = row[dataColIndex]
 		}
-		
+
 		// Truncate if too long
 		if len(leftCell) > leftWidth {
 			leftCell = leftCell[:leftWidth-3] + "..."
@@ -387,13 +392,13 @@ func displaySingleColumnPair(table *wikipedia.SimpleTable, leftColIndex, dataCol
 		if len(dataCell) > dataWidth {
 			dataCell = dataCell[:dataWidth-3] + "..."
 		}
-		
+
 		fmt.Printf("| %-*s | %-*s |\n", leftWidth, leftCell, dataWidth, dataCell)
 	}
-	
+
 	// Print bottom border
-	fmt.Printf("+%s+%s+\n", 
-		strings.Repeat("-", leftWidth+2), 
+	fmt.Printf("+%s+%s+\n",
+		strings.Repeat("-", leftWidth+2),
 		strings.Repeat("-", dataWidth+2))
 }
 
@@ -404,7 +409,7 @@ func detectTraditionalTable(table *wikipedia.SimpleTable) bool {
 	if table == nil || len(table.Headers) < 3 {
 		return false
 	}
-	
+
 	// Check if headers contain year patterns (tennis-style indicator)
 	yearCount := 0
 	for _, header := range table.Headers[1:] { // Skip first header
@@ -420,26 +425,26 @@ func detectTraditionalTable(table *wikipedia.SimpleTable) bool {
 			}
 		}
 	}
-	
+
 	// If more than half the columns are years, it's likely tennis-style
 	if yearCount > len(table.Headers)/2 {
 		return false
 	}
-	
+
 	// Check for traditional table indicators
 	headerLower := strings.ToLower(strings.Join(table.Headers, " "))
 	traditionalKeywords := []string{
-		"date", "state", "magnitude", "location", "name", "type", 
+		"date", "state", "magnitude", "location", "name", "type",
 		"fatalities", "casualties", "article", "description", "result",
 	}
-	
+
 	matchCount := 0
 	for _, keyword := range traditionalKeywords {
 		if strings.Contains(headerLower, keyword) {
 			matchCount++
 		}
 	}
-	
+
 	// If we have traditional keywords and few/no years, it's traditional
 	return matchCount >= 2
 }
@@ -450,14 +455,14 @@ func displayTraditionalTable(table *wikipedia.SimpleTable) {
 		fmt.Printf("No data to display\n")
 		return
 	}
-	
+
 	for rowIndex, row := range table.Rows {
 		fmt.Printf("--- ROW %d/%d ---\n", rowIndex+1, len(table.Rows))
-		
+
 		// Calculate max width for headers and data
 		headerWidth := 0
 		dataWidth := 0
-		
+
 		for i, header := range table.Headers {
 			if len(header) > headerWidth {
 				headerWidth = len(header)
@@ -466,7 +471,7 @@ func displayTraditionalTable(table *wikipedia.SimpleTable) {
 				dataWidth = len(row[i])
 			}
 		}
-		
+
 		// Set reasonable limits
 		if headerWidth > 25 {
 			headerWidth = 25
@@ -480,46 +485,46 @@ func displayTraditionalTable(table *wikipedia.SimpleTable) {
 		if dataWidth < 10 {
 			dataWidth = 10
 		}
-		
+
 		// Print top border
-		fmt.Printf("+%s+%s+\n", 
-			strings.Repeat("-", headerWidth+2), 
+		fmt.Printf("+%s+%s+\n",
+			strings.Repeat("-", headerWidth+2),
 			strings.Repeat("-", dataWidth+2))
-		
+
 		// Print header row
 		fmt.Printf("| %-*s | %-*s |\n", headerWidth, "Field", dataWidth, "Value")
-		
+
 		// Print separator
-		fmt.Printf("+%s+%s+\n", 
-			strings.Repeat("=", headerWidth+2), 
+		fmt.Printf("+%s+%s+\n",
+			strings.Repeat("=", headerWidth+2),
 			strings.Repeat("=", dataWidth+2))
-		
+
 		// Print each field-value pair
 		for i, header := range table.Headers {
 			value := ""
 			if i < len(row) {
 				value = row[i]
 			}
-			
+
 			// Truncate if too long
 			truncatedHeader := header
 			if len(truncatedHeader) > headerWidth {
 				truncatedHeader = truncatedHeader[:headerWidth-3] + "..."
 			}
-			
+
 			truncatedValue := value
 			if len(truncatedValue) > dataWidth {
 				truncatedValue = truncatedValue[:dataWidth-3] + "..."
 			}
-			
+
 			fmt.Printf("| %-*s | %-*s |\n", headerWidth, truncatedHeader, dataWidth, truncatedValue)
 		}
-		
+
 		// Print bottom border
-		fmt.Printf("+%s+%s+\n", 
-			strings.Repeat("-", headerWidth+2), 
+		fmt.Printf("+%s+%s+\n",
+			strings.Repeat("-", headerWidth+2),
 			strings.Repeat("-", dataWidth+2))
-		
+
 		// Add spacing between rows (except after the last one)
 		if rowIndex < len(table.Rows)-1 {
 			fmt.Println()
@@ -541,7 +546,7 @@ func displayTableASCII(table *wikipedia.SimpleTable) {
 
 	// Detect table type: Traditional vs Tennis-style
 	isTraditionalTable := detectTraditionalTable(table)
-	
+
 	if isTraditionalTable {
 		fmt.Printf("=== TRADITIONAL TABLE: Each Row as 2-Column Format ===\n\n")
 		displayTraditionalTable(table)
@@ -549,15 +554,15 @@ func displayTableASCII(table *wikipedia.SimpleTable) {
 		// Tennis-style: Display leftmost column + each data column (skipping leftmost)
 		leftColIndex := 0
 		totalDataCols := len(table.Headers) - 1
-		
+
 		fmt.Printf("=== TENNIS-STYLE TABLE: %d COLUMN PAIRS (Leftmost + Each Data Column) ===\n\n", totalDataCols)
-		
+
 		for dataColIndex := 1; dataColIndex < len(table.Headers); dataColIndex++ {
-			fmt.Printf("--- TABLE %d/%d: %s + %s ---\n", 
+			fmt.Printf("--- TABLE %d/%d: %s + %s ---\n",
 				dataColIndex, totalDataCols, table.Headers[leftColIndex], table.Headers[dataColIndex])
-			
+
 			displaySingleColumnPair(table, leftColIndex, dataColIndex)
-			
+
 			// Add spacing between tables (except after the last one)
 			if dataColIndex < len(table.Headers)-1 {
 				fmt.Println()
@@ -591,24 +596,24 @@ func parseWikipediaTables(articleTitle string, tableNumber int) error {
 		if tableNumber > len(tables) {
 			return fmt.Errorf("table %d not found. Article has %d tables", tableNumber, len(tables))
 		}
-		
+
 		selectedTable := &tables[tableNumber-1]
 		fmt.Printf("\n=== TABLE %d FROM WIKIPEDIA ARTICLE '%s' ===\n", tableNumber, articleTitle)
 		fmt.Printf("Headers: %d, Rows: %d\n\n", len(selectedTable.Headers), len(selectedTable.Rows))
-		
+
 		displayTableASCII(selectedTable)
 		return nil
 	}
 
 	// Display all tables found (summary mode)
 	fmt.Printf("\n=== FOUND %d TABLES IN WIKIPEDIA ARTICLE '%s' ===\n\n", len(tables), articleTitle)
-	
+
 	for i, table := range tables {
 		fmt.Printf("TABLE %d:\n", i+1)
 		fmt.Printf("--------\n")
 		fmt.Printf("Headers (%d): %v\n", len(table.Headers), table.Headers)
 		fmt.Printf("Rows: %d\n", len(table.Rows))
-		
+
 		if len(table.Rows) > 0 {
 			fmt.Printf("\nFirst 5 rows:\n")
 			for j, row := range table.Rows {
@@ -617,7 +622,7 @@ func parseWikipediaTables(articleTitle string, tableNumber int) error {
 				}
 				fmt.Printf("  Row %d: %v\n", j+1, row)
 			}
-			
+
 			if len(table.Rows) > 5 {
 				fmt.Printf("  ... (and %d more rows)\n", len(table.Rows)-5)
 			}
@@ -703,29 +708,29 @@ func generateFromWikipedia(articleTitle, outputFile string) error {
 func handleVTTClipsCommand(args []string) {
 	fs := flag.NewFlagSet("vtt-clips", flag.ExitOnError)
 	var outputFile string
-	
+
 	fs.StringVar(&outputFile, "o", "", "Output file (default: <vtt-basename>_clips.fcpxml)")
 	fs.StringVar(&outputFile, "output", "", "Output file (default: <vtt-basename>_clips.fcpxml)")
-	
+
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-	
+
 	if fs.NArg() < 2 {
 		fmt.Fprintf(os.Stderr, "Error: VTT file and timecodes required\n")
 		fmt.Fprintf(os.Stderr, "Usage: %s vtt-clips <vtt-file> <timecodes>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Example: %s vtt-clips IBnNedMh4Pg.en.vtt 01:21_6,02:20_3,03:34_9,05:07_18\n", os.Args[0])
 		os.Exit(1)
 	}
-	
+
 	vttFile := fs.Arg(0)
 	timecodesStr := fs.Arg(1)
-	
+
 	if _, err := os.Stat(vttFile); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Error: VTT file '%s' does not exist\n", vttFile)
 		os.Exit(1)
 	}
-	
+
 	if err := generateVTTClips(vttFile, timecodesStr, outputFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating VTT clips: %v\n", err)
 		os.Exit(1)
@@ -735,7 +740,7 @@ func handleVTTClipsCommand(args []string) {
 func generateVTTClips(vttFile, timecodesStr, outputFile string) error {
 	// Parse VTT filename to extract base ID (e.g., "IBnNedMh4Pg" from "IBnNedMh4Pg.en.vtt")
 	baseName := filepath.Base(vttFile)
-	
+
 	// Remove .en.vtt suffix
 	var videoID string
 	if strings.HasSuffix(baseName, ".en.vtt") {
@@ -745,21 +750,21 @@ func generateVTTClips(vttFile, timecodesStr, outputFile string) error {
 	} else {
 		return fmt.Errorf("VTT file must end with .vtt or .en.vtt")
 	}
-	
+
 	// Find corresponding MOV file in same directory
 	vttDir := filepath.Dir(vttFile)
 	videoFile := filepath.Join(vttDir, videoID+".mov")
-	
+
 	if _, err := os.Stat(videoFile); os.IsNotExist(err) {
 		return fmt.Errorf("corresponding video file not found: %s", videoFile)
 	}
-	
+
 	// Parse timecodes (format: "01:21_6,02:20_3,03:34_9,05:07_18")
 	timecodeStrs := strings.Split(timecodesStr, ",")
 	if len(timecodeStrs) == 0 {
 		return fmt.Errorf("no timecodes provided")
 	}
-	
+
 	var timecodes []TimecodeWithDuration
 	for _, tc := range timecodeStrs {
 		tc = strings.TrimSpace(tc)
@@ -769,7 +774,7 @@ func generateVTTClips(vttFile, timecodesStr, outputFile string) error {
 		}
 		timecodes = append(timecodes, timecodeData)
 	}
-	
+
 	// Set default output file if not provided
 	if outputFile == "" {
 		outputFile = filepath.Join(vttDir, videoID+"_clips.fcpxml")
@@ -777,26 +782,26 @@ func generateVTTClips(vttFile, timecodesStr, outputFile string) error {
 	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
 		outputFile += ".fcpxml"
 	}
-	
+
 	// Parse VTT file to get all segments
 	segments, err := vtt.ParseFile(vttFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse VTT file: %v", err)
 	}
-	
+
 	// Create clips from timecodes with durations
 	clips, err := createClipsFromTimecodesWithDuration(segments, timecodes)
 	if err != nil {
 		return fmt.Errorf("failed to create clips: %v", err)
 	}
-	
+
 	// Generate FCPXML
 	fmt.Printf("Generating FCPXML with %d clips from %s\n", len(clips), videoFile)
 	err = fcp.GenerateClipFCPXML(clips, videoFile, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
-	
+
 	fmt.Printf("Successfully generated %s with %d clips\n", outputFile, len(clips))
 	return nil
 }
@@ -807,49 +812,49 @@ func parseTimecode(timecode string) (time.Duration, error) {
 	if len(parts) != 2 {
 		return 0, fmt.Errorf("timecode must be in MM:SS format")
 	}
-	
+
 	minutes, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, fmt.Errorf("invalid minutes: %v", err)
 	}
-	
+
 	seconds, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return 0, fmt.Errorf("invalid seconds: %v", err)
 	}
-	
+
 	if minutes < 0 || seconds < 0 || seconds >= 60 {
 		return 0, fmt.Errorf("invalid time values")
 	}
-	
+
 	return time.Duration(minutes)*time.Minute + time.Duration(seconds)*time.Second, nil
 }
 
 // parseTimecodeWithDuration parses MM:SS_duration format to start time and duration
 func parseTimecodeWithDuration(timecode string) (TimecodeWithDuration, error) {
 	var result TimecodeWithDuration
-	
+
 	parts := strings.Split(timecode, "_")
 	if len(parts) != 2 {
 		return result, fmt.Errorf("timecode must be in MM:SS_duration format")
 	}
-	
+
 	// Parse start time
 	startTime, err := parseTimecode(parts[0])
 	if err != nil {
 		return result, fmt.Errorf("invalid start time: %v", err)
 	}
-	
+
 	// Parse duration in seconds
 	durationSeconds, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return result, fmt.Errorf("invalid duration: %v", err)
 	}
-	
+
 	if durationSeconds <= 0 {
 		return result, fmt.Errorf("duration must be positive")
 	}
-	
+
 	result.Start = startTime
 	result.Duration = time.Duration(durationSeconds) * time.Second
 	return result, nil
@@ -858,12 +863,12 @@ func parseTimecodeWithDuration(timecode string) (TimecodeWithDuration, error) {
 // createClipsFromTimecodes creates clips starting at specified timecodes
 func createClipsFromTimecodes(segments []vtt.Segment, timecodes []time.Duration) ([]vtt.Clip, error) {
 	var clips []vtt.Clip
-	
+
 	for i, startTime := range timecodes {
 		// Find segments around this timecode
 		var clipSegments []vtt.Segment
 		var clipText []string
-		
+
 		// Find the first segment at or after the timecode
 		for _, segment := range segments {
 			if segment.StartTime >= startTime {
@@ -872,7 +877,7 @@ func createClipsFromTimecodes(segments []vtt.Segment, timecodes []time.Duration)
 				break
 			}
 		}
-		
+
 		if len(clipSegments) == 0 {
 			// If no segment found at or after timecode, find the closest one before
 			var closestSegment *vtt.Segment
@@ -890,7 +895,7 @@ func createClipsFromTimecodes(segments []vtt.Segment, timecodes []time.Duration)
 				return nil, fmt.Errorf("no VTT segment found near timecode %v", startTime)
 			}
 		}
-		
+
 		// Determine clip duration and end time
 		var endTime time.Duration
 		if i < len(timecodes)-1 {
@@ -904,18 +909,18 @@ func createClipsFromTimecodes(segments []vtt.Segment, timecodes []time.Duration)
 				endTime = startTime + 30*time.Second // Default 30s clip
 			}
 		}
-		
+
 		// Ensure minimum clip duration
 		minDuration := 5 * time.Second
 		if endTime-startTime < minDuration {
 			endTime = startTime + minDuration
 		}
-		
+
 		firstSegmentText := ""
 		if len(clipSegments) > 0 {
 			firstSegmentText = clipSegments[0].Text
 		}
-		
+
 		clip := vtt.Clip{
 			StartTime:        startTime,
 			EndTime:          endTime,
@@ -924,10 +929,10 @@ func createClipsFromTimecodes(segments []vtt.Segment, timecodes []time.Duration)
 			FirstSegmentText: firstSegmentText,
 			ClipNum:          i + 1,
 		}
-		
+
 		clips = append(clips, clip)
 	}
-	
+
 	return clips, nil
 }
 
@@ -940,16 +945,16 @@ type TimecodeWithDuration struct {
 // createClipsFromTimecodesWithDuration creates clips with specified start times and durations
 func createClipsFromTimecodesWithDuration(segments []vtt.Segment, timecodes []TimecodeWithDuration) ([]vtt.Clip, error) {
 	var clips []vtt.Clip
-	
+
 	for i, timecode := range timecodes {
 		startTime := timecode.Start
 		endTime := startTime + timecode.Duration
-		
+
 		// Find all segments that overlap with this time range
 		var clipText []string
 		var firstSegmentText string
 		found := false
-		
+
 		for _, segment := range segments {
 			// Check if segment overlaps with our clip time range
 			if segment.EndTime > startTime && segment.StartTime < endTime {
@@ -960,12 +965,12 @@ func createClipsFromTimecodesWithDuration(segments []vtt.Segment, timecodes []Ti
 				}
 			}
 		}
-		
+
 		// If no segments found within the exact time range, find the closest segment
 		if !found {
 			var closestSegment *vtt.Segment
 			minDistance := time.Duration(1<<63 - 1) // Max duration
-			
+
 			for _, segment := range segments {
 				// Calculate distance from segment to our start time
 				var distance time.Duration
@@ -976,13 +981,13 @@ func createClipsFromTimecodesWithDuration(segments []vtt.Segment, timecodes []Ti
 				} else {
 					distance = 0 // Overlaps
 				}
-				
+
 				if distance < minDistance {
 					minDistance = distance
 					closestSegment = &segment
 				}
 			}
-			
+
 			if closestSegment != nil {
 				clipText = append(clipText, closestSegment.Text)
 				firstSegmentText = closestSegment.Text
@@ -990,7 +995,7 @@ func createClipsFromTimecodesWithDuration(segments []vtt.Segment, timecodes []Ti
 				return nil, fmt.Errorf("no VTT segment found near timecode %v", startTime)
 			}
 		}
-		
+
 		clip := vtt.Clip{
 			StartTime:        startTime,
 			EndTime:          endTime,
@@ -999,9 +1004,117 @@ func createClipsFromTimecodesWithDuration(segments []vtt.Segment, timecodes []Ti
 			FirstSegmentText: firstSegmentText,
 			ClipNum:          i + 1,
 		}
-		
+
 		clips = append(clips, clip)
 	}
-	
+
 	return clips, nil
+}
+
+func handleYouTubeBulkCommand(args []string) {
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "Error: Video IDs file required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s youtube-bulk <ids-file>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "File should contain one video ID per line\n")
+		os.Exit(1)
+	}
+
+	idsFile := args[0]
+	if _, err := os.Stat(idsFile); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: IDs file '%s' does not exist\n", idsFile)
+		os.Exit(1)
+	}
+
+	if err := downloadMultipleVideos(idsFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error downloading videos: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func downloadMultipleVideos(idsFile string) error {
+	// Read video IDs from file
+	videoIDs, err := readVideoIDsFromFile(idsFile)
+	if err != nil {
+		return fmt.Errorf("failed to read video IDs: %v", err)
+	}
+
+	if len(videoIDs) == 0 {
+		return fmt.Errorf("no video IDs found in file")
+	}
+
+	fmt.Printf("Found %d video IDs to download\n", len(videoIDs))
+
+	// Download each video
+	for i, videoID := range videoIDs {
+		fmt.Printf("\n=== Downloading video %d/%d: %s ===\n", i+1, len(videoIDs), videoID)
+
+		if err := downloadVideoWithYtDlp(videoID); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to download video %s: %v\n", videoID, err)
+			continue
+		}
+
+		fmt.Printf("Successfully downloaded video %s\n", videoID)
+	}
+
+	fmt.Printf("\nBulk download completed\n")
+	return nil
+}
+
+func readVideoIDsFromFile(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var videoIDs []string
+	scanner := bufio.NewScanner(file)
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Validate YouTube ID
+		if !youtube.IsYouTubeID(line) {
+			fmt.Fprintf(os.Stderr, "Warning: Invalid YouTube ID on line %d: %s\n", lineNum, line)
+			continue
+		}
+
+		videoIDs = append(videoIDs, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return videoIDs, nil
+}
+
+func downloadVideoWithYtDlp(videoID string) error {
+	outputPattern := "./data/output.%(ext)s"
+	videoURL := "https://www.youtube.com/watch?v=" + videoID
+
+	// Create data directory if it doesn't exist
+	if err := os.MkdirAll("./data", 0755); err != nil {
+		return fmt.Errorf("failed to create data directory: %v", err)
+	}
+
+	cmd := exec.Command("yt-dlp",
+		"-o", outputPattern,
+		videoURL)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("yt-dlp command failed: %v", err)
+	}
+
+	return nil
 }
