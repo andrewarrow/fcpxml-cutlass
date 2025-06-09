@@ -66,7 +66,7 @@ func DownloadSubtitles(youtubeID string) error {
 	// Retry with exponential backoff up to 50 times
 	var lastErr error
 	for attempt := 1; attempt <= 50; attempt++ {
-		subCmd := exec.Command("yt-dlp", "-o", youtubeID, "--skip-download", "--write-auto-sub", "--sub-lang", "en", youtubeURL)
+		subCmd := exec.Command("yt-dlp", "-o", "./data/"+youtubeID, "--skip-download", "--write-auto-sub", "--sub-lang", "en", youtubeURL)
 		subCmd.Stdout = os.Stdout
 		subCmd.Stderr = os.Stderr
 
