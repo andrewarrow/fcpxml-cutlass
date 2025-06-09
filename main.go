@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -1025,96 +1023,8 @@ func handleYouTubeBulkCommand(args []string) {
 		os.Exit(1)
 	}
 
-	if err := downloadMultipleVideos(idsFile); err != nil {
+	if err := youtube.DownloadMultipleVideos(idsFile); err != nil {
 		fmt.Fprintf(os.Stderr, "Error downloading videos: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func downloadMultipleVideos(idsFile string) error {
-	// Read video IDs from file
-	videoIDs, err := readVideoIDsFromFile(idsFile)
-	if err != nil {
-		return fmt.Errorf("failed to read video IDs: %v", err)
-	}
-
-	if len(videoIDs) == 0 {
-		return fmt.Errorf("no video IDs found in file")
-	}
-
-	fmt.Printf("Found %d video IDs to download\n", len(videoIDs))
-
-	// Download each video
-	for i, videoID := range videoIDs {
-		fmt.Printf("\n=== Downloading video %d/%d: %s ===\n", i+1, len(videoIDs), videoID)
-
-		if err := downloadVideoWithYtDlp(videoID); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to download video %s: %v\n", videoID, err)
-			continue
-		}
-
-		fmt.Printf("Successfully downloaded video %s\n", videoID)
-	}
-
-	fmt.Printf("\nBulk download completed\n")
-	return nil
-}
-
-func readVideoIDsFromFile(filename string) ([]string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var videoIDs []string
-	scanner := bufio.NewScanner(file)
-	lineNum := 0
-
-	for scanner.Scan() {
-		lineNum++
-		line := strings.TrimSpace(scanner.Text())
-
-		// Skip empty lines and comments
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		// Validate YouTube ID
-		if !youtube.IsYouTubeID(line) {
-			fmt.Fprintf(os.Stderr, "Warning: Invalid YouTube ID on line %d: %s\n", lineNum, line)
-			continue
-		}
-
-		videoIDs = append(videoIDs, line)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return videoIDs, nil
-}
-
-func downloadVideoWithYtDlp(videoID string) error {
-	outputPattern := "./data/output.%(ext)s"
-	videoURL := "https://www.youtube.com/watch?v=" + videoID
-
-	// Create data directory if it doesn't exist
-	if err := os.MkdirAll("./data", 0755); err != nil {
-		return fmt.Errorf("failed to create data directory: %v", err)
-	}
-
-	cmd := exec.Command("yt-dlp",
-		"-o", outputPattern,
-		videoURL)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("yt-dlp command failed: %v", err)
-	}
-
-	return nil
 }
