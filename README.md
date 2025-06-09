@@ -49,9 +49,9 @@ This will download an mp4 of https://www.youtube.com/watch?v=IBnNedMh4Pg convert
 
 ## 🎯 Overview
 
-cutlass is a swift army knife for generating fcpxml files.
+cutlass is a swiss army knife for generating fcpxml files.
 
-Making tables is just one swift army knife blade. It can also take a youtube video id and download it (using yt-dlp) and download the vtt subtiles, and then make an fcpxml with video already cut into nice logical segments based on the timecode of the vtt info.
+Making tables is just one swiss army knife blade. It can also take a youtube video id and download it (using yt-dlp) and download the vtt subtiles, and then make an fcpxml with video already cut into nice logical segments based on the timecode of the vtt info.
 
 this is a work in progress. The idea is to have cutlass understand the fcpxml format perfectly (no small task) and be able to generate impressive videos very quickly. Or at least generate a really good starting point for a human to then open fcp and tweak.
 
