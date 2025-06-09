@@ -24,3 +24,28 @@ func HandleYouTubeBulkCommand(args []string) {
 		os.Exit(1)
 	}
 }
+func DownloadMultipleVideos(idsFile string) error {
+	// Read video IDs from file
+	videoIDs, err := readVideoIDsFromFile(idsFile)
+	if err != nil {
+		return fmt.Errorf("failed to read video IDs: %v", err)
+	}
+
+	if len(videoIDs) == 0 {
+		return fmt.Errorf("no video IDs found in file")
+	}
+
+	fmt.Printf("Found %d video IDs to download\n", len(videoIDs))
+
+	// Download each video
+	for i, videoID := range videoIDs {
+		fmt.Printf("\n=== Downloading video %d/%d: %s ===\n", i+1, len(videoIDs), videoID)
+
+		DownloadVideo(videoID)
+
+		fmt.Printf("Successfully downloaded video %s\n", videoID)
+	}
+
+	fmt.Printf("\nBulk download completed\n")
+	return nil
+}

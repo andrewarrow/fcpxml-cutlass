@@ -26,7 +26,7 @@ func DownloadVideo(youtubeID string) (string, error) {
 
 	// Download as .mp4 first
 	mp4File := youtubeID + ".mp4"
-	cmd := exec.Command("yt-dlp", "-o", mp4File, youtubeID)
+	cmd := exec.Command("yt-dlp", "-o", "./data/"+mp4File, youtubeID)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -35,7 +35,7 @@ func DownloadVideo(youtubeID string) (string, error) {
 
 	// Convert mp4 to mov using ffmpeg
 	fmt.Printf("Converting %s to %s...\n", mp4File, videoFile)
-	convertCmd := exec.Command("ffmpeg", "-i", mp4File, videoFile)
+	convertCmd := exec.Command("ffmpeg", "-i", "./data/"+mp4File, "./data/"+videoFile)
 	convertCmd.Stdout = os.Stdout
 	convertCmd.Stderr = os.Stderr
 	if err := convertCmd.Run(); err != nil {
@@ -43,7 +43,7 @@ func DownloadVideo(youtubeID string) (string, error) {
 	}
 
 	// Remove the temporary mp4 file
-	if err := os.Remove(mp4File); err != nil {
+	if err := os.Remove("./data/" + mp4File); err != nil {
 		fmt.Printf("Warning: Could not remove temporary file %s: %v\n", mp4File, err)
 	}
 
@@ -68,7 +68,7 @@ func DownloadSubtitles(youtubeID string) error {
 		subCmd := exec.Command("yt-dlp", "-o", youtubeID, "--skip-download", "--write-auto-sub", "--sub-lang", "en", youtubeURL)
 		subCmd.Stdout = os.Stdout
 		subCmd.Stderr = os.Stderr
-		
+
 		if err := subCmd.Run(); err != nil {
 			lastErr = err
 			if attempt < 50 {
@@ -90,35 +90,6 @@ func DownloadSubtitles(youtubeID string) error {
 	return fmt.Errorf("could not download subtitles after 50 attempts: %v", lastErr)
 }
 
-func DownloadMultipleVideos(idsFile string) error {
-	// Read video IDs from file
-	videoIDs, err := readVideoIDsFromFile(idsFile)
-	if err != nil {
-		return fmt.Errorf("failed to read video IDs: %v", err)
-	}
-
-	if len(videoIDs) == 0 {
-		return fmt.Errorf("no video IDs found in file")
-	}
-
-	fmt.Printf("Found %d video IDs to download\n", len(videoIDs))
-
-	// Download each video
-	for i, videoID := range videoIDs {
-		fmt.Printf("\n=== Downloading video %d/%d: %s ===\n", i+1, len(videoIDs), videoID)
-		
-		if err := downloadVideoWithYtDlp(videoID); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to download video %s: %v\n", videoID, err)
-			continue
-		}
-		
-		fmt.Printf("Successfully downloaded video %s\n", videoID)
-	}
-
-	fmt.Printf("\nBulk download completed\n")
-	return nil
-}
-
 func readVideoIDsFromFile(filename string) ([]string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -133,18 +104,18 @@ func readVideoIDsFromFile(filename string) ([]string, error) {
 	for scanner.Scan() {
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip empty lines and comments
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		// Validate YouTube ID
 		if !IsYouTubeID(line) {
 			fmt.Fprintf(os.Stderr, "Warning: Invalid YouTube ID on line %d: %s\n", lineNum, line)
 			continue
 		}
-		
+
 		videoIDs = append(videoIDs, line)
 	}
 
@@ -153,28 +124,4 @@ func readVideoIDsFromFile(filename string) ([]string, error) {
 	}
 
 	return videoIDs, nil
-}
-
-func downloadVideoWithYtDlp(videoID string) error {
-	outputPattern := "./data/output.%(ext)s"
-	videoURL := "https://www.youtube.com/watch?v=" + videoID
-	
-	// Create data directory if it doesn't exist
-	if err := os.MkdirAll("./data", 0755); err != nil {
-		return fmt.Errorf("failed to create data directory: %v", err)
-	}
-	
-	cmd := exec.Command("yt-dlp", 
-		"-o", outputPattern,
-		"--download-sections", "*120-240",
-		videoURL)
-	
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("yt-dlp command failed: %v", err)
-	}
-	
-	return nil
 }
