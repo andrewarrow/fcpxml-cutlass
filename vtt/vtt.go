@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"sort"
 	"strconv"
@@ -24,6 +25,12 @@ type Clip struct {
 	Text             string
 	FirstSegmentText string // Just the first VTT segment for previews
 	ClipNum          int
+}
+
+type SilenceGap struct {
+	Start    time.Duration
+	End      time.Duration
+	Duration time.Duration
 }
 
 func ParseTime(timeStr string) (time.Duration, error) {
@@ -506,8 +513,17 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 		return
 	}
 	
-	// First, create smart clips by merging segments into complete thoughts
-	smartClips := createSmartClips(segments)
+	// Try to find corresponding audio/video file for waveform analysis
+	audioFile := findAudioFile(vttPath)
+	var silenceGaps []SilenceGap
+	if audioFile != "" {
+		fmt.Printf("🎵 Analyzing audio waveform for natural speech boundaries...\n")
+		silenceGaps = detectSilenceGaps(audioFile)
+		fmt.Printf("Found %d natural pause points\n\n", len(silenceGaps))
+	}
+	
+	// Create smart clips with audio-aware boundaries
+	smartClips := createSmartClipsWithAudio(segments, silenceGaps)
 	
 	// Score clips based on multiple quality factors
 	type ScoredClip struct {
@@ -911,6 +927,205 @@ func containsReactions(text string) bool {
 		}
 	}
 	return false
+}
+
+// findAudioFile looks for corresponding audio/video file for the VTT
+func findAudioFile(vttPath string) string {
+	// Remove .vtt extension and try common video/audio extensions
+	baseName := strings.TrimSuffix(vttPath, ".vtt")
+	baseName = strings.TrimSuffix(baseName, ".en") // Remove language suffix if present
+	
+	extensions := []string{".mov", ".mp4", ".m4a", ".wav", ".mp3", ".mkv", ".avi"}
+	
+	for _, ext := range extensions {
+		candidateFile := baseName + ext
+		if _, err := os.Stat(candidateFile); err == nil {
+			return candidateFile
+		}
+	}
+	
+	return ""
+}
+
+// detectSilenceGaps uses FFmpeg to analyze audio and find natural speech pauses
+func detectSilenceGaps(audioFile string) []SilenceGap {
+	// Use FFmpeg's silencedetect filter to find gaps
+	cmd := exec.Command("ffmpeg", "-i", audioFile, "-af", 
+		"silencedetect=noise=-30dB:duration=0.3", "-f", "null", "-")
+	
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Warning: Could not analyze audio waveform: %v\n", err)
+		return nil
+	}
+	
+	return parseSilenceOutput(string(output))
+}
+
+// parseSilenceOutput extracts silence timestamps from FFmpeg output
+func parseSilenceOutput(output string) []SilenceGap {
+	var gaps []SilenceGap
+	lines := strings.Split(output, "\n")
+	
+	silenceStartRegex := regexp.MustCompile(`silence_start: ([0-9.]+)`)
+	silenceEndRegex := regexp.MustCompile(`silence_end: ([0-9.]+)`)
+	
+	var currentStart *time.Duration
+	
+	for _, line := range lines {
+		if matches := silenceStartRegex.FindStringSubmatch(line); len(matches) > 1 {
+			if seconds, err := strconv.ParseFloat(matches[1], 64); err == nil {
+				start := time.Duration(seconds * float64(time.Second))
+				currentStart = &start
+			}
+		} else if matches := silenceEndRegex.FindStringSubmatch(line); len(matches) > 1 && currentStart != nil {
+			if seconds, err := strconv.ParseFloat(matches[1], 64); err == nil {
+				end := time.Duration(seconds * float64(time.Second))
+				duration := end - *currentStart
+				
+				// Only include meaningful pauses (300ms or longer)
+				if duration >= 300*time.Millisecond {
+					gaps = append(gaps, SilenceGap{
+						Start:    *currentStart,
+						End:      end,
+						Duration: duration,
+					})
+				}
+				currentStart = nil
+			}
+		}
+	}
+	
+	return gaps
+}
+
+// createSmartClipsWithAudio creates clips using both text analysis and audio boundaries
+func createSmartClipsWithAudio(segments []Segment, silenceGaps []SilenceGap) []Segment {
+	if len(silenceGaps) == 0 {
+		// Fallback to text-only analysis
+		return createSmartClips(segments)
+	}
+	
+	var smartClips []Segment
+	i := 0
+	
+	for i < len(segments) {
+		currentClip := segments[i]
+		currentText := strings.TrimSpace(currentClip.Text)
+		
+		// Look ahead to merge incomplete thoughts
+		j := i + 1
+		for j < len(segments) {
+			nextSegment := segments[j]
+			nextText := strings.TrimSpace(nextSegment.Text)
+			
+			// Check if we should merge with next segment
+			shouldMerge := false
+			
+			// Standard text-based merging logic
+			if !endsWithCompletePunctuation(currentText) {
+				shouldMerge = true
+			}
+			if len(strings.Fields(currentText)) < 4 {
+				shouldMerge = true
+			}
+			if len(nextText) > 0 && nextText[0] >= 'a' && nextText[0] <= 'z' {
+				shouldMerge = true
+			}
+			
+			// Audio-based boundary detection
+			if shouldMerge {
+				// Check if there's a natural pause between segments
+				gapBetween := nextSegment.StartTime - currentClip.EndTime
+				if gapBetween > 800*time.Millisecond {
+					// Long gap suggests natural boundary
+					shouldMerge = false
+				} else {
+					// Look for silence gaps near the boundary
+					boundaryTime := nextSegment.StartTime
+					for _, gap := range silenceGaps {
+						// If there's a silence gap within 1 second of the boundary
+						if gap.Start <= boundaryTime+time.Second && gap.End >= boundaryTime-time.Second {
+							if gap.Duration >= 400*time.Millisecond {
+								shouldMerge = false
+								break
+							}
+						}
+					}
+				}
+			}
+			
+			// Don't merge if combined clip would be too long
+			combinedDuration := nextSegment.EndTime - currentClip.StartTime
+			if combinedDuration > 20*time.Second {
+				break
+			}
+			
+			// Don't merge if we've hit a topic change
+			if isTopicChange(currentText, nextText) {
+				break
+			}
+			
+			if shouldMerge {
+				currentClip.EndTime = nextSegment.EndTime
+				currentClip.Text = currentText + " " + nextText
+				currentText = currentClip.Text
+				j++
+			} else {
+				break
+			}
+		}
+		
+		// Refine clip boundaries using audio analysis
+		currentClip = refineClipBoundariesWithAudio(currentClip, silenceGaps)
+		
+		smartClips = append(smartClips, currentClip)
+		i = j
+	}
+	
+	return smartClips
+}
+
+// refineClipBoundariesWithAudio adjusts clip timing to align with natural speech pauses
+func refineClipBoundariesWithAudio(clip Segment, silenceGaps []SilenceGap) Segment {
+	if len(silenceGaps) == 0 {
+		return addNaturalPadding(clip)
+	}
+	
+	// Look for silence gaps near the start and end of the clip
+	searchWindow := 2 * time.Second
+	
+	// Refine start time
+	for _, gap := range silenceGaps {
+		if gap.End >= clip.StartTime-searchWindow && gap.End <= clip.StartTime+searchWindow {
+			if gap.Duration >= 300*time.Millisecond {
+				// Start the clip just after this silence gap
+				clip.StartTime = gap.End + 50*time.Millisecond
+				break
+			}
+		}
+	}
+	
+	// Refine end time
+	for _, gap := range silenceGaps {
+		if gap.Start >= clip.EndTime-searchWindow && gap.Start <= clip.EndTime+searchWindow {
+			if gap.Duration >= 300*time.Millisecond {
+				// End the clip just before this silence gap
+				clip.EndTime = gap.Start - 50*time.Millisecond
+				break
+			}
+		}
+	}
+	
+	// Ensure we don't go negative or create invalid clips
+	if clip.StartTime < 0 {
+		clip.StartTime = 0
+	}
+	if clip.EndTime <= clip.StartTime {
+		clip.EndTime = clip.StartTime + 2*time.Second
+	}
+	
+	return clip
 }
 
 // containsInterestingWords checks for emotionally engaging or interesting content
