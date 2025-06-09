@@ -101,9 +101,11 @@ func replaceVideoClipsWithRandom(fcpxmlContent string, videoIDs []string) string
 	// Replace the original ben asset with all new assets
 	result = result[:benAssetStart] + newAssets.String() + result[benAssetEnd:]
 	
-	// Now we need to update asset-clip references in each NUMBER section
-	// The asset-clip references will be updated when we create the number sections
-	// For now, just replace the original r10 references with r10 (first video)
+	// Now update ALL asset-clip references from "ben" to proper video names
+	// First, replace all remaining "ben" names with the first video ID
+	if len(videoIDs) > 0 {
+		result = strings.ReplaceAll(result, `name="ben"`, fmt.Sprintf(`name="%s"`, videoIDs[0]))
+	}
 	
 	return result
 }
@@ -115,10 +117,11 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 		return fcpxmlContent // Return unchanged if pattern not found
 	}
 	
-	// Find the end of the NUMBER 5 section (look for the next major closing tag)
+	// Find the end of the NUMBER 5 section including its asset-clip
+	// Look for the pattern: </title>\n        <asset-clip ref="r10"...
 	searchStart := number5Start
 	titleDepth := 0
-	number5End := -1
+	titleEnd := -1
 	
 	for i := searchStart; i < len(fcpxmlContent); i++ {
 		if i+7 < len(fcpxmlContent) && fcpxmlContent[i:i+7] == "<title " {
@@ -126,8 +129,22 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 		} else if i+8 < len(fcpxmlContent) && fcpxmlContent[i:i+8] == "</title>" {
 			titleDepth--
 			if titleDepth == 0 {
-				number5End = i + 8
+				titleEnd = i + 8
 				break
+			}
+		}
+	}
+	
+	// Now find the asset-clip that follows this title
+	number5End := titleEnd
+	if titleEnd != -1 {
+		// Look for the asset-clip that should follow
+		assetClipStart := strings.Index(fcpxmlContent[titleEnd:], "<asset-clip ref=\"r10\"")
+		if assetClipStart != -1 {
+			assetClipStart += titleEnd
+			assetClipEnd := strings.Index(fcpxmlContent[assetClipStart:], "/>")
+			if assetClipEnd != -1 {
+				number5End = assetClipStart + assetClipEnd + 2
 			}
 		}
 	}
@@ -145,10 +162,10 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 		return fcpxmlContent // Return unchanged if pattern not found
 	}
 	
-	// Find the end of the NUMBER 4 section
+	// Find the end of the NUMBER 4 section including its asset-clip
 	searchStart = number4Start
 	titleDepth = 0
-	number4End := -1
+	title4End := -1
 	
 	for i := searchStart; i < len(fcpxmlContent); i++ {
 		if i+7 < len(fcpxmlContent) && fcpxmlContent[i:i+7] == "<title " {
@@ -156,8 +173,21 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 		} else if i+8 < len(fcpxmlContent) && fcpxmlContent[i:i+8] == "</title>" {
 			titleDepth--
 			if titleDepth == 0 {
-				number4End = i + 8
+				title4End = i + 8
 				break
+			}
+		}
+	}
+	
+	// Find the asset-clip that follows NUMBER 4 title
+	number4End := title4End
+	if title4End != -1 {
+		assetClipStart := strings.Index(fcpxmlContent[title4End:], "<asset-clip ref=\"r10\"")
+		if assetClipStart != -1 {
+			assetClipStart += title4End
+			assetClipEnd := strings.Index(fcpxmlContent[assetClipStart:], "/>")
+			if assetClipEnd != -1 {
+				number4End = assetClipStart + assetClipEnd + 2
 			}
 		}
 	}
@@ -206,10 +236,9 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 			newAssetRef := fmt.Sprintf("r1%d", assetIndex)
 			newSection = strings.ReplaceAll(newSection, `ref="r10"`, fmt.Sprintf(`ref="%s"`, newAssetRef))
 			
-			// Also update the asset-clip name
-			if assetIndex < len(videoIDs) {
-				newSection = strings.ReplaceAll(newSection, `name="ben"`, fmt.Sprintf(`name="%s"`, videoIDs[assetIndex]))
-			}
+			// Update the asset-clip name if it exists in this section
+			videoName := videoIDs[assetIndex]
+			newSection = strings.ReplaceAll(newSection, fmt.Sprintf(`name="%s"`, videoIDs[0]), fmt.Sprintf(`name="%s"`, videoName))
 		}
 		
 		allNumberSections.WriteString(newSection)
