@@ -42,6 +42,7 @@ func DownloadMultipleVideos(idsFile string) error {
 		fmt.Printf("\n=== Downloading video %d/%d: %s ===\n", i+1, len(videoIDs), videoID)
 
 		DownloadVideo(videoID)
+		DownloadSubtitles(videoID)
 
 		fmt.Printf("Successfully downloaded video %s\n", videoID)
 	}
