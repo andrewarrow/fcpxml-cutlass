@@ -552,17 +552,51 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 	})
 	
 	// Select segments for approximately 2 minutes (120 seconds)
+	// Distribute clips across the entire video timeline
 	var selected []ScoredSegment
 	totalDuration := 0
 	targetDuration := 120
 	
+	if len(scored) == 0 {
+		return
+	}
+	
+	// Find the total video duration to create time buckets
+	lastSegment := segments[len(segments)-1]
+	videoDuration := lastSegment.EndTime.Seconds()
+	
+	// Create time buckets to ensure distribution across the video
+	numBuckets := 6 // Divide video into 6 sections for good distribution
+	bucketSize := videoDuration / float64(numBuckets)
+	
+	// Group segments by time buckets
+	buckets := make([][]ScoredSegment, numBuckets)
 	for _, seg := range scored {
-		if totalDuration + seg.Duration <= targetDuration {
-			selected = append(selected, seg)
-			totalDuration += seg.Duration
+		bucketIndex := int(seg.Segment.StartTime.Seconds() / bucketSize)
+		if bucketIndex >= numBuckets {
+			bucketIndex = numBuckets - 1
 		}
-		if totalDuration >= int(float64(targetDuration) * 0.8) { // Stop when we're close to target
-			break
+		buckets[bucketIndex] = append(buckets[bucketIndex], seg)
+	}
+	
+	// Sort each bucket by score
+	for i := range buckets {
+		sort.Slice(buckets[i], func(j, k int) bool {
+			return buckets[i][j].Score > buckets[i][k].Score
+		})
+	}
+	
+	// Select best segments from each bucket in round-robin fashion
+	for round := 0; round < 5 && totalDuration < targetDuration; round++ {
+		for bucketIdx := 0; bucketIdx < numBuckets && totalDuration < targetDuration; bucketIdx++ {
+			bucket := buckets[bucketIdx]
+			if round < len(bucket) {
+				seg := bucket[round]
+				if totalDuration + seg.Duration <= targetDuration {
+					selected = append(selected, seg)
+					totalDuration += seg.Duration
+				}
+			}
 		}
 	}
 	
