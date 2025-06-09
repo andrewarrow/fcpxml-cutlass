@@ -506,43 +506,33 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 		return
 	}
 	
-	// Score segments based on length and content quality
-	type ScoredSegment struct {
-		Segment Segment
-		Score   float64
-		Duration int
+	// First, create smart clips by merging segments into complete thoughts
+	smartClips := createSmartClips(segments)
+	
+	// Score clips based on multiple quality factors
+	type ScoredClip struct {
+		StartTime time.Duration
+		EndTime   time.Duration
+		Text      string
+		Score     float64
+		Duration  int
 	}
 	
-	var scored []ScoredSegment
-	for _, seg := range segments {
-		duration := int(seg.EndTime.Seconds()) - int(seg.StartTime.Seconds())
-		if duration < 2 { // Skip very short segments
+	var scored []ScoredClip
+	for _, clip := range smartClips {
+		duration := int(clip.EndTime.Seconds()) - int(clip.StartTime.Seconds())
+		if duration < 3 { // Skip very short clips
 			continue
 		}
 		
-		text := strings.TrimSpace(seg.Text)
-		words := strings.Fields(text)
+		score := calculateAdvancedScore(clip.Text, duration)
 		
-		// Base score on duration and word count
-		score := float64(duration) * 0.5 + float64(len(words)) * 0.3
-		
-		// Bonus for complete sentences
-		if strings.ContainsAny(text, ".!?") {
-			score += 2.0
-		}
-		
-		// Bonus for interesting content (questions, emotional words)
-		if strings.Contains(strings.ToLower(text), "?") {
-			score += 1.5
-		}
-		if containsInterestingWords(text) {
-			score += 1.0
-		}
-		
-		scored = append(scored, ScoredSegment{
-			Segment: seg,
-			Score: score,
-			Duration: duration,
+		scored = append(scored, ScoredClip{
+			StartTime: clip.StartTime,
+			EndTime:   clip.EndTime,
+			Text:      clip.Text,
+			Score:     score,
+			Duration:  duration,
 		})
 	}
 	
@@ -551,9 +541,9 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 		return scored[i].Score > scored[j].Score
 	})
 	
-	// Select segments for approximately 2 minutes (120 seconds)
+	// Select clips for approximately 2 minutes (120 seconds)
 	// Distribute clips across the entire video timeline
-	var selected []ScoredSegment
+	var selected []ScoredClip
 	totalDuration := 0
 	targetDuration := 120
 	
@@ -569,14 +559,14 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 	numBuckets := 6 // Divide video into 6 sections for good distribution
 	bucketSize := videoDuration / float64(numBuckets)
 	
-	// Group segments by time buckets
-	buckets := make([][]ScoredSegment, numBuckets)
-	for _, seg := range scored {
-		bucketIndex := int(seg.Segment.StartTime.Seconds() / bucketSize)
+	// Group clips by time buckets
+	buckets := make([][]ScoredClip, numBuckets)
+	for _, clip := range scored {
+		bucketIndex := int(clip.StartTime.Seconds() / bucketSize)
 		if bucketIndex >= numBuckets {
 			bucketIndex = numBuckets - 1
 		}
-		buckets[bucketIndex] = append(buckets[bucketIndex], seg)
+		buckets[bucketIndex] = append(buckets[bucketIndex], clip)
 	}
 	
 	// Sort each bucket by score
@@ -586,23 +576,23 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 		})
 	}
 	
-	// Select best segments from each bucket in round-robin fashion
+	// Select best clips from each bucket in round-robin fashion
 	for round := 0; round < 5 && totalDuration < targetDuration; round++ {
 		for bucketIdx := 0; bucketIdx < numBuckets && totalDuration < targetDuration; bucketIdx++ {
 			bucket := buckets[bucketIdx]
 			if round < len(bucket) {
-				seg := bucket[round]
-				if totalDuration + seg.Duration <= targetDuration {
-					selected = append(selected, seg)
-					totalDuration += seg.Duration
+				clip := bucket[round]
+				if totalDuration + clip.Duration <= targetDuration {
+					selected = append(selected, clip)
+					totalDuration += clip.Duration
 				}
 			}
 		}
 	}
 	
-	// Sort selected segments by start time
+	// Sort selected clips by start time
 	sort.Slice(selected, func(i, j int) bool {
-		return selected[i].Segment.StartTime < selected[j].Segment.StartTime
+		return selected[i].StartTime < selected[j].StartTime
 	})
 	
 	if len(selected) == 0 {
@@ -614,13 +604,313 @@ func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
 	fmt.Printf("For a ~%d second video, try:\n\n", totalDuration)
 	
 	clipPairs := make([]string, len(selected))
-	for i, seg := range selected {
-		startMin := int(seg.Segment.StartTime.Minutes())
-		startSec := int(seg.Segment.StartTime.Seconds()) % 60
-		clipPairs[i] = fmt.Sprintf("%02d:%02d_%d", startMin, startSec, seg.Duration)
+	for i, clip := range selected {
+		startMin := int(clip.StartTime.Minutes())
+		startSec := int(clip.StartTime.Seconds()) % 60
+		clipPairs[i] = fmt.Sprintf("%02d:%02d_%d", startMin, startSec, clip.Duration)
 	}
 	
 	fmt.Printf("./cutlass vtt-clips %s %s\n\n", vttPath, strings.Join(clipPairs, ","))
+}
+
+// createSmartClips merges segments into complete thoughts with natural boundaries
+func createSmartClips(segments []Segment) []Segment {
+	if len(segments) == 0 {
+		return segments
+	}
+	
+	var smartClips []Segment
+	i := 0
+	
+	for i < len(segments) {
+		currentClip := segments[i]
+		currentText := strings.TrimSpace(currentClip.Text)
+		
+		// Look ahead to merge incomplete thoughts
+		j := i + 1
+		for j < len(segments) {
+			nextSegment := segments[j]
+			nextText := strings.TrimSpace(nextSegment.Text)
+			
+			// Check if we should merge with next segment
+			shouldMerge := false
+			
+			// Merge if current ends without punctuation and next is continuation
+			if !endsWithCompletePunctuation(currentText) {
+				shouldMerge = true
+			}
+			
+			// Merge if current text is very short (likely incomplete)
+			if len(strings.Fields(currentText)) < 4 {
+				shouldMerge = true
+			}
+			
+			// Merge if next starts with lowercase (continuation)
+			if len(nextText) > 0 && nextText[0] >= 'a' && nextText[0] <= 'z' {
+				shouldMerge = true
+			}
+			
+			// Don't merge if the combined clip would be too long
+			combinedDuration := nextSegment.EndTime - currentClip.StartTime
+			if combinedDuration > 25*time.Second {
+				break
+			}
+			
+			// Don't merge if we've hit a clear topic change
+			if isTopicChange(currentText, nextText) {
+				break
+			}
+			
+			if shouldMerge {
+				// Merge the segments
+				currentClip.EndTime = nextSegment.EndTime
+				currentClip.Text = currentText + " " + nextText
+				currentText = currentClip.Text
+				j++
+			} else {
+				break
+			}
+		}
+		
+		// Add timing padding for natural speech boundaries
+		currentClip = addNaturalPadding(currentClip)
+		
+		smartClips = append(smartClips, currentClip)
+		i = j
+	}
+	
+	return smartClips
+}
+
+// calculateAdvancedScore uses sophisticated metrics to score clip quality
+func calculateAdvancedScore(text string, duration int) float64 {
+	if text == "" {
+		return 0
+	}
+	
+	words := strings.Fields(text)
+	wordCount := len(words)
+	
+	score := 0.0
+	
+	// Base score: balanced duration and content density
+	wordsPerSecond := float64(wordCount) / float64(duration)
+	if wordsPerSecond >= 2.0 && wordsPerSecond <= 4.0 { // Natural speaking pace
+		score += 3.0
+	} else {
+		score += 1.0
+	}
+	
+	// Content quality bonuses
+	
+	// 1. Storytelling elements
+	if containsStorytellingElements(text) {
+		score += 4.0
+	}
+	
+	// 2. Humor and entertainment
+	if containsHumorIndicators(text) {
+		score += 3.5
+	}
+	
+	// 3. Emotional engagement
+	if containsEmotionalContent(text) {
+		score += 3.0
+	}
+	
+	// 4. Question-answer dynamics
+	if containsDialogueFlow(text) {
+		score += 2.5
+	}
+	
+	// 5. Quotable moments
+	if isQuotable(text) {
+		score += 2.0
+	}
+	
+	// 6. Personal revelations/confessions
+	if containsPersonalRevelation(text) {
+		score += 2.5
+	}
+	
+	// 7. Complete thoughts bonus
+	if endsWithCompletePunctuation(text) && wordCount >= 8 {
+		score += 1.5
+	}
+	
+	// 8. Reaction moments
+	if containsReactions(text) {
+		score += 1.0
+	}
+	
+	// Duration sweet spot (5-15 seconds optimal)
+	if duration >= 5 && duration <= 15 {
+		score += 2.0
+	} else if duration >= 3 && duration <= 20 {
+		score += 1.0
+	}
+	
+	// Penalty for very short or very long clips
+	if duration < 3 {
+		score *= 0.5
+	}
+	if duration > 25 {
+		score *= 0.7
+	}
+	
+	return score
+}
+
+// Helper functions for smart clip analysis
+
+func endsWithCompletePunctuation(text string) bool {
+	text = strings.TrimSpace(text)
+	if len(text) == 0 {
+		return false
+	}
+	last := text[len(text)-1]
+	return last == '.' || last == '!' || last == '?' || last == '"'
+}
+
+func isTopicChange(current, next string) bool {
+	// Simple heuristic: if next starts with question words, it's likely a topic change
+	nextLower := strings.ToLower(strings.TrimSpace(next))
+	topicStarters := []string{"so,", "do you", "would you", "have you", "what", "where", "when", "why", "how"}
+	
+	for _, starter := range topicStarters {
+		if strings.HasPrefix(nextLower, starter) {
+			return true
+		}
+	}
+	return false
+}
+
+func addNaturalPadding(segment Segment) Segment {
+	// Add small padding to ensure we don't cut off words
+	segment.StartTime = segment.StartTime - 200*time.Millisecond
+	segment.EndTime = segment.EndTime + 300*time.Millisecond
+	
+	// Don't go negative
+	if segment.StartTime < 0 {
+		segment.StartTime = 0
+	}
+	
+	return segment
+}
+
+func containsStorytellingElements(text string) bool {
+	lower := strings.ToLower(text)
+	indicators := []string{
+		"once", "remember", "story", "told", "happened", "saw", "went",
+		"growing up", "one time", "i was", "there was", "back when",
+	}
+	
+	for _, indicator := range indicators {
+		if strings.Contains(lower, indicator) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsHumorIndicators(text string) bool {
+	lower := strings.ToLower(text)
+	indicators := []string{
+		"funny", "hilarious", "laugh", "haha", "lol", "joke", "kidding",
+		"ridiculous", "crazy", "insane", "weird", "awkward", "embarrassing",
+	}
+	
+	for _, indicator := range indicators {
+		if strings.Contains(lower, indicator) {
+			return true
+		}
+	}
+	
+	// Check for self-deprecating humor patterns
+	if strings.Contains(lower, "i'm") && (strings.Contains(lower, "terrible") || 
+		strings.Contains(lower, "awful") || strings.Contains(lower, "bad")) {
+		return true
+	}
+	
+	return false
+}
+
+func containsEmotionalContent(text string) bool {
+	lower := strings.ToLower(text)
+	emotions := []string{
+		"love", "hate", "excited", "scared", "nervous", "amazing", "incredible",
+		"beautiful", "terrible", "awful", "wonderful", "shocking", "surprised",
+		"crying", "tears", "heart", "feel", "emotional", "touched",
+	}
+	
+	for _, emotion := range emotions {
+		if strings.Contains(lower, emotion) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsDialogueFlow(text string) bool {
+	hasQuestion := strings.Contains(text, "?")
+	hasResponse := strings.Contains(strings.ToLower(text), "no") || 
+		strings.Contains(strings.ToLower(text), "yes") ||
+		strings.Contains(strings.ToLower(text), "well") ||
+		strings.Contains(strings.ToLower(text), "actually")
+	
+	return hasQuestion && hasResponse
+}
+
+func isQuotable(text string) bool {
+	words := strings.Fields(text)
+	
+	// Short, punchy statements
+	if len(words) >= 3 && len(words) <= 12 {
+		lower := strings.ToLower(text)
+		if strings.Contains(lower, "i think") || strings.Contains(lower, "i believe") ||
+			strings.Contains(lower, "the truth is") || strings.Contains(lower, "honestly") {
+			return true
+		}
+	}
+	
+	// Contains quotation marks (direct quotes)
+	if strings.Contains(text, "\"") {
+		return true
+	}
+	
+	return false
+}
+
+func containsPersonalRevelation(text string) bool {
+	lower := strings.ToLower(text)
+	revelations := []string{
+		"to be honest", "honestly", "truth is", "confession", "secret",
+		"never told", "first time", "admit", "confess", "reveal",
+		"i've never", "nobody knows", "between you and me",
+	}
+	
+	for _, revelation := range revelations {
+		if strings.Contains(lower, revelation) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsReactions(text string) bool {
+	lower := strings.ToLower(text)
+	reactions := []string{
+		"oh my god", "omg", "wow", "whoa", "really?", "seriously?",
+		"no way", "are you kidding", "what?", "huh?", "wait",
+		"hold on", "pause", "stop", "that's crazy", "unbelievable",
+	}
+	
+	for _, reaction := range reactions {
+		if strings.Contains(lower, reaction) {
+			return true
+		}
+	}
+	return false
 }
 
 // containsInterestingWords checks for emotionally engaging or interesting content
