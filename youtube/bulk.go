@@ -91,7 +91,7 @@ func AssembleTop5FCPXML(idsFile, name string) error {
 	}
 
 	// Read the template top5.fcpxml
-	templatePath := "top5.fcpxml"
+	templatePath := "templates/top5.fcpxml"
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 		return fmt.Errorf("template file %s does not exist", templatePath)
 	}

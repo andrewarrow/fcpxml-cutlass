@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat1080p25" frameDuration="100/2500s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="cutlass_logo_t" uid="3F909E29CB42ED246BCE2FB34A45EF33" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="3F909E29CB42ED246BCE2FB34A45EF33" src="file:///Users/aa/Movies/Untitled.fcpbundle/Auto%20Generated%20Clips/Original%20Media/cutlass_logo_t.png">
+                <bookmark>Ym9va5ADAAAAAAQQMAAAAPQXjsaG0djKdrm31DBnh2DbonQR1pp4QGvlVyAHqIGWaAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAAEgAAAAEBAABVbnRpdGxlZC5mY3BidW5kbGUAABQAAAABAQAAQXV0byBHZW5lcmF0ZWQgQ2xpcHMOAAAAAQEAAE9yaWdpbmFsIE1lZGlhAAASAAAAAQEAAGN1dGxhc3NfbG9nb190LnBuZwAAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAWAAAAHQAAACMAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAABjhsEDAAAAAAgAAAAEAwAA9O0IBAAAAAAIAAAABAMAAP3tCAQAAAAACAAAAAQDAACTVRAEAAAAABwAAAABBgAAzAAAANwAAADsAAAA/AAAAAwBAAAcAQAALAEAAAgAAAAABAAAQcb7fZM0LGMYAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAKgAAAAAAAAABRAAADwBAAAAAAAAEBAAAHABAAAAAAAAQBAAAGABAAAAAAAAVBAAAJgBAAAAAAAAVRAAAKQBAAAAAAAAVhAAAJABAAAAAAAAAiAAAFwCAAAAAAAABSAAAMwBAAAAAAAAECAAANwBAAAAAAAAESAAABACAAAAAAAAEiAAAPABAAAAAAAAEyAAAAACAAAAAAAAICAAADwCAAAAAAAAMCAAAJABAAAAAAAAAcAAALABAAAAAAAAEcAAACAAAAAAAAAAEsAAAMABAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-09 05:06:13 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="1"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="262" height="282" colorSpace="1-13-1"/>
+        <asset id="r4" name="Ethereal Accents" uid="798E3523EBB845A996446F857DE6AA7E" start="0s" duration="91591/44100s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="44100">
+            <media-rep kind="original-media" sig="798E3523EBB845A996446F857DE6AA7E" src="file:///Users/aa/Movies/Untitled.fcpbundle/Auto%20Generated%20Clips/Original%20Media/Ethereal%20Accents.caf">
+                <bookmark>Ym9va5ADAAAAAAQQMAAAANX2jy7uqWVdaQz7Lw3q0v+OAWn5Y9FGtn1ehShFEQI/aAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAAEgAAAAEBAABVbnRpdGxlZC5mY3BidW5kbGUAABQAAAABAQAAQXV0byBHZW5lcmF0ZWQgQ2xpcHMOAAAAAQEAAE9yaWdpbmFsIE1lZGlhAAAUAAAAAQEAAEV0aGVyZWFsIEFjY2VudHMuY2FmHAAAAAEGAAAQAAAAIAAAACwAAAA<truncated>...</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-09 05:11:35 -0700"/>
+            </metadata>
+        </asset>
+        <format id="r5" name="FFVideoFormatRateUndefined"/>
+        <effect id="r6" name="Fade 3D" uid=".../Titles.localized/3D.localized/Fade 3D.localized/Fade 3D.moti"/>
+        <effect id="r7" name="Bumper" uid=".../Titles.localized/Dynamic Titles.localized/Blur.localized/Bumper.localized/Bumper.moti"/>
+        <effect id="r8" name="Basic 3D" uid=".../Titles.localized/3D.localized/Basic 3D.localized/Basic 3D.moti"/>
+        <asset id="r9" name="Synth Zap Accent 06" uid="3DC9B020540A135712966448E4C2AB96" start="0s" duration="98138/44100s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="44100">
+            <media-rep kind="original-media" sig="3DC9B020540A135712966448E4C2AB96" src="file:///Users/aa/Movies/Untitled.fcpbundle/Auto%20Generated%20Clips/Original%20Media/Synth%20Zap%20Accent%2006.caf">
+                <bookmark>Ym9va5QDAAAAAAQQMAAAAAln9W9Uhq5+Xak6meRFZGFRv571YJGARXiecGeODivUbAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAAEgAAAAEBAABVbnRpdGxlZC5mY3BidW5kbGUAABQAAAABAQAAQXV0byBHZW5lcmF0ZWQgQ2xpcHMOAAAAAQEAAE9yaWdpbmFsIE1lZGlhAAAXAAAAAQEAAFN5bnRoIFphcCBBY2NlbnQgMDYuY2FmABwAAAABBgAAEAAAACAAAAAsAAAAPAAAAFgAAAB0AAAAjAAAAAgAAAAEAwAAHUIAAAAAAAAIAAAABAMAAMdSBAAAAAAACAAAAAQDAAD6UgQAAAAAAAgAAAAEAwAAY4bBAwAAAAAIAAAABAMAAPTtCAQAAAAACAAAAAQDAAD97QgEAAAAAAgAAAAEAwAAB2kQBAAAAAAcAAAAAQYAANAAAADgAAAA8AAAAAABAAAQAQAAIAEAADABAAAIAAAAAAQAAEHGKQr4gAAAGAAAAAECAAABAAAAAAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAQUAAAQAAAADAwAACAAAAAQAAAADAwAABQAAAAgAAAAEAwAABQAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxmPHqoAAACQAAAABAQAANUUzOUUyNTMtNjBBOC00RDkyLTkzQ0ItREYxREZEMjAxQ0JEGAAAAAECAACBAAAAAQAAAO8TAAABAAAAAAAAAAAAAAABAAAAAQEAAC8AAADwAAAA/v///wEAAAAAAAAAEwAAAAQQAACsAAAAAAAAAAUQAABAAQAAAAAAABAQAAB0AQAAAAAAAEAQAABkAQAAAAAAAFQQAACcAQAAAAAAAFUQAACoAQAAAAAAAFYQAACUAQAAAAAAAAIgAABgAgAAAAAAAAUgAADQAQAAAAAAABAgAADgAQAAAAAAABEgAAAUAgAAAAAAABIgAAD0AQAAAAAAABMgAAAEAgAAAAAAACAgAABAAgAAAAAAADAgAACUAQAAAAAAAAHAAAC0AQAAAAAAABHAAAAgAAAAAAAAABLAAADEAQAAAAAAABDQAAAEAAAAAAAAAA==</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-09 05:33:12 -0700"/>
+            </metadata>
+        </asset>
+        {{range $index, $video := .Videos}}
+        <asset id="r{{add $index 10}}" name="{{$video.ID}}" uid="1060CDAD22BE0C793867C03043293F21" start="0s" duration="960000/32000s" hasVideo="1" format="r1" hasAudio="1" videoSources="1" audioSources="1" audioChannels="2" audioRate="44100">
+            <media-rep kind="original-media" sig="1060CDAD22BE0C793867C03043293F21" src="file:///Users/aa/Movies/Untitled.fcpbundle/Auto%20Generated%20Clips/Original%20Media/{{$video.ID}}.mov">
+                <bookmark>Ym9va4QDAAAAAAQQMAAAAOBLbLsoxLD5+zzOqerWza2PENc+uJiE8Dk93Q0C2k1xXAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAAEgAAAAEBAABVbnRpdGxlZC5mY3BidW5kbGUAABQAAAABAQAAQXV0byBHZW5lcmF0ZWQgQ2xpcHMOAAAAAQEAAE9yaWdpbmFsIE1lZGlhAAAHAAAAAQEAAGJlbi5tb3YAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAWAAAAHQAAACMAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAABjhsEDAAAAAAgAAAAEAwAA9O0IBAAAAAAIAAAABAMAAP3tCAQAAAAACAAAAAQDAADkXhAEAAAAABwAAAABBgAAwAAAANAAAADgAAAA8AAAAAABAAAQAQAAIAEAAAgAAAAABAAAQcb7hAuMkLYYAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAJwAAAAAAAAABRAAADABAAAAAAAAEBAAAGQBAAAAAAAAQBAAAFQBAAAAAAAAVBAAAIwBAAAAAAAAVRAAAJgBAAAAAAAAVhAAAIQBAAAAAAAAAiAAAFACAAAAAAAABSAAAMABAAAAAAAAECAAANABAAAAAAAAESAAAAQCAAAAAAAAEiAAAOQBAAAAAAAAEyAAAPQBAAAAAAAAICAAADACAAAAAAAAMCAAAIQBAAAAAAAAAcAAAKQBAAAAAAAAEcAAACAAAAAAAAAAEsAAALQBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemCodecs">
+                    <array>
+                        <string>Lavc61.19.101 libx264</string>
+                        <string>MPEG-4 AAC</string>
+                    </array>
+                </md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-09 05:16:49 -0700"/>
+            </metadata>
+        </asset>
+        {{end}}
+        
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="Auto Generated Clips" uid="31687F41-8098-43E5-91DA-7943FD245C92">
+            <project name="better" uid="ED192620-E1BF-4284-8526-93B89ADF1721" modDate="2025-06-09 05:38:24 -0700">
+                <sequence format="r1" duration="5529600/320000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="cutlass_logo_t" start="3600s" duration="3200/2500s">
+                            <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
+                            <title ref="r6" lane="1" offset="3600s" name="cutlass - Fade 3D" start="8999100/2500s" duration="3200/2500s">
+                                <param name="Position" key="9999/10085/10086/1/100/101" value="-50 -400"/>
+                                <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
+                                <param name="Alignment" key="9999/10085/10086/2/354/2959511101/401" value="1 (Center)"/>
+                                <param name="Anchor Point" key="9999/10085/10086/2/357" value="3 (All)"/>
+                                <param name="Position" key="9999/10085/10086/2/358" value="0 69"/>
+                                <param name="Anchor Position" key="9999/10085/10086/2/375" value="2 (Typographic Center)"/>
+                                <param name="Opacity" key="9999/10085/10086/4/1825835762/1000/1044" value="0"/>
+                                <param name="Animate" key="9999/10085/10086/4/1825835762/201/203" value="4 (All)"/>
+                                <param name="Spread: In" key="9999/10085/10086/4/1825835762/201/204" value="25"/>
+                                <param name="Speed" key="9999/10085/10086/4/1825835762/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1825835762/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1825835762/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1825835762/201/220/222" value="0"/>
+                                <param name="Opacity" key="9999/10085/10086/4/1828073613/1000/1044" value="0"/>
+                                <param name="Sequencing" key="9999/10085/10086/4/1828073613/201/202" value="0 (To)"/>
+                                <param name="Animate" key="9999/10085/10086/4/1828073613/201/203" value="4 (All)"/>
+                                <param name="Spread: Out" key="9999/10085/10086/4/1828073613/201/204" value="0"/>
+                                <param name="Speed" key="9999/10085/10086/4/1828073613/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1828073613/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="684684/120000s" value="0"/>
+                                        <keyframe time="860860/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1828073613/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1828073613/201/220/222" value="0"/>
+                                <param name="Start Offset" key="9999/10085/10086/4/1828073613/201/235" value="45"/>
+                                <param name="Speed: In" key="9999/15365/100/1831926367/2/100" value="0 (Constant)"/>
+                                <param name="Fade Duration: In" key="9999/15365/100/2960696185/2/100" value="0"/>
+                                <param name="Speed: Out" key="9999/1828084260/100/1831929138/2/100" value="0 (Constant)"/>
+                                <text>
+                                    <text-style ref="ts1">cutlas</text-style>
+                                    <text-style ref="ts2">s</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Sabon Pro" fontSize="288" fontFace="Roman" fontColor="1 1 1 1" kerning="4.608" alignment="center">
+                                        <param name="Depth" key="504" value="9"/>
+                                        <param name="Depth Direction" key="506" value="2 (Centered)"/>
+                                        <param name="Weight" key="519" value="0.13"/>
+                                        <param name="Front Edge" key="500" value="1 (Bevel)"/>
+                                        <param name="Front Edge Size" key="502" value="2.6 2.6"/>
+                                        <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+                                        <param name="Lighting" key="527">
+                                            <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                                            <param name="Intensity" key="526" value="1"/>
+                                            <param name="Environment" key="512">
+                                                <param name="Type" key="533" value="7 (Soft Box Above)"/>
+                                                <param name="Intensity" key="514" value="0.5"/>
+                                                <param name="Rotation" key="516" value="-21.1 0 0 0 (Use Rotation)"/>
+                                            </param>
+                                        </param>
+                                        <param name="Material" key="509">
+                                            <param name="Material" key="528" value="0 (Single)"/>
+                                        </param>
+                                        <param name="Hidden Channel" key="532" value="1"/>
+                                        <param name="Material" key="material:Basic">
+                                            <param name="Layer" key="layer:Substance:3 (Plastic)">
+                                                <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                                                <param name="Type" key="4" value="0 (Shiny)"/>
+                                                <param name="Shininess" key="109" value="1"/>
+                                                <param name="Color" key="106" value="0.879699 0.879699 0.879699"/>
+                                                <param name="Image Options" key="114">
+                                                    <param name="Placement" key="7">
+                                                        <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                                                    </param>
+                                                </param>
+                                                <param name="Texture Depth" key="110" value="0"/>
+                                                <param name="Enable Edge" key="116" enabled="0"/>
+                                            </param>
+                                            <param name="Sequence ID" key="2" value="2000"/>
+                                            <param name="Is Edited" key="5" value="1"/>
+                                        </param>
+                                        <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                            <param name="motionTextTracking" key="tracking" value="4.608"/>
+                                        </param>
+                                    </text-style>
+                                </text-style-def>
+                                <text-style-def id="ts2">
+                                    <text-style font="Sabon Pro" fontSize="288" fontFace="Roman" fontColor="1 1 1 1" alignment="center">
+                                        <param name="Depth" key="504" value="9"/>
+                                        <param name="Depth Direction" key="506" value="2 (Centered)"/>
+                                        <param name="Weight" key="519" value="0.13"/>
+                                        <param name="Front Edge" key="500" value="1 (Bevel)"/>
+                                        <param name="Front Edge Size" key="502" value="2.6 2.6"/>
+                                        <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+                                        <param name="Lighting" key="527">
+                                            <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                                            <param name="Intensity" key="526" value="1"/>
+                                            <param name="Environment" key="512">
+                                                <param name="Type" key="533" value="7 (Soft Box Above)"/>
+                                                <param name="Intensity" key="514" value="0.5"/>
+                                                <param name="Rotation" key="516" value="-21.1 0 0 0 (Use Rotation)"/>
+                                            </param>
+                                        </param>
+                                        <param name="Material" key="509">
+                                            <param name="Material" key="528" value="0 (Single)"/>
+                                        </param>
+                                        <param name="Hidden Channel" key="532" value="1"/>
+                                        <param name="Material" key="material:Basic">
+                                            <param name="Layer" key="layer:Substance:3 (Plastic)">
+                                                <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                                                <param name="Type" key="4" value="0 (Shiny)"/>
+                                                <param name="Shininess" key="109" value="1"/>
+                                                <param name="Color" key="106" value="0.879699 0.879699 0.879699"/>
+                                                <param name="Image Options" key="114">
+                                                    <param name="Placement" key="7">
+                                                        <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                                                    </param>
+                                                </param>
+                                                <param name="Texture Depth" key="110" value="0"/>
+                                                <param name="Enable Edge" key="116" enabled="0"/>
+                                            </param>
+                                            <param name="Sequence ID" key="2" value="2000"/>
+                                            <param name="Is Edited" key="5" value="1"/>
+                                        </param>
+                                        <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                            <param name="motionTextTracking" key="tracking" value="4.608"/>
+                                        </param>
+                                    </text-style>
+                                </text-style-def>
+                            </title>
+                        </video>
+                        <title ref="r7" offset="3200/2500s" name="TOP FIVE - Bumper" start="3600s" duration="5100/2500s">
+                            <param name="Build In" key="9999/10119/2/101" value="0"/>
+                            <param name="Layout Method" key="9999/3296813083/3296813732/10139/3296835635/10144/2/314" value="1 (Paragraph)"/>
+                            <param name="Left Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/323" value="-1600"/>
+                            <param name="Top Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/324" value="0"/>
+                            <param name="Right Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/325" value="-1600"/>
+                            <param name="Bottom Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/326" value="0"/>
+                            <param name="Auto-Size to Text" key="9999/3296813083/3296813732/10139/3296835635/10144/2/327" value="1"/>
+                            <param name="Layout Method" key="9999/3296813083/3296813732/10139/3296835716/10144/2/314" value="1 (Paragraph)"/>
+                            <param name="Left Margin" key="9999/3296813083/3296813732/10139/3296835716/10144/2/323" value="-1600"/>
+                            <param name="Top Margin" key="9999/3296813083/3296813732/10139/3296835716/10144/2/324" value="0"/>
+                            <param name="Right Margin" key="9999/3296813083/3296813732/10139/3296835716/10144/2/325" value="-1600"/>
+                            <param name="Bottom Margin" key="9999/3296813083/3296813732/10139/3296835716/10144/2/326" value="0"/>
+                            <param name="Auto-Size to Text" key="9999/3296813083/3296813732/10139/3296835716/10144/2/327" value="1"/>
+                            <param name="Noisiness" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/201/220/222" value="0"/>
+                            <param name="Start Offset" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/201/235" value="3"/>
+                            <param name="Blur" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/1007/1040" value="32 32"/>
+                            <param name="Sequencing" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/201/202" value="0 (To)"/>
+                            <param name="Spread" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/201/204" value="6"/>
+                            <param name="Speed" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/201/208" value="4 (Accelerate)"/>
+                            <text>
+                                <text-style ref="ts3">TOP FIV</text-style>
+                                <text-style ref="ts4">E</text-style>
+                            </text>
+                            <text>
+                                <text-style ref="ts5">{{.FirstName}}</text-style>
+                                <text-style ref="ts6">
+</text-style>
+                                <text-style ref="ts5">{{.LastName}}</text-style>{{if .LastNameSuffix}}
+                                <text-style ref="ts7">{{.LastNameSuffix}}</text-style>{{end}}
+                            </text>
+                            <text-style-def id="ts3">
+                                <text-style font="Futura" fontSize="126" fontFace="Medium" fontColor="1 1 1 1" kerning="-8.4042" alignment="center">
+                                    <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                        <param name="motionTextTracking" key="tracking" value="-8.4042"/>
+                                    </param>
+                                </text-style>
+                            </text-style-def>
+                            <text-style-def id="ts4">
+                                <text-style font="Futura" fontSize="126" fontFace="Medium" fontColor="1 1 1 1" alignment="center"/>
+                            </text-style-def>
+                            <text-style-def id="ts5">
+                                <text-style font="Futura" fontSize="400" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="-26.64" alignment="center" lineSpacing="-284">
+                                    <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                        <param name="motionTextTracking" key="tracking" value="-26.64"/>
+                                    </param>
+                                </text-style>
+                            </text-style-def>
+                            <text-style-def id="ts6">
+                                <text-style font="Futura" fontSize="400" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center" lineSpacing="-284">
+                                    <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                        <param name="motionTextKerning" key="kerning" value="-40"/>
+                                    </param>
+                                </text-style>
+                            </text-style-def>
+                            <text-style-def id="ts7">
+                                <text-style font="Futura" fontSize="400" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center" lineSpacing="-284"/>
+                            </text-style-def>
+                            {{range $index, $number := .Numbers}}
+                            <title ref="r8" lane="1" offset="3600s" name="NUMBER {{$number.Number}} - Basic 3D" start="3600s" duration="5100/2500s">
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10085/10086/1/100/101" value="0 -200"/>
+                                <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
+                                <param name="Alignment" key="9999/10085/10086/2/354/2959511101/401" value="1 (Center)"/>
+                                <param name="Anchor Point" key="9999/10085/10086/2/357" value="2 (Line)"/>
+                                <param name="Position" key="9999/10085/10086/2/358" value="0 69"/>
+                                <param name="Anchor Position" key="9999/10085/10086/2/375" value="1 (Center)"/>
+                                <param name="Animate" key="9999/10085/10086/4/14906/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/14906/201/204" value="0"/>
+                                <param name="Speed" key="9999/10085/10086/4/14906/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/14906/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/14906/201/211" value="2 (Per Object)"/>
+                                <param name="Seed" key="9999/10085/10086/4/14906/201/220/217" value="603129557"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/14906/201/220/222" value="0"/>
+                                <param name="Animate" key="9999/10085/10086/4/15157/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/15157/201/204" value="0"/>
+                                <param name="Speed" key="9999/10085/10086/4/15157/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/15157/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/15157/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/15157/201/220/222" value="0"/>
+                                <param name="Opacity" key="9999/10085/10086/4/1825835762/1000/1044" value="0"/>
+                                <param name="Animate" key="9999/10085/10086/4/1825835762/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1825835762/201/204" value="100"/>
+                                <param name="Speed" key="9999/10085/10086/4/1825835762/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1825835762/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1825835762/201/211" value="2 (Per Object)"/>
+                                <param name="End Offset" key="9999/10085/10086/4/1825835762/201/213" value="45"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1825835762/201/220/222" value="0"/>
+                                <param name="Animate" key="9999/10085/10086/4/1825925714/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1825925714/201/204" value="0"/>
+                                <param name="Speed" key="9999/10085/10086/4/1825925714/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1825925714/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1825925714/201/211" value="2 (Per Object)"/>
+                                <param name="Variance" key="9999/10085/10086/4/1825925714/201/220/214" value="1"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1825925714/201/220/222" value="1"/>
+                                <param name="Animate" key="9999/10085/10086/4/1825957995/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1825957995/201/204" value="0"/>
+                                <param name="Speed" key="9999/10085/10086/4/1825957995/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1825957995/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1825957995/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1825957995/201/220/222" value="0"/>
+                                <param name="Sequencing" key="9999/10085/10086/4/1828073611/201/202" value="0 (To)"/>
+                                <param name="Animate" key="9999/10085/10086/4/1828073611/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1828073611/201/204" value="0"/>
+                                <param name="Direction" key="9999/10085/10086/4/1828073611/201/205" value="1 (Backwards)"/>
+                                <param name="Speed" key="9999/10085/10086/4/1828073611/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1828073611/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="624624/120000s" value="0"/>
+                                        <keyframe time="800800/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1828073611/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1828073611/201/220/222" value="0"/>
+                                <param name="Sequencing" key="9999/10085/10086/4/1828073612/201/202" value="0 (To)"/>
+                                <param name="Animate" key="9999/10085/10086/4/1828073612/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1828073612/201/204" value="0"/>
+                                <param name="Direction" key="9999/10085/10086/4/1828073612/201/205" value="1 (Backwards)"/>
+                                <param name="Speed" key="9999/10085/10086/4/1828073612/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1828073612/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="624624/120000s" value="0"/>
+                                        <keyframe time="800800/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1828073612/201/211" value="2 (Per Object)"/>
+                                <param name="Opacity" key="9999/10085/10086/4/1828073613/1000/1044" value="0"/>
+                                <param name="Sequencing" key="9999/10085/10086/4/1828073613/201/202" value="0 (To)"/>
+                                <param name="Animate" key="9999/10085/10086/4/1828073613/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1828073613/201/204" value="100"/>
+                                <param name="Direction" key="9999/10085/10086/4/1828073613/201/205" value="1 (Backwards)"/>
+                                <param name="Speed" key="9999/10085/10086/4/1828073613/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1828073613/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="624624/120000s" value="0"/>
+                                        <keyframe time="800800/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1828073613/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1828073613/201/220/222" value="0"/>
+                                <param name="Start Offset" key="9999/10085/10086/4/1828073613/201/235" value="45"/>
+                                <param name="Sequencing" key="9999/10085/10086/4/1828073614/201/202" value="0 (To)"/>
+                                <param name="Animate" key="9999/10085/10086/4/1828073614/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1828073614/201/204" value="0"/>
+                                <param name="Direction" key="9999/10085/10086/4/1828073614/201/205" value="1 (Backwards)"/>
+                                <param name="Speed" key="9999/10085/10086/4/1828073614/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1828073614/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="624624/120000s" value="0"/>
+                                        <keyframe time="800800/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1828073614/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1828073614/201/220/222" value="0"/>
+                                <param name="Sequencing" key="9999/10085/10086/4/1828073615/201/202" value="0 (To)"/>
+                                <param name="Animate" key="9999/10085/10086/4/1828073615/201/203" value="4 (All)"/>
+                                <param name="Spread" key="9999/10085/10086/4/1828073615/201/204" value="0"/>
+                                <param name="Direction" key="9999/10085/10086/4/1828073615/201/205" value="1 (Backwards)"/>
+                                <param name="Speed" key="9999/10085/10086/4/1828073615/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10085/10086/4/1828073615/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="180180/120000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10085/10086/4/1828073615/201/211" value="2 (Per Object)"/>
+                                <param name="Noisiness" key="9999/10085/10086/4/1828073615/201/220/222" value="0"/>
+                                <param name="Speed: Out" key="9999/1828084260/100/1831929138/2/100" value="12 (Ease In)"/>
+                                <param name="Fade Duration: Out" key="9999/1828084260/100/2929344721/2/100" value="0.375"/>
+                                <text>
+                                    <text-style ref="ts{{mul $index 2 | add 8}}">NUMBER </text-style>
+                                    <text-style ref="ts{{mul $index 2 | add 9}}">{{$number.Number}}</text-style>
+                                </text>
+                                <text-style-def id="ts{{mul $index 2 | add 8}}">
+                                    <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="3.6" alignment="center">
+                                        <param name="Depth Direction" key="506" value="2 (Centered)"/>
+                                        <param name="Front Edge" key="500" value="1 (Bevel)"/>
+                                        <param name="Front Edge Size" key="502" value="2 2"/>
+                                        <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+                                        <param name="Lighting" key="527">
+                                            <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                                            <param name="Intensity" key="526" value="1"/>
+                                            <param name="Environment" key="512">
+                                                <param name="Intensity" key="514" value="1"/>
+                                                <param name="Rotation" key="516" value="-21 0 0 0 (Use Rotation)"/>
+                                            </param>
+                                        </param>
+                                        <param name="Material" key="509">
+                                            <param name="Material" key="528" value="0 (Single)"/>
+                                        </param>
+                                        <param name="Hidden Channel" key="532" value="1"/>
+                                        <param name="Material" key="material:Basic">
+                                            <param name="Layer" key="layer:Substance:3 (Plastic)">
+                                                <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                                                <param name="Type" key="4" value="0 (Shiny)"/>
+                                                <param name="Shininess" key="109" value="1"/>
+                                                <param name="Color" key="106" value="0.879699 0.879699 0.879699"/>
+                                                <param name="Image Options" key="114">
+                                                    <param name="Placement" key="7">
+                                                        <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                                                    </param>
+                                                </param>
+                                                <param name="Texture Depth" key="110" value="0"/>
+                                                <param name="Enable Edge" key="116" enabled="0"/>
+                                            </param>
+                                            <param name="Sequence ID" key="2" value="2000"/>
+                                            <param name="Is Edited" key="5" value="1"/>
+                                        </param>
+                                        <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                            <param name="motionTextTracking" key="tracking" value="3.6"/>
+                                        </param>
+                                    </text-style>
+                                </text-style-def>
+                                <text-style-def id="ts{{mul $index 2 | add 9}}">
+                                    <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center">
+                                        <param name="Depth Direction" key="506" value="2 (Centered)"/>
+                                        <param name="Front Edge" key="500" value="1 (Bevel)"/>
+                                        <param name="Front Edge Size" key="502" value="2 2"/>
+                                        <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+                                        <param name="Lighting" key="527">
+                                            <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                                            <param name="Intensity" key="526" value="1"/>
+                                            <param name="Environment" key="512">
+                                                <param name="Intensity" key="514" value="1"/>
+                                                <param name="Rotation" key="516" value="-21 0 0 0 (Use Rotation)"/>
+                                            </param>
+                                        </param>
+                                        <param name="Material" key="509">
+                                            <param name="Material" key="528" value="0 (Single)"/>
+                                        </param>
+                                        <param name="Hidden Channel" key="532" value="1"/>
+                                        <param name="Material" key="material:Basic">
+                                            <param name="Layer" key="layer:Substance:3 (Plastic)">
+                                                <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                                                <param name="Type" key="4" value="0 (Shiny)"/>
+                                                <param name="Shininess" key="109" value="1"/>
+                                                <param name="Color" key="106" value="0.879699 0.879699 0.879699"/>
+                                                <param name="Image Options" key="114">
+                                                    <param name="Placement" key="7">
+                                                        <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                                                    </param>
+                                                </param>
+                                                <param name="Texture Depth" key="110" value="0"/>
+                                                <param name="Enable Edge" key="116" enabled="0"/>
+                                            </param>
+                                            <param name="Sequence ID" key="2" value="2000"/>
+                                            <param name="Is Edited" key="5" value="1"/>
+                                        </param>
+                                    </text-style>
+                                </text-style-def>
+                            </title>
+                            <asset-clip ref="r9" lane="-1" offset="432001139/120000s" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
+                        </title>
+                        <asset-clip ref="r{{add $index 10}}" offset="{{$number.Offset}}" name="{{$number.VideoID}}" duration="1702400/320000s" tcFormat="NDF" audioRole="dialogue"/>
+                        {{end}}
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+    </library>
+</fcpxml>
