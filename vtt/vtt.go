@@ -209,6 +209,9 @@ func ParseAndDisplayCleanText(vttPath string) error {
 	fmt.Printf("=== CLEANED TEXT (with timestamps) ===\n")
 	displayCleanedText(cleanedSegments)
 	
+	// Generate suggested vtt-clips command
+	generateSuggestedClipsCommand(vttPath, cleanedSegments)
+	
 	return nil
 }
 
@@ -495,4 +498,110 @@ func formatDuration(d time.Duration) string {
 	seconds := int(d.Seconds()) % 60
 	totalSeconds := int(d.Seconds())
 	return fmt.Sprintf("%02d:%02d (%ds)", minutes, seconds, totalSeconds)
+}
+
+// generateSuggestedClipsCommand analyzes segments and suggests a vtt-clips command
+func generateSuggestedClipsCommand(vttPath string, segments []Segment) {
+	if len(segments) == 0 {
+		return
+	}
+	
+	// Score segments based on length and content quality
+	type ScoredSegment struct {
+		Segment Segment
+		Score   float64
+		Duration int
+	}
+	
+	var scored []ScoredSegment
+	for _, seg := range segments {
+		duration := int(seg.EndTime.Seconds()) - int(seg.StartTime.Seconds())
+		if duration < 2 { // Skip very short segments
+			continue
+		}
+		
+		text := strings.TrimSpace(seg.Text)
+		words := strings.Fields(text)
+		
+		// Base score on duration and word count
+		score := float64(duration) * 0.5 + float64(len(words)) * 0.3
+		
+		// Bonus for complete sentences
+		if strings.ContainsAny(text, ".!?") {
+			score += 2.0
+		}
+		
+		// Bonus for interesting content (questions, emotional words)
+		if strings.Contains(strings.ToLower(text), "?") {
+			score += 1.5
+		}
+		if containsInterestingWords(text) {
+			score += 1.0
+		}
+		
+		scored = append(scored, ScoredSegment{
+			Segment: seg,
+			Score: score,
+			Duration: duration,
+		})
+	}
+	
+	// Sort by score descending
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].Score > scored[j].Score
+	})
+	
+	// Select segments for approximately 2 minutes (120 seconds)
+	var selected []ScoredSegment
+	totalDuration := 0
+	targetDuration := 120
+	
+	for _, seg := range scored {
+		if totalDuration + seg.Duration <= targetDuration {
+			selected = append(selected, seg)
+			totalDuration += seg.Duration
+		}
+		if totalDuration >= int(float64(targetDuration) * 0.8) { // Stop when we're close to target
+			break
+		}
+	}
+	
+	// Sort selected segments by start time
+	sort.Slice(selected, func(i, j int) bool {
+		return selected[i].Segment.StartTime < selected[j].Segment.StartTime
+	})
+	
+	if len(selected) == 0 {
+		return
+	}
+	
+	// Build the command
+	fmt.Printf("=== SUGGESTED CLIPS COMMAND ===\n")
+	fmt.Printf("For a ~%d second video, try:\n\n", totalDuration)
+	
+	clipPairs := make([]string, len(selected))
+	for i, seg := range selected {
+		startMin := int(seg.Segment.StartTime.Minutes())
+		startSec := int(seg.Segment.StartTime.Seconds()) % 60
+		clipPairs[i] = fmt.Sprintf("%02d:%02d_%d", startMin, startSec, seg.Duration)
+	}
+	
+	fmt.Printf("./cutlass vtt-clips %s %s\n\n", vttPath, strings.Join(clipPairs, ","))
+}
+
+// containsInterestingWords checks for emotionally engaging or interesting content
+func containsInterestingWords(text string) bool {
+	lower := strings.ToLower(text)
+	interestingWords := []string{
+		"nervous", "scared", "funny", "love", "hate", "amazing", "terrible",
+		"excited", "surprised", "shocked", "dream", "favorite", "worst",
+		"best", "never", "always", "remember", "forget", "secret", "truth",
+	}
+	
+	for _, word := range interestingWords {
+		if strings.Contains(lower, word) {
+			return true
+		}
+	}
+	return false
 }
