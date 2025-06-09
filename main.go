@@ -29,6 +29,8 @@ func main() {
 		youtube.HandleYouTubeCommand(args)
 	case "youtube-bulk":
 		youtube.HandleYouTubeBulkCommand(args)
+	case "youtube-bulk-assemble":
+		youtube.HandleYouTubeBulkAssembleCommand(args)
 	case "wikipedia":
 		wikipedia.HandleWikipediaCommand(args)
 	case "parse":
@@ -54,6 +56,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  video <file>              Generate FCPXML from video file\n")
 	fmt.Fprintf(os.Stderr, "  youtube <video-id>        Download YouTube video and generate FCPXML\n")
 	fmt.Fprintf(os.Stderr, "  youtube-bulk <ids-file>   Download multiple YouTube videos from file\n")
+	fmt.Fprintf(os.Stderr, "  youtube-bulk-assemble <ids-file> <name> Create top5.fcpxml from downloaded videos\n")
 	fmt.Fprintf(os.Stderr, "  wikipedia <article-title> Generate FCPXML from Wikipedia tables\n")
 	fmt.Fprintf(os.Stderr, "  parse <fcpxml-file>       Parse and display FCPXML contents\n")
 	fmt.Fprintf(os.Stderr, "  table <article-title>     Display Wikipedia table data\n")
