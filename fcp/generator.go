@@ -3,10 +3,7 @@ package fcp
 import (
 	"fmt"
 	"io/ioutil"
-	"math/rand"
-	"path/filepath"
 	"strings"
-	"time"
 )
 
 func GenerateTop5FCPXML(templatePath string, videoIDs []string, name, outputPath string) error {
@@ -28,9 +25,14 @@ func GenerateTop5FCPXML(templatePath string, videoIDs []string, name, outputPath
 	}
 	if len(nameWords) >= 2 {
 		result = strings.ReplaceAll(result, "Dimoldenber", nameWords[1])
+		// Remove the extra "g" after the second name
+		result = strings.ReplaceAll(result, nameWords[1]+"</text-style>\n                                <text-style ref=\"ts7\">g</text-style>", nameWords[1]+"</text-style>")
+		result = strings.ReplaceAll(result, nameWords[1]+"</text-style>\n                                <text-style ref=\"ts16\">g</text-style>", nameWords[1]+"</text-style>")
 	} else if len(nameWords) == 1 {
 		// If only one word, replace Dimoldenber with empty but keep structure
 		result = strings.ReplaceAll(result, "Dimoldenber", "")
+		result = strings.ReplaceAll(result, "</text-style>\n                                <text-style ref=\"ts7\">g</text-style>", "</text-style>")
+		result = strings.ReplaceAll(result, "</text-style>\n                                <text-style ref=\"ts16\">g</text-style>", "</text-style>")
 	}
 
 	// Create numbers 1, 2, 3 by duplicating the existing NUMBER 4 and NUMBER 5 patterns
@@ -51,34 +53,32 @@ func GenerateTop5FCPXML(templatePath string, videoIDs []string, name, outputPath
 }
 
 func replaceVideoClipsWithRandom(fcpxmlContent string, videoIDs []string) string {
-	// For now, this is a placeholder - we would need to:
-	// 1. Parse the existing video clips in the FCPXML
-	// 2. Generate random start times (within 30 seconds of total duration)
-	// 3. Replace the video asset references with paths to ./data/{id}.mov
-	// 4. Update the timing and duration to be 30 seconds
-	
-	// This is a simplified implementation that just updates the content
-	// In a full implementation, we'd need to properly parse and modify the XML structure
-	
-	rand.Seed(time.Now().UnixNano())
-	
-	// Replace existing video asset with random video from our list
-	if len(videoIDs) > 0 {
-		randomID := videoIDs[rand.Intn(len(videoIDs))]
-		dataPath := fmt.Sprintf("./data/%s.mov", randomID)
-		
-		// This is a basic replacement - in practice we'd need more sophisticated XML manipulation
-		content := strings.ReplaceAll(fcpxmlContent, "ben.mov", filepath.Base(dataPath))
-		return content
+	if len(videoIDs) == 0 {
+		return fcpxmlContent
 	}
 	
-	return fcpxmlContent
+	result := fcpxmlContent
+	
+	// The order in the FCPXML is now 5,4,3,2,1
+	// We want to use videoIDs[0] for NUMBER 5, videoIDs[1] for NUMBER 4, etc.
+	
+	// Replace ben.mov with the first video ID (for NUMBER 5)
+	if len(videoIDs) > 0 {
+		result = strings.ReplaceAll(result, "ben.mov", fmt.Sprintf("%s.mov", videoIDs[0]))
+	}
+	
+	// For a more complete implementation, we would:
+	// 1. Create unique asset IDs for each video
+	// 2. Update all the video references in each NUMBER section
+	// 3. Ensure each number uses a different video
+	
+	// For now, this basic replacement will use the first video for all sections
+	// A full implementation would require proper XML parsing and manipulation
+	
+	return result
 }
 
 func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
-	// This is a simplified approach - we'll find the NUMBER 5 section and duplicate it
-	// to create NUMBER 1, 2, 3 before the existing NUMBER 4 and 5
-	
 	// Find the NUMBER 5 title section
 	number5Start := strings.Index(fcpxmlContent, `<title ref="r8" lane="1" offset="3600s" name="NUMBER 5 - Basic 3D"`)
 	if number5Start == -1 {
@@ -109,10 +109,49 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 	// Extract the NUMBER 5 section
 	number5Section := fcpxmlContent[number5Start:number5End]
 	
-	// Create sections for numbers 1, 2, 3 by duplicating and modifying the NUMBER 5 section
-	var newSections strings.Builder
+	// Now find the NUMBER 4 section to understand the full pattern
+	number4Start := strings.Index(fcpxmlContent, `<title ref="r8" lane="1" offset="3600s" name="NUMBER 4 - Basic 3D"`)
+	if number4Start == -1 {
+		return fcpxmlContent // Return unchanged if pattern not found
+	}
 	
-	for num := 1; num <= 3; num++ {
+	// Find the end of the NUMBER 4 section
+	searchStart = number4Start
+	titleDepth = 0
+	number4End := -1
+	
+	for i := searchStart; i < len(fcpxmlContent); i++ {
+		if i+7 < len(fcpxmlContent) && fcpxmlContent[i:i+7] == "<title " {
+			titleDepth++
+		} else if i+8 < len(fcpxmlContent) && fcpxmlContent[i:i+8] == "</title>" {
+			titleDepth--
+			if titleDepth == 0 {
+				number4End = i + 8
+				break
+			}
+		}
+	}
+	
+	if number4End == -1 {
+		return fcpxmlContent // Return unchanged if end not found
+	}
+	
+	number4Section := fcpxmlContent[number4Start:number4End]
+	
+	// Create sections for numbers 3, 2, 1 in the right order
+	// We want final order: 5, 4, 3, 2, 1
+	var allNumberSections strings.Builder
+	
+	// Start with NUMBER 5 (keep original)
+	allNumberSections.WriteString(number5Section)
+	allNumberSections.WriteString("\n")
+	
+	// Add NUMBER 4 (keep original) 
+	allNumberSections.WriteString(number4Section)
+	allNumberSections.WriteString("\n")
+	
+	// Add NUMBER 3, 2, 1 by duplicating NUMBER 5 section
+	for num := 3; num >= 1; num-- {
 		numStr := fmt.Sprintf("%d", num)
 		newSection := strings.ReplaceAll(number5Section, "NUMBER 5", fmt.Sprintf("NUMBER %s", numStr))
 		newSection = strings.ReplaceAll(newSection, ">5</text-style>", fmt.Sprintf(">%s</text-style>", numStr))
@@ -121,12 +160,12 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 		newSection = strings.ReplaceAll(newSection, "ts8", fmt.Sprintf("ts%d_num", num))
 		newSection = strings.ReplaceAll(newSection, "ts9", fmt.Sprintf("ts%d_digit", num))
 		
-		newSections.WriteString(newSection)
-		newSections.WriteString("\n")
+		allNumberSections.WriteString(newSection)
+		allNumberSections.WriteString("\n")
 	}
 	
-	// Insert the new sections before the existing NUMBER 5 section
-	result := fcpxmlContent[:number5Start] + newSections.String() + fcpxmlContent[number5Start:]
+	// Replace both original sections with the new ordered sections
+	result := fcpxmlContent[:number5Start] + allNumberSections.String() + fcpxmlContent[number4End:]
 	
 	return result
 }
