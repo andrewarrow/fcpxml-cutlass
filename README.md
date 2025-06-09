@@ -29,7 +29,7 @@ And get a completely different wikipedia table in this format.
 ```
 ./cutlass youtube IBnNedMh4Pg
 ./cutlass vtt IBnNedMh4Pg.en.vtt
-./cutlass vtt-clips IBnNedMh4Pg.en.vtt 01:21_6,02:20_3,03:34_9,05:07_18
+./cutlass vtt-clips IBnNedMh4Pg.en.vtt 00:52_13,01:28_15,04:34_24,06:47_20,14:39_20,18:21_16,20:40_9
 ```
 
 This will download an mp4 of https://www.youtube.com/watch?v=IBnNedMh4Pg convert it to .mov and then get the vtt subtitles. You can then pick timecodes like 01:21_6,02:20_3,03:34_9,05:07_18 the _number means number of seconds duration at the timecode.
