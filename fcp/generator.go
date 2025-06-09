@@ -59,21 +59,51 @@ func replaceVideoClipsWithRandom(fcpxmlContent string, videoIDs []string) string
 	
 	result := fcpxmlContent
 	
-	// The order in the FCPXML is now 5,4,3,2,1
-	// We want to use videoIDs[0] for NUMBER 5, videoIDs[1] for NUMBER 4, etc.
+	// Replace the ben asset definition and all references
+	// First, we need to create new asset definitions for each video ID
 	
-	// Replace ben.mov with the first video ID (for NUMBER 5)
-	if len(videoIDs) > 0 {
-		result = strings.ReplaceAll(result, "ben.mov", fmt.Sprintf("%s.mov", videoIDs[0]))
+	// Find the original ben asset definition
+	benAssetStart := strings.Index(result, `<asset id="r10" name="ben"`)
+	if benAssetStart == -1 {
+		return result // Return if ben asset not found
 	}
 	
-	// For a more complete implementation, we would:
-	// 1. Create unique asset IDs for each video
-	// 2. Update all the video references in each NUMBER section
-	// 3. Ensure each number uses a different video
+	// Find the end of the ben asset
+	benAssetEnd := strings.Index(result[benAssetStart:], "</asset>")
+	if benAssetEnd == -1 {
+		return result
+	}
+	benAssetEnd += benAssetStart + 8 // Include </asset>
 	
-	// For now, this basic replacement will use the first video for all sections
-	// A full implementation would require proper XML parsing and manipulation
+	// Extract the original ben asset for use as template
+	originalBenAsset := result[benAssetStart:benAssetEnd]
+	
+	// Create new asset definitions for each video ID (5,4,3,2,1 order)
+	var newAssets strings.Builder
+	
+	for i := 0; i < 5 && i < len(videoIDs); i++ {
+		videoID := videoIDs[i]
+		assetID := fmt.Sprintf("r1%d", i) // r10, r11, r12, r13, r14
+		
+		// Create new asset by modifying the template
+		newAsset := strings.ReplaceAll(originalBenAsset, `id="r10"`, fmt.Sprintf(`id="%s"`, assetID))
+		newAsset = strings.ReplaceAll(newAsset, `name="ben"`, fmt.Sprintf(`name="%s"`, videoID))
+		newAsset = strings.ReplaceAll(newAsset, "ben.mov", fmt.Sprintf("%s.mov", videoID))
+		
+		// Update duration to be longer (30 seconds = 30*320000/320000s for 30s at 25fps)
+		// 30 seconds = 960000/32000s 
+		newAsset = strings.ReplaceAll(newAsset, `duration="257945/12800s"`, `duration="960000/32000s"`)
+		
+		newAssets.WriteString(newAsset)
+		newAssets.WriteString("\n        ")
+	}
+	
+	// Replace the original ben asset with all new assets
+	result = result[:benAssetStart] + newAssets.String() + result[benAssetEnd:]
+	
+	// Now we need to update asset-clip references in each NUMBER section
+	// The asset-clip references will be updated when we create the number sections
+	// For now, just replace the original r10 references with r10 (first video)
 	
 	return result
 }
@@ -146,8 +176,13 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 	allNumberSections.WriteString(number5Section)
 	allNumberSections.WriteString("\n")
 	
-	// Add NUMBER 4 (keep original) 
-	allNumberSections.WriteString(number4Section)
+	// Add NUMBER 4 (modify to use second video)
+	number4Modified := number4Section
+	if len(videoIDs) > 1 {
+		number4Modified = strings.ReplaceAll(number4Modified, `ref="r10"`, `ref="r11"`)
+		number4Modified = strings.ReplaceAll(number4Modified, `name="ben"`, fmt.Sprintf(`name="%s"`, videoIDs[1]))
+	}
+	allNumberSections.WriteString(number4Modified)
 	allNumberSections.WriteString("\n")
 	
 	// Add NUMBER 3, 2, 1 by duplicating NUMBER 5 section
@@ -159,6 +194,23 @@ func expandToFullTop5(fcpxmlContent string, videoIDs []string) string {
 		// Update the unique IDs and references to avoid conflicts
 		newSection = strings.ReplaceAll(newSection, "ts8", fmt.Sprintf("ts%d_num", num))
 		newSection = strings.ReplaceAll(newSection, "ts9", fmt.Sprintf("ts%d_digit", num))
+		
+		// Update asset-clip references to use different videos
+		// NUMBER 5 -> r10 (videoIDs[0])
+		// NUMBER 4 -> r11 (videoIDs[1]) 
+		// NUMBER 3 -> r12 (videoIDs[2])
+		// NUMBER 2 -> r13 (videoIDs[3])
+		// NUMBER 1 -> r14 (videoIDs[4])
+		assetIndex := 5 - num // Convert number to index: 3->2, 2->3, 1->4
+		if assetIndex < len(videoIDs) {
+			newAssetRef := fmt.Sprintf("r1%d", assetIndex)
+			newSection = strings.ReplaceAll(newSection, `ref="r10"`, fmt.Sprintf(`ref="%s"`, newAssetRef))
+			
+			// Also update the asset-clip name
+			if assetIndex < len(videoIDs) {
+				newSection = strings.ReplaceAll(newSection, `name="ben"`, fmt.Sprintf(`name="%s"`, videoIDs[assetIndex]))
+			}
+		}
 		
 		allNumberSections.WriteString(newSection)
 		allNumberSections.WriteString("\n")
