@@ -118,12 +118,9 @@ func handleVideoCommand(args []string) {
 func handleYouTubeCommand(args []string) {
 	fs := flag.NewFlagSet("youtube", flag.ExitOnError)
 	var segmentMode bool
-	var outputFile string
 	
 	fs.BoolVar(&segmentMode, "s", false, "Break into logical clips with title cards")
 	fs.BoolVar(&segmentMode, "segments", false, "Break into logical clips with title cards")
-	fs.StringVar(&outputFile, "o", "test.fcpxml", "Output file")
-	fs.StringVar(&outputFile, "output", "test.fcpxml", "Output file")
 	
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
@@ -141,11 +138,7 @@ func handleYouTubeCommand(args []string) {
 		os.Exit(1)
 	}
 	
-	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
-		outputFile += ".fcpxml"
-	}
-	
-	videoFile, err := youtube.DownloadVideo(youtubeID)
+	_, err := youtube.DownloadVideo(youtubeID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error downloading YouTube video: %v\n", err)
 		os.Exit(1)
@@ -163,13 +156,6 @@ func handleYouTubeCommand(args []string) {
 		}
 		return
 	}
-	
-	if err := fcp.GenerateStandard(videoFile, outputFile); err != nil {
-		fmt.Fprintf(os.Stderr, "Error generating FCPXML: %v\n", err)
-		os.Exit(1)
-	}
-	
-	fmt.Printf("Successfully converted '%s' to '%s'\n", videoFile, outputFile)
 }
 
 func handleWikipediaCommand(args []string) {
