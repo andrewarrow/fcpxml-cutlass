@@ -25,7 +25,8 @@ func DownloadVideo(youtubeID string) (string, error) {
 	fmt.Printf("Detected YouTube ID: %s, downloading...\n", youtubeID)
 
 	// Download as .mp4 first
-	mp4File := youtubeID + ".mp4"
+	//mp4File := youtubeID + ".mp4"
+	mp4File := "%(id)s_%(channel)[:10]san_%(title)[:10]san.%(ext)s"
 	cmd := exec.Command("yt-dlp", "-o", "./data/"+mp4File, youtubeID)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
