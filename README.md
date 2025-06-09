@@ -7,7 +7,7 @@
 ^ this is from [Andre_Agassi Wikipedia](https://en.wikipedia.org/wiki/Andre_Agassi#Career_statistics)
 
 ```
-./cutlass wikipedia "Andre_Agassi" -w tennis.fcpxml
+./cutlass wikipedia "Andre_Agassi"
 ```
 
 And after running cutlass you get `tennis.fcpxml` which opened in fcp looks like:
@@ -19,7 +19,7 @@ The red lines are drawn using a Shape title card rectangle and then changing the
 You can also run:
 
 ```
-./cutlass -i "List_of_earthquakes_in_the_United_States" -w earthquakes.fcpxml
+./cutlass wikipedia "List_of_earthquakes_in_the_United_States" 
 ```
 
 And get a completely different wikipedia table in this format.
