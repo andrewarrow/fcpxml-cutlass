@@ -4,6 +4,7 @@ import (
 	"cutlass/fcp"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -170,22 +171,29 @@ func GetVideoDuration(videoFile string) (time.Duration, error) {
 	return time.Duration(durationFloat * float64(time.Second)), nil
 }
 
-// GenerateThirtySecondSegments creates 30-second segments for the entire video duration
+// GenerateThirtySecondSegments creates variable-duration segments with random jitter for the entire video duration
 func GenerateThirtySecondSegments(videoFile string) ([]TimecodeWithDuration, error) {
 	duration, err := GetVideoDuration(videoFile)
 	if err != nil {
 		return nil, err
 	}
 
+	// Seed random number generator
+	rand.Seed(time.Now().UnixNano())
+	
 	var segments []TimecodeWithDuration
-	segmentDuration := 30 * time.Second
 	currentTime := time.Duration(0)
 
 	for currentTime < duration {
 		remainingTime := duration - currentTime
+		
+		// Generate random duration between 15 and 45 seconds
+		randomSeconds := rand.Intn(31) + 15 // 15-45 seconds
+		segmentDuration := time.Duration(randomSeconds) * time.Second
+		
 		actualDuration := segmentDuration
 		
-		// If less than 30 seconds remaining, use the remaining time
+		// If less time remaining than our random duration, use the remaining time
 		if remainingTime < segmentDuration {
 			actualDuration = remainingTime
 		}
@@ -195,7 +203,7 @@ func GenerateThirtySecondSegments(videoFile string) ([]TimecodeWithDuration, err
 			Duration:  actualDuration,
 		})
 
-		currentTime += segmentDuration
+		currentTime += actualDuration
 	}
 
 	return segments, nil
