@@ -62,7 +62,7 @@
                             </title>
                         </video>
                         {{range $index, $video := .Videos}}
-                        <asset-clip ref="r{{add $index 10}}" offset="{{mul (add (mul $index 2) 1) 409600}}/320000s" name="CLIP{{add 5 (mul $index -1)}}" start="1689600/320000s" duration="12800/320000s" tcFormat="NDF" audioRole="dialogue"/>
+                        <asset-clip ref="r{{add $index 10}}" offset="{{mul (add (mul $index 2) 1) 409600}}/320000s" name="CLIP{{add 5 (mul $index -1)}}" start="1689600/320000s" duration="3200/2500s" tcFormat="NDF" audioRole="dialogue"/>
                         {{if lt $index 4}}
                         <video ref="r2" offset="{{add (mul (add (mul $index 2) 1) 409600) 12800}}/320000s" name="LOGOCLIP" start="3600s" duration="3200/2500s">
                             <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
