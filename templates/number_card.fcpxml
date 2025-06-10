@@ -1,0 +1,231 @@
+<!-- Number Card Template Fragment for Top 5 countdown
+     This template creates animated number cards (5, 4, 3, 2, 1) with 3D styling and sound effects
+     Usage: Include this template fragment within a larger FCPXML structure
+     
+     Required resources (add to <resources> section):
+     - effect id="r8" name="Basic 3D" 
+     - format id="r5" for audio
+     - asset id="r9" for "Synth Zap Accent 06" sound effect
+     
+     Template variables:
+     - {{.Number}} - The number to display (1, 2, 3, 4, or 5)
+     - {{.Offset}} - Timeline offset for this number card
+     - {{.StyleId1}} - Unique text style ID for "NUMBER "
+     - {{.StyleId2}} - Unique text style ID for the digit
+-->
+
+<!-- Number Card Title Element -->
+<title ref="r8" lane="1" offset="{{.Offset}}" name="NUMBER {{.Number}} - Basic 3D" start="3600s" duration="5100/2500s">
+    <param name="Build Out" key="9999/10000/2/102" value="0"/>
+    <param name="Position" key="9999/10085/10086/1/100/101" value="0 -200"/>
+    <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
+    <param name="Alignment" key="9999/10085/10086/2/354/2959511101/401" value="1 (Center)"/>
+    <param name="Anchor Point" key="9999/10085/10086/2/357" value="2 (Line)"/>
+    <param name="Position" key="9999/10085/10086/2/358" value="0 69"/>
+    <param name="Anchor Position" key="9999/10085/10086/2/375" value="1 (Center)"/>
+    
+    <!-- Animation: Build In -->
+    <param name="Animate" key="9999/10085/10086/4/14906/201/203" value="4 (All)"/>
+    <param name="Spread" key="9999/10085/10086/4/14906/201/204" value="0"/>
+    <param name="Speed" key="9999/10085/10086/4/14906/201/208" value="6 (Custom)"/>
+    <param name="Custom Speed" key="9999/10085/10086/4/14906/201/209">
+        <keyframeAnimation>
+            <keyframe time="0s" value="0"/>
+            <keyframe time="180180/120000s" value="1"/>
+        </keyframeAnimation>
+    </param>
+    <param name="Apply Speed" key="9999/10085/10086/4/14906/201/211" value="2 (Per Object)"/>
+    <param name="Seed" key="9999/10085/10086/4/14906/201/220/217" value="603129557"/>
+    <param name="Noisiness" key="9999/10085/10086/4/14906/201/220/222" value="0"/>
+    
+    <!-- Animation: Scale -->
+    <param name="Animate" key="9999/10085/10086/4/15157/201/203" value="4 (All)"/>
+    <param name="Spread" key="9999/10085/10086/4/15157/201/204" value="0"/>
+    <param name="Speed" key="9999/10085/10086/4/15157/201/208" value="6 (Custom)"/>
+    <param name="Custom Speed" key="9999/10085/10086/4/15157/201/209">
+        <keyframeAnimation>
+            <keyframe time="0s" value="0"/>
+            <keyframe time="180180/120000s" value="1"/>
+        </keyframeAnimation>
+    </param>
+    <param name="Apply Speed" key="9999/10085/10086/4/15157/201/211" value="2 (Per Object)"/>
+    <param name="Noisiness" key="9999/10085/10086/4/15157/201/220/222" value="0"/>
+    
+    <!-- Animation: Opacity -->
+    <param name="Opacity" key="9999/10085/10086/4/1825835762/1000/1044" value="0"/>
+    <param name="Animate" key="9999/10085/10086/4/1825835762/201/203" value="4 (All)"/>
+    <param name="Spread" key="9999/10085/10086/4/1825835762/201/204" value="100"/>
+    <param name="Speed" key="9999/10085/10086/4/1825835762/201/208" value="6 (Custom)"/>
+    <param name="Custom Speed" key="9999/10085/10086/4/1825835762/201/209">
+        <keyframeAnimation>
+            <keyframe time="0s" value="0"/>
+            <keyframe time="180180/120000s" value="1"/>
+        </keyframeAnimation>
+    </param>
+    <param name="Apply Speed" key="9999/10085/10086/4/1825835762/201/211" value="2 (Per Object)"/>
+    <param name="End Offset" key="9999/10085/10086/4/1825835762/201/213" value="45"/>
+    <param name="Noisiness" key="9999/10085/10086/4/1825835762/201/220/222" value="0"/>
+    
+    <!-- Build Out Animation -->
+    <param name="Sequencing" key="9999/10085/10086/4/1828073611/201/202" value="0 (To)"/>
+    <param name="Animate" key="9999/10085/10086/4/1828073611/201/203" value="4 (All)"/>
+    <param name="Spread" key="9999/10085/10086/4/1828073611/201/204" value="0"/>
+    <param name="Direction" key="9999/10085/10086/4/1828073611/201/205" value="1 (Backwards)"/>
+    <param name="Speed" key="9999/10085/10086/4/1828073611/201/208" value="6 (Custom)"/>
+    <param name="Custom Speed" key="9999/10085/10086/4/1828073611/201/209">
+        <keyframeAnimation>
+            <keyframe time="624624/120000s" value="0"/>
+            <keyframe time="800800/120000s" value="1"/>
+        </keyframeAnimation>
+    </param>
+    <param name="Apply Speed" key="9999/10085/10086/4/1828073611/201/211" value="2 (Per Object)"/>
+    <param name="Noisiness" key="9999/10085/10086/4/1828073611/201/220/222" value="0"/>
+    
+    <!-- Additional Build Out Animations -->
+    <param name="Animate" key="9999/10085/10086/4/1828073612/201/203" value="4 (All)"/>
+    <param name="Spread" key="9999/10085/10086/4/1828073612/201/204" value="0"/>
+    <param name="Direction" key="9999/10085/10086/4/1828073612/201/205" value="1 (Backwards)"/>
+    <param name="Speed" key="9999/10085/10086/4/1828073612/201/208" value="6 (Custom)"/>
+    <param name="Custom Speed" key="9999/10085/10086/4/1828073612/201/209">
+        <keyframeAnimation>
+            <keyframe time="624624/120000s" value="0"/>
+            <keyframe time="800800/120000s" value="1"/>
+        </keyframeAnimation>
+    </param>
+    <param name="Apply Speed" key="9999/10085/10086/4/1828073612/201/211" value="2 (Per Object)"/>
+    
+    <!-- Fade Out -->
+    <param name="Speed: Out" key="9999/1828084260/100/1831929138/2/100" value="12 (Ease In)"/>
+    <param name="Fade Duration: Out" key="9999/1828084260/100/2929344721/2/100" value="0.375"/>
+    
+    <!-- Text Content -->
+    <text>
+        <text-style ref="{{.StyleId1}}">NUMBER </text-style>
+        <text-style ref="{{.StyleId2}}">{{.Number}}</text-style>
+    </text>
+    
+    <!-- Text Style Definition for "NUMBER" -->
+    <text-style-def id="{{.StyleId1}}">
+        <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="3.6" alignment="center">
+            <param name="Depth Direction" key="506" value="2 (Centered)"/>
+            <param name="Front Edge" key="500" value="1 (Bevel)"/>
+            <param name="Front Edge Size" key="502" value="2 2"/>
+            <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+            <param name="Lighting" key="527">
+                <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                <param name="Intensity" key="526" value="1"/>
+                <param name="Environment" key="512">
+                    <param name="Intensity" key="514" value="1"/>
+                    <param name="Rotation" key="516" value="-21 0 0 0 (Use Rotation)"/>
+                </param>
+            </param>
+            <param name="Material" key="509">
+                <param name="Material" key="528" value="0 (Single)"/>
+            </param>
+            <param name="Hidden Channel" key="532" value="1"/>
+            <param name="Material" key="material:Basic">
+                <param name="Layer" key="layer:Substance:3 (Plastic)">
+                    <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                    <param name="Type" key="4" value="0 (Shiny)"/>
+                    <param name="Reflection Gradient" key="108">
+                        <param name="RGB" key="1">
+                            <param name="RGB1" key="1">
+                                <param name="Color" key="3" value="0.996942 0.897967 0.625861"/>
+                            </param>
+                            <param name="RGB2" key="2">
+                                <param name="Location" key="1" value="0.226862"/>
+                                <param name="Middle" key="2" value="0.565176"/>
+                                <param name="Color" key="3" value="1 0.839877 0.48642"/>
+                            </param>
+                            <param name="RGB3" key="33356">
+                                <param name="Location" key="1" value="0.783242"/>
+                                <param name="Color" key="3" value="0.932229 0.634395 0.523004"/>
+                            </param>
+                            <param name="RGB4" key="2999992460">
+                                <param name="Location" key="1" value="0.997521"/>
+                                <param name="Color" key="3" value="0.96105 0.880994 0.72965"/>
+                            </param>
+                        </param>
+                    </param>
+                    <param name="Shininess" key="109" value="0.796"/>
+                    <param name="Color" key="106" value="0.72692 0.175003 0.708195"/>
+                    <param name="Image Options" key="114">
+                        <param name="Placement" key="7">
+                            <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                        </param>
+                    </param>
+                    <param name="Enable Edge" key="116" enabled="0"/>
+                </param>
+                <param name="Sequence ID" key="2" value="2000"/>
+                <param name="Is Edited" key="5" value="1"/>
+            </param>
+            <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                <param name="motionTextKerning" key="kerning" value="3.6"/>
+            </param>
+        </text-style>
+    </text-style-def>
+    
+    <!-- Text Style Definition for Number Digit -->
+    <text-style-def id="{{.StyleId2}}">
+        <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center">
+            <param name="Depth Direction" key="506" value="2 (Centered)"/>
+            <param name="Front Edge" key="500" value="1 (Bevel)"/>
+            <param name="Front Edge Size" key="502" value="2 2"/>
+            <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+            <param name="Lighting" key="527">
+                <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                <param name="Intensity" key="526" value="1"/>
+                <param name="Environment" key="512">
+                    <param name="Intensity" key="514" value="1"/>
+                    <param name="Rotation" key="516" value="-21 0 0 0 (Use Rotation)"/>
+                </param>
+            </param>
+            <param name="Material" key="509">
+                <param name="Material" key="528" value="0 (Single)"/>
+            </param>
+            <param name="Hidden Channel" key="532" value="1"/>
+            <param name="Material" key="material:Basic">
+                <param name="Layer" key="layer:Substance:3 (Plastic)">
+                    <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                    <param name="Type" key="4" value="0 (Shiny)"/>
+                    <param name="Reflection Gradient" key="108">
+                        <param name="RGB" key="1">
+                            <param name="RGB1" key="1">
+                                <param name="Color" key="3" value="0.996942 0.897967 0.625861"/>
+                            </param>
+                            <param name="RGB2" key="2">
+                                <param name="Location" key="1" value="0.226862"/>
+                                <param name="Middle" key="2" value="0.565176"/>
+                                <param name="Color" key="3" value="1 0.839877 0.48642"/>
+                            </param>
+                            <param name="RGB3" key="33356">
+                                <param name="Location" key="1" value="0.783242"/>
+                                <param name="Color" key="3" value="0.932229 0.634395 0.523004"/>
+                            </param>
+                            <param name="RGB4" key="2999992460">
+                                <param name="Location" key="1" value="0.997521"/>
+                                <param name="Color" key="3" value="0.96105 0.880994 0.72965"/>
+                            </param>
+                        </param>
+                    </param>
+                    <param name="Shininess" key="109" value="0.796"/>
+                    <param name="Color" key="106" value="0.72692 0.175003 0.708195"/>
+                    <param name="Image Options" key="114">
+                        <param name="Placement" key="7">
+                            <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                        </param>
+                    </param>
+                    <param name="Enable Edge" key="116" enabled="0"/>
+                </param>
+                <param name="Sequence ID" key="2" value="2000"/>
+                <param name="Is Edited" key="5" value="1"/>
+            </param>
+            <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                <param name="motionTextKerning" key="kerning" value="0"/>
+            </param>
+        </text-style>
+    </text-style-def>
+</title>
+
+<!-- Associated Sound Effect (place in timeline at same offset) -->
+<asset-clip ref="r9" lane="-1" offset="{{.Offset}}" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
