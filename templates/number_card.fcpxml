@@ -2,14 +2,13 @@
      This template creates animated number cards (5, 4, 3, 2, 1) with 3D styling and sound effects
      Usage: Include this template fragment within a larger FCPXML structure
      
-     Context: Expects to be called from within the {{range $index, $video := .Videos}} loop
+     Context: Expects to be passed the index value (0-4 for videos 1-5)
      Available variables:
-     - $index - The current video index (0-4 for videos 1-5)
-     - $video - The video object with .ID, .UID, etc.
+     - . - The current video index (0-4 for videos 1-5)
 */}}
 
 <!-- Number Card Title Element -->
-<title ref="r8" lane="1" offset="3600s" name="NUMBER {{add 5 (mul $index -1)}} - Basic 3D" start="3600s" duration="5100/2500s">
+<title ref="r8" lane="1" offset="3600s" name="NUMBER {{add 5 (mul . -1)}} - Basic 3D" start="3600s" duration="5100/2500s">
     <param name="Build Out" key="9999/10000/2/102" value="0"/>
     <param name="Position" key="9999/10085/10086/1/100/101" value="0 -200"/>
     <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
@@ -94,12 +93,12 @@
     
     <!-- Text Content -->
     <text>
-        <text-style ref="ts{{add (mul $index 2) 100}}">NUMBER </text-style>
-        <text-style ref="ts{{add (mul $index 2) 101}}">{{add 5 (mul $index -1)}}</text-style>
+        <text-style ref="ts{{add (mul . 2) 100}}">NUMBER </text-style>
+        <text-style ref="ts{{add (mul . 2) 101}}">{{add 5 (mul . -1)}}</text-style>
     </text>
     
     <!-- Text Style Definition for "NUMBER" -->
-    <text-style-def id="ts{{add (mul $index 2) 100}}">
+    <text-style-def id="ts{{add (mul . 2) 100}}">
         <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="3.6" alignment="center">
             <param name="Depth Direction" key="506" value="2 (Centered)"/>
             <param name="Front Edge" key="500" value="1 (Bevel)"/>
@@ -160,7 +159,7 @@
     </text-style-def>
     
     <!-- Text Style Definition for Number Digit -->
-    <text-style-def id="ts{{add (mul $index 2) 101}}">
+    <text-style-def id="ts{{add (mul . 2) 101}}">
         <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center">
             <param name="Depth Direction" key="506" value="2 (Centered)"/>
             <param name="Front Edge" key="500" value="1 (Bevel)"/>

@@ -116,7 +116,7 @@
                                 </text-style-def>
                             </title>
                             <!-- Include Number Card Template -->
-                            {{template "number_card.fcpxml" .}}
+                            {{template "number_card.fcpxml" $index}}
                         </video>
                         {{end}}
                     </spine>

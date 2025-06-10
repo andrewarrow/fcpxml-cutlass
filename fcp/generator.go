@@ -164,15 +164,32 @@ func GenerateTop5FCPXML(templatePath string, videoIDs []string, name, outputPath
 		"mul": func(a, b int) int { return a * b },
 	}
 
-	// Parse the template
-	tmpl, err := template.New("top5.fcpxml").Funcs(funcMap).ParseFiles(templatePath)
+	// Parse all templates in the templates directory
+	tmpl := template.New("").Funcs(funcMap)
+	
+	templateFiles, err := ioutil.ReadDir("templates")
 	if err != nil {
-		return fmt.Errorf("failed to parse template: %v", err)
+		return fmt.Errorf("failed to read templates directory: %v", err)
+	}
+	
+	for _, file := range templateFiles {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".fcpxml") {
+			filePath := "templates/" + file.Name()
+			fileContents, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("failed to read template file %s: %v", file.Name(), err)
+			}
+			
+			_, err = tmpl.New(file.Name()).Parse(string(fileContents))
+			if err != nil {
+				return fmt.Errorf("failed to parse template %s: %v", file.Name(), err)
+			}
+		}
 	}
 
 	// Execute the template
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, data)
+	err = tmpl.ExecuteTemplate(&buf, "top5.fcpxml", data)
 	if err != nil {
 		return fmt.Errorf("failed to execute template: %v", err)
 	}
