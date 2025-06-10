@@ -1,6 +1,7 @@
 import requests
 import os
 import time
+import base64
 
 ACCESS_TOKEN = os.getenv("CANVA_ACCESS_TOKEN")
 
@@ -115,6 +116,115 @@ def list_designs():
             print(f"   Created: {design['created']}")
         print()
 
+def upload_image():
+    filename = input("Enter the image filename to upload: ").strip()
+    if not filename:
+        print("Error: No filename provided")
+        return
+    
+    if not os.path.exists(filename):
+        print(f"Error: File '{filename}' not found")
+        return
+    
+    # Step 1: Upload the image
+    print("Uploading image...")
+    upload_url = "https://api.canva.com/rest/v1/asset-uploads"
+    
+    # Get just the filename without path for the asset name
+    asset_name = os.path.basename(filename)
+    name_base64 = base64.b64encode(asset_name.encode('utf-8')).decode('utf-8')
+    
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/octet-stream",
+        "Asset-Upload-Metadata": f'{{"name_base64": "{name_base64}"}}'
+    }
+    
+    with open(filename, 'rb') as f:
+        response = requests.post(upload_url, headers=headers, data=f.read())
+    
+    if response.status_code != 200:
+        print(f"Error uploading image: {response.status_code} - {response.text}")
+        return
+    
+    upload_data = response.json()
+    job_id = upload_data['job']['id']
+    print(f"Image upload job created with ID: {job_id}")
+    
+    # Poll for upload completion
+    print("Waiting for upload to complete...")
+    max_attempts = 30
+    attempts = 0
+    asset_id = None
+    
+    while attempts < max_attempts:
+        job_status_url = f"https://api.canva.com/rest/v1/asset-uploads/{job_id}"
+        job_response = requests.get(job_status_url, headers={"Authorization": f"Bearer {ACCESS_TOKEN}"})
+        
+        if job_response.status_code != 200:
+            print(f"Error checking upload status: {job_response.status_code} - {job_response.text}")
+            return
+        
+        job_data = job_response.json()
+        status = job_data['job']['status']
+        
+        if status == "success":
+            asset_id = job_data['job']['asset']['id']
+            print(f"Upload completed! Asset ID: {asset_id}")
+            break
+        elif status == "failed":
+            print("Upload failed:", job_data['job'].get('error', 'Unknown error'))
+            return
+        else:
+            attempts += 1
+            time.sleep(1)
+    
+    if not asset_id:
+        print("Upload timed out")
+        return
+    
+    # Step 2: Create a YouTube thumbnail design
+    print("Creating YouTube thumbnail design...")
+    design_url = "https://api.canva.com/rest/v1/designs"
+    design_data = {
+        "design_type": {
+            "type": "preset",
+            "name": "doc"
+        },
+        "title": "YouTube Thumbnail",
+        "asset_id": asset_id
+    }
+    
+    response = requests.post(design_url, headers={**headers, "Content-Type": "application/json"}, json=design_data)
+    
+    if response.status_code != 200:
+        print(f"Error creating design: {response.status_code} - {response.text}")
+        return
+    
+    design_response = response.json()
+    design_id = design_response['design']['id']
+    print(f"YouTube thumbnail design created with ID: {design_id}")
+    
+    # Step 3: Add the uploaded image to the design
+    print("Adding image to design...")
+    add_element_url = f"https://api.canva.com/rest/v1/designs/{design_id}/elements"
+    element_data = {
+        "element": {
+            "type": "image",
+            "asset_id": asset_id
+        }
+    }
+    
+    response = requests.post(add_element_url, headers={**headers, "Content-Type": "application/json"}, json=element_data)
+    
+    if response.status_code != 200:
+        print(f"Error adding image to design: {response.status_code} - {response.text}")
+        return
+    
+    print("Image successfully added to YouTube thumbnail design!")
+    print(f"Design ID: {design_id}")
+    print(f"You can now edit this design in Canva or download it using option 1")
+
 def main_menu():
     if not ACCESS_TOKEN:
         print("Error: CANVA_ACCESS_TOKEN environment variable not set")
@@ -125,19 +235,22 @@ def main_menu():
         print("=================")
         print("1. Download design")
         print("2. List designs")
-        print("3. Exit")
+        print("3. Upload image and create YouTube thumbnail")
+        print("4. Exit")
         
-        choice = input("\nEnter your choice (1-3): ").strip()
+        choice = input("\nEnter your choice (1-4): ").strip()
         
         if choice == "1":
             download_design()
         elif choice == "2":
             list_designs()
         elif choice == "3":
+            upload_image()
+        elif choice == "4":
             print("Goodbye!")
             break
         else:
-            print("Invalid choice. Please enter 1, 2, or 3.")
+            print("Invalid choice. Please enter 1, 2, 3, or 4.")
 
 if __name__ == "__main__":
     main_menu()
