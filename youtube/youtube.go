@@ -14,9 +14,7 @@ func IsYouTubeID(input string) bool {
 }
 
 func DownloadVideo(youtubeID string) (string, error) {
-	// Use the same filename pattern but with .mov extension and underscores instead of spaces
-	mp4File := "%(id)s_%(channel).10s_%(title).10s.%(ext)s"
-	movFile := "%(id)s_%(channel).10s_%(title).10s.mov"
+	mp4File := youtubeID + ".mp4"
 
 	fmt.Printf("Detected YouTube ID: %s, downloading and converting to MOV...\n", youtubeID)
 
@@ -32,7 +30,7 @@ func DownloadVideo(youtubeID string) (string, error) {
 		return "", fmt.Errorf("error downloading and converting YouTube video: %v", err)
 	}
 
-	return movFile, nil
+	return mp4File, nil
 }
 
 func DownloadSubtitles(youtubeID string) error {
