@@ -67,11 +67,11 @@ class TranscriptSegmenter:
         'including', 'like this', 'as follows', 'as well as'
     }
     
-    def __init__(self, min_duration: int = 18, max_duration: int = 36, long_duration: int = 60):
+    def __init__(self, min_duration: int = 9, max_duration: int = 18, long_duration: int = 30):
         self.min_duration = min_duration
         self.max_duration = max_duration
         self.long_duration = long_duration
-        # Target distribution: ~60% medium (18-36s), ~25% short (<18s), ~15% long (45-60s)
+        # Target distribution: ~60% medium (9-18s), ~25% short (<9s), ~15% long (22-30s)
         self.target_long_ratio = 0.15
         self.target_short_ratio = 0.25
     
@@ -160,7 +160,7 @@ class TranscriptSegmenter:
         if total_estimated == 0:
             return False
             
-        current_long_count = sum(1 for s in self.temp_segments if hasattr(self, 'temp_segments') and s.duration > 45)
+        current_long_count = sum(1 for s in self.temp_segments if hasattr(self, 'temp_segments') and s.duration > 22)
         current_ratio = current_long_count / max(1, segments_created)
         
         # Add some randomness but bias toward target distribution
@@ -225,15 +225,15 @@ class TranscriptSegmenter:
             should_go_long = self.should_create_long_segment(segments_created, estimated_segments)
             
             if should_go_long:
-                # Try for a longer segment (45-60s)
-                target_min = 45
+                # Try for a longer segment (22-30s)
+                target_min = 22
                 target_max = self.long_duration
             else:
                 # Regular segment duration
                 random_factor = random.random()
                 if random_factor < 0.3:  # 30% chance for shorter segments
-                    target_min = 12
-                    target_max = 22
+                    target_min = 6
+                    target_max = 11
                 else:  # 70% chance for medium segments
                     target_min = self.min_duration
                     target_max = self.max_duration
@@ -325,7 +325,7 @@ class TranscriptSegmenter:
             print(f"\nSegment {i}:")
             print(f"  Time: {segment.start_time} - {segment.end_time} ({segment.duration}s)")
             print(f"  Lines: {segment.start_line} - {segment.end_line}")
-            print(f"  Text: {segment.text[:100]}{'...' if len(segment.text) > 100 else ''}")
+            print(f"  Text: {segment.text}")
         
         print(f"\n{'='*80}")
         print(f"SUMMARY")
@@ -338,27 +338,27 @@ class TranscriptSegmenter:
             print("Average segment length: N/A")
         
         # Duration distribution
-        short = sum(1 for s in segments if s.duration < 18)
-        medium = sum(1 for s in segments if 18 <= s.duration <= 36)
-        long_medium = sum(1 for s in segments if 37 <= s.duration <= 45)
-        long = sum(1 for s in segments if s.duration > 45)
+        short = sum(1 for s in segments if s.duration < 9)
+        medium = sum(1 for s in segments if 9 <= s.duration <= 18)
+        long_medium = sum(1 for s in segments if 19 <= s.duration <= 22)
+        long = sum(1 for s in segments if s.duration > 22)
         
         print(f"Duration distribution:")
-        print(f"  Short (<18s): {short} ({short/len(segments)*100:.1f}%)")
-        print(f"  Medium (18-36s): {medium} ({medium/len(segments)*100:.1f}%)")
-        print(f"  Long-Medium (37-45s): {long_medium} ({long_medium/len(segments)*100:.1f}%)")
-        print(f"  Long (>45s): {long} ({long/len(segments)*100:.1f}%)")
+        print(f"  Short (<9s): {short} ({short/len(segments)*100:.1f}%)")
+        print(f"  Medium (9-18s): {medium} ({medium/len(segments)*100:.1f}%)")
+        print(f"  Long-Medium (19-22s): {long_medium} ({long_medium/len(segments)*100:.1f}%)")
+        print(f"  Long (>22s): {long} ({long/len(segments)*100:.1f}%)")
 
 
 def main():
     parser = argparse.ArgumentParser(description='Intelligently segment transcript files')
     parser.add_argument('file', help='Path to the .codes transcript file')
-    parser.add_argument('--min-duration', type=int, default=18, 
-                       help='Minimum segment duration in seconds (default: 18)')
-    parser.add_argument('--max-duration', type=int, default=36,
-                       help='Maximum regular segment duration in seconds (default: 36)')
-    parser.add_argument('--long-duration', type=int, default=60,
-                       help='Maximum long segment duration in seconds (default: 60)')
+    parser.add_argument('--min-duration', type=int, default=9, 
+                       help='Minimum segment duration in seconds (default: 9)')
+    parser.add_argument('--max-duration', type=int, default=18,
+                       help='Maximum regular segment duration in seconds (default: 18)')
+    parser.add_argument('--long-duration', type=int, default=30,
+                       help='Maximum long segment duration in seconds (default: 30)')
     parser.add_argument('--seed', type=int, default=None,
                        help='Random seed for reproducible results')
     
