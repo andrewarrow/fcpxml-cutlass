@@ -39,7 +39,7 @@
         </asset>
         {{range $index, $video := .Videos}}
         <asset id="r{{add $index 10}}" name="{{$video.ID}}" uid="1060CDAD22BE0C793867C03043293F21" start="0s" duration="960000/32000s" hasVideo="1" format="r1" hasAudio="1" videoSources="1" audioSources="1" audioChannels="2" audioRate="44100">
-            <media-rep kind="original-media" sig="1060CDAD22BE0C793867C03043293F21" src="file:///./data/{{$video.ID}}.mov">
+            <media-rep kind="original-media" sig="1060CDAD22BE0C793867C03043293F21" src="data/{{$video.ID}}.mov">
                 <bookmark>Ym9va4QDAAAAAAQQMAAAAOBLbLsoxLD5+zzOqerWza2PENc+uJiE8Dk93Q0C2k1xXAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAAEgAAAAEBAABVbnRpdGxlZC5mY3BidW5kbGUAABQAAAABAQAAQXV0byBHZW5lcmF0ZWQgQ2xpcHMOAAAAAQEAAE9yaWdpbmFsIE1lZGlhAAAHAAAAAQEAAGJlbi5tb3YAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAWAAAAHQAAACMAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAABjhsEDAAAAAAgAAAAEAwAA9O0IBAAAAAAIAAAABAMAAP3tCAQAAAAACAAAAAQDAADkXhAEAAAAABwAAAABBgAAwAAAANAAAADgAAAA8AAAAAABAAAQAQAAIAEAAAgAAAAABAAAQcb7hAuMkLYYAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAJwAAAAAAAAABRAAADABAAAAAAAAEBAAAGQBAAAAAAAAQBAAAFQBAAAAAAAAVBAAAIwBAAAAAAAAVRAAAJgBAAAAAAAAVhAAAIQBAAAAAAAAAiAAAFACAAAAAAAABSAAAMABAAAAAAAAECAAANABAAAAAAAAESAAAAQCAAAAAAAAEiAAAOQBAAAAAAAAEyAAAPQBAAAAAAAAICAAADACAAAAAAAAMCAAAIQBAAAAAAAAAcAAAKQBAAAAAAAAEcAAACAAAAAAAAAAEsAAALQBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
             </media-rep>
             <metadata>
@@ -514,7 +514,7 @@
                             </title>
                             <asset-clip ref="r9" lane="-1" offset="432001139/120000s" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
                         </title>
-                        <asset-clip ref="r{{add $index 10}}" offset="8300/2500s" name="{{$video.ID}}" duration="1702400/320000s" tcFormat="NDF" audioRole="dialogue"/>
+                        <asset-clip ref="r10" offset="8300/2500s" name="{{(index .Videos 0).ID}}" duration="1702400/320000s" tcFormat="NDF" audioRole="dialogue"/>
                         <video ref="r2" offset="2764800/320000s" name="cutlass_logo_t" start="3600s" duration="3200/2500s">
                             <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
                             <title ref="r6" lane="1" offset="3600s" name="cutlass - Fade 3D" start="8999100/2500s" duration="3200/2500s">
@@ -966,7 +966,7 @@
                             </title>
                             <asset-clip ref="r9" lane="-1" offset="432001139/120000s" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
                         </title>
-                        <asset-clip ref="r{{add $index 10}}" offset="3827200/320000s" name="{{$video.ID}}" duration="1702400/320000s" tcFormat="NDF" audioRole="dialogue"/>
+                        <asset-clip ref="r11" offset="3827200/320000s" name="{{(index .Videos 1).ID}}" duration="1702400/320000s" tcFormat="NDF" audioRole="dialogue"/>
                     </spine>
                 </sequence>
             </project>
