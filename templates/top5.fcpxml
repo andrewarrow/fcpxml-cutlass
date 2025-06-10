@@ -120,6 +120,72 @@
                         {{range $index, $video := .Videos}}
                         <!-- TOP FIVE Bumper Title with Number Card -->
                         <title ref="r7" offset="{{add 3200 (mul $index 8300)}}/2500s" name="TOP FIVE - Bumper" duration="5100/2500s">
+                            <param name="Build In" key="9999/10119/2/101" value="0"/>
+                            <param name="Layout Method" key="9999/3296813083/3296813732/10139/3296835635/10144/2/314" value="1 (Paragraph)"/>
+                            <param name="Left Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/323" value="-1600"/>
+                            <param name="Right Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/324" value="1600"/>
+                            <param name="Top Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/325" value="647.9"/>
+                            <param name="Bottom Margin" key="9999/3296813083/3296813732/10139/3296835635/10144/2/326" value="-805"/>
+                            <param name="Alignment" key="9999/3296813083/3296813732/10139/3296835635/10144/2/354/10105/401" value="1 (Center)"/>
+                            <param name="Line Spacing" key="9999/3296813083/3296813732/10139/3296835635/10144/2/354/10105/404" value="-284"/>
+                            <param name="Alignment" key="9999/3296813083/3296813732/10139/3296835635/10144/2/354/3297089129/401" value="1 (Center)"/>
+                            <param name="Line Spacing" key="9999/3296813083/3296813732/10139/3296835635/10144/2/354/3297089129/404" value="-284"/>
+                            <param name="Auto-Shrink" key="9999/3296813083/3296813732/10139/3296835635/10144/2/370" value="3 (To All Margins)"/>
+                            <param name="Layout Method" key="9999/3296813083/3296813732/10139/3296835715/16895/2/314" value="1 (Paragraph)"/>
+                            <param name="Left Margin" key="9999/3296813083/3296813732/10139/3296835715/16895/2/323" value="-1600"/>
+                            <param name="Right Margin" key="9999/3296813083/3296813732/10139/3296835715/16895/2/324" value="1600"/>
+                            <param name="Top Margin" key="9999/3296813083/3296813732/10139/3296835715/16895/2/325" value="202.517"/>
+                            <param name="Bottom Margin" key="9999/3296813083/3296813732/10139/3296835715/16895/2/326" value="-83"/>
+                            <param name="Alignment" key="9999/3296813083/3296813732/10139/3296835715/16895/2/354/16896/401" value="1 (Center)"/>
+                            <param name="Auto-Shrink" key="9999/3296813083/3296813732/10139/3296835715/16895/2/370" value="3 (To All Margins)"/>
+                            <param name="Alignment" key="9999/3296813083/3296813732/10139/3296835715/16895/2/373" value="0 (Left) 2 (Bottom)"/>
+                            <param name="Blur" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/1007/1040" value="10 10"/>
+                            <param name="Spread" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/201/204" value="5"/>
+                            <param name="Direction" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/201/205" value="1 (Backwards)"/>
+                            <param name="Speed" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/201/208" value="3 (Ease Both)"/>
+                            <param name="Start Offset" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835597/201/235" value="3"/>
+                            <param name="Blur" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/1007/1040" value="32 32"/>
+                            <param name="Sequencing" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/201/202" value="0 (To)"/>
+                            <param name="Spread" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/201/204" value="6"/>
+                            <param name="Speed" key="9999/3296813083/3296813732/10139/3296835715/16895/4/3296835770/201/208" value="4 (Accelerate)"/>
+                            <text>
+                                <text-style ref="ts{{add (mul $index 10) 3}}">TOP FIV</text-style>
+                                <text-style ref="ts{{add (mul $index 10) 4}}">E</text-style>
+                            </text>
+                            <text>
+                                <text-style ref="ts{{add (mul $index 10) 5}}">{{$.FirstName}}</text-style>
+                                <text-style ref="ts{{add (mul $index 10) 6}}">
+</text-style>
+                                <text-style ref="ts{{add (mul $index 10) 5}}">{{$.LastName}}</text-style>{{if $.LastNameSuffix}}
+                                <text-style ref="ts{{add (mul $index 10) 7}}">{{$.LastNameSuffix}}</text-style>{{end}}
+                            </text>
+                            <text-style-def id="ts{{add (mul $index 10) 3}}">
+                                <text-style font="Futura" fontSize="126" fontFace="Medium" fontColor="1 1 1 1" kerning="-8.4042" alignment="center">
+                                    <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                        <param name="motionTextTracking" key="tracking" value="-8.4042"/>
+                                    </param>
+                                </text-style>
+                            </text-style-def>
+                            <text-style-def id="ts{{add (mul $index 10) 4}}">
+                                <text-style font="Futura" fontSize="126" fontFace="Medium" fontColor="1 1 1 1" alignment="center"/>
+                            </text-style-def>
+                            <text-style-def id="ts{{add (mul $index 10) 5}}">
+                                <text-style font="Futura" fontSize="400" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="-26.64" alignment="center" lineSpacing="-284">
+                                    <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                        <param name="motionTextTracking" key="tracking" value="-26.64"/>
+                                    </param>
+                                </text-style>
+                            </text-style-def>
+                            <text-style-def id="ts{{add (mul $index 10) 6}}">
+                                <text-style font="Futura" fontSize="400" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="-40" alignment="center" lineSpacing="-284">
+                                    <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                        <param name="motionTextKerning" key="kerning" value="-40"/>
+                                    </param>
+                                </text-style>
+                            </text-style-def>
+                            <text-style-def id="ts{{add (mul $index 10) 7}}">
+                                <text-style font="Futura" fontSize="400" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center" lineSpacing="-284"/>
+                            </text-style-def>
                             {{template "number_card.fcpxml" $index}}
                         </title>
                         
