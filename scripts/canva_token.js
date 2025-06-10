@@ -50,6 +50,9 @@ fetch('https://api.canva.com/rest/v1/oauth/token', {
 .then(response => response.json())
 .then(data => {
     console.log('Token response:', JSON.stringify(data, null, 2));
+    if (data.access_token) {
+        console.log(data.access_token);
+    }
 })
 .catch(error => {
     console.error('Error:', error);

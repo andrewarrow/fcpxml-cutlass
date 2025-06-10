@@ -9,4 +9,3 @@ const authUrl = `https://www.canva.com/api/oauth/authorize?code_challenge_method
 console.log("Code Verifier:", codeVerifier);
 console.log("Code Challenge:", codeChallenge);
 console.log("Authorization URL:", authUrl);
-console.log("\nCode verifier has been set in CANVA_CODE_VERIFIER environment variable");
