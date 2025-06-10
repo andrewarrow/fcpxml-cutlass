@@ -22,7 +22,7 @@ func DownloadVideo(youtubeID string) (string, error) {
 	cmd := exec.Command("yt-dlp",
 		"-o", "./data/"+mp4File,
 		"--restrict-filenames",
-		"--exec", "ffmpeg -i {} {}.mov && rm {}",
+		"--exec", fmt.Sprintf("ffmpeg -i {} %s.mov && rm {}", youtubeID),
 		youtubeID)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
