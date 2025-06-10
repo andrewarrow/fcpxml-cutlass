@@ -3,6 +3,43 @@ import asyncio
 import re
 from playwright.async_api import async_playwright
 
+async def fetch_channel_description(page, channel_name):
+    """Fetch channel description by searching for the channel"""
+    if not channel_name:
+        return None
+    
+    try:
+        # Navigate to channel search
+        search_url = f"https://www.youtube.com/results?search_query={channel_name}&sp=EgIQAg%253D%253D"
+        await page.goto(search_url)
+        await page.wait_for_load_state('networkidle')
+        
+        # Click on the first channel result
+        channel_link = await page.query_selector('a[href*="/channel/"], a[href*="/@"]')
+        if channel_link:
+            await channel_link.click()
+            await page.wait_for_load_state('networkidle')
+            
+            # Look for channel description
+            description_selectors = [
+                '#description yt-formatted-string',
+                '#description-container yt-formatted-string',
+                '.ytd-channel-about-metadata-renderer yt-formatted-string',
+                '#about-description yt-formatted-string'
+            ]
+            
+            for selector in description_selectors:
+                desc_element = await page.query_selector(selector)
+                if desc_element:
+                    description = await desc_element.text_content()
+                    if description and description.strip():
+                        return description.strip()
+        
+        return None
+    except Exception as e:
+        print(f"DEBUG: Error fetching channel description for {channel_name}: {e}")
+        return None
+
 async def scrape_youtube_trending():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -84,10 +121,58 @@ async def scrape_youtube_trending():
                                         duration = duration.strip()
                                         break
                         
-                        videos.append({'id': video_id, 'title': title, 'duration': duration})
+                        # Try to find channel name
+                        channel_name = None
+                        channel_selectors = [
+                            '#channel-name a',
+                            '.ytd-channel-name a',
+                            'a[href*="/channel/"] #text',
+                            'a[href*="/@"] #text',
+                            '.yt-simple-endpoint.style-scope.yt-formatted-string',
+                            '#owner-text a'
+                        ]
+                        
+                        # Look for channel name in the video container
+                        for channel_selector in channel_selectors:
+                            channel_element = await page.query_selector(f'ytd-rich-grid-media:has(a[href*="{video_id}"]) {channel_selector}')
+                            if not channel_element:
+                                channel_element = await page.query_selector(f'ytd-video-renderer:has(a[href*="{video_id}"]) {channel_selector}')
+                            if channel_element:
+                                channel_name = await channel_element.text_content()
+                                if channel_name and channel_name.strip():
+                                    channel_name = channel_name.strip()
+                                    break
+                        
+                        # Try to find video description (snippet)
+                        video_description = None
+                        description_selectors = [
+                            '#description-text',
+                            '.ytd-video-meta-block #description-text',
+                            'yt-formatted-string#description-text',
+                            '.metadata-snippet-text'
+                        ]
+                        
+                        for desc_selector in description_selectors:
+                            desc_element = await page.query_selector(f'ytd-rich-grid-media:has(a[href*="{video_id}"]) {desc_selector}')
+                            if not desc_element:
+                                desc_element = await page.query_selector(f'ytd-video-renderer:has(a[href*="{video_id}"]) {desc_selector}')
+                            if desc_element:
+                                video_description = await desc_element.text_content()
+                                if video_description and video_description.strip():
+                                    video_description = video_description.strip()
+                                    break
+                        
+                        videos.append({
+                            'id': video_id, 
+                            'title': title, 
+                            'duration': duration,
+                            'channel_name': channel_name,
+                            'video_description': video_description,
+                            'channel_description': None  # Will be fetched separately if needed
+                        })
                         processed_count += 1
                         if processed_count <= 3:  # Show debug for first few videos
-                            print(f"DEBUG: Added video: {title} ({video_id}) - Duration: {duration}")
+                            print(f"DEBUG: Added video: {title} ({video_id}) - Duration: {duration} - Channel: {channel_name}")
                         elif processed_count == 4:
                             print("DEBUG: Processing more videos...")
                     
@@ -108,6 +193,21 @@ async def main():
         print(f"    Video ID: {video['id']}")
         duration_text = f" ({video['duration']})" if video['duration'] else " (duration unknown)"
         print(f"    Duration:{duration_text}")
+        
+        if video['channel_name']:
+            print(f"    Channel: {video['channel_name']}")
+        else:
+            print("    Channel: (unknown)")
+        
+        if video['video_description']:
+            # Truncate description if too long
+            desc = video['video_description']
+            if len(desc) > 100:
+                desc = desc[:100] + "..."
+            print(f"    Description: {desc}")
+        else:
+            print("    Description: (none available)")
+        
         print(f"    URL: https://www.youtube.com/watch?v={video['id']}")
         print()
 
