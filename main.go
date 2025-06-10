@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"cutlass/fcp"
+	"cutlass/segments"
 	"cutlass/vtt"
 	"cutlass/wikipedia"
 	"cutlass/youtube"
@@ -42,7 +43,7 @@ func main() {
 	case "vtt-clips":
 		vtt.HandleVTTClipsCommand(args)
 	case "segments":
-		vtt.HandleSegmentsCommand(args)
+		segments.HandleSegmentsCommand(args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
