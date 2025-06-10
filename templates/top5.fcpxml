@@ -27,6 +27,10 @@
         </asset>
         <format id="r5" name="FFVideoFormatRateUndefined"/>
         <effect id="r6" name="Fade 3D" uid=".../Titles.localized/3D.localized/Fade 3D.localized/Fade 3D.moti"/>
+        <effect id="r8" name="Basic 3D" uid=".../Titles.localized/3D.localized/Basic 3D.localized/Basic 3D.moti"/>
+        <asset id="r9" name="Synth Zap Accent 06" uid="3DC9B020540A135712966448E4C2AB96" start="0s" duration="98138/44100s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="44100">
+            <media-rep kind="original-media" sig="3DC9B020540A135712966448E4C2AB96" src="file:///Users/aa/assets/Synth%20Zap%20Accent%2006.caf"/>
+        </asset>
         {{range $index, $video := .Videos}}
         <asset id="r{{add $index 10}}" name="CLIP{{add 5 (mul $index -1)}}" uid="{{$video.UID}}" start="0s" duration="960000/32000s" hasVideo="1" format="r1" hasAudio="1" videoSources="1" audioSources="1" audioChannels="2" audioRate="44100">
           <media-rep kind="original-media" sig="{{$video.UID}}" src="file:///Users/aa/cs/cutlass/data/{{$video.ID}}.mov">{{if $video.Bookmark}}
@@ -111,6 +115,8 @@
                                     </text-style>
                                 </text-style-def>
                             </title>
+                            <!-- Include Number Card Template -->
+                            {{template "number_card.fcpxml" .}}
                         </video>
                         {{end}}
                     </spine>

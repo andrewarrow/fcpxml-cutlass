@@ -1,21 +1,15 @@
-<!-- Number Card Template Fragment for Top 5 countdown
+{{/* Number Card Template Fragment for Top 5 countdown
      This template creates animated number cards (5, 4, 3, 2, 1) with 3D styling and sound effects
      Usage: Include this template fragment within a larger FCPXML structure
      
-     Required resources (add to <resources> section):
-     - effect id="r8" name="Basic 3D" 
-     - format id="r5" for audio
-     - asset id="r9" for "Synth Zap Accent 06" sound effect
-     
-     Template variables:
-     - {{.Number}} - The number to display (1, 2, 3, 4, or 5)
-     - {{.Offset}} - Timeline offset for this number card
-     - {{.StyleId1}} - Unique text style ID for "NUMBER "
-     - {{.StyleId2}} - Unique text style ID for the digit
--->
+     Context: Expects to be called from within the {{range $index, $video := .Videos}} loop
+     Available variables:
+     - $index - The current video index (0-4 for videos 1-5)
+     - $video - The video object with .ID, .UID, etc.
+*/}}
 
 <!-- Number Card Title Element -->
-<title ref="r8" lane="1" offset="{{.Offset}}" name="NUMBER {{.Number}} - Basic 3D" start="3600s" duration="5100/2500s">
+<title ref="r8" lane="1" offset="3600s" name="NUMBER {{add 5 (mul $index -1)}} - Basic 3D" start="3600s" duration="5100/2500s">
     <param name="Build Out" key="9999/10000/2/102" value="0"/>
     <param name="Position" key="9999/10085/10086/1/100/101" value="0 -200"/>
     <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
@@ -100,12 +94,12 @@
     
     <!-- Text Content -->
     <text>
-        <text-style ref="{{.StyleId1}}">NUMBER </text-style>
-        <text-style ref="{{.StyleId2}}">{{.Number}}</text-style>
+        <text-style ref="ts{{add (mul $index 2) 100}}">NUMBER </text-style>
+        <text-style ref="ts{{add (mul $index 2) 101}}">{{add 5 (mul $index -1)}}</text-style>
     </text>
     
     <!-- Text Style Definition for "NUMBER" -->
-    <text-style-def id="{{.StyleId1}}">
+    <text-style-def id="ts{{add (mul $index 2) 100}}">
         <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" kerning="3.6" alignment="center">
             <param name="Depth Direction" key="506" value="2 (Centered)"/>
             <param name="Front Edge" key="500" value="1 (Bevel)"/>
@@ -166,7 +160,7 @@
     </text-style-def>
     
     <!-- Text Style Definition for Number Digit -->
-    <text-style-def id="{{.StyleId2}}">
+    <text-style-def id="ts{{add (mul $index 2) 101}}">
         <text-style font="DIN Condensed" fontSize="225" fontColor="1 1 1 1" bold="1" baseline="-100" alignment="center">
             <param name="Depth Direction" key="506" value="2 (Centered)"/>
             <param name="Front Edge" key="500" value="1 (Bevel)"/>
@@ -228,4 +222,4 @@
 </title>
 
 <!-- Associated Sound Effect (place in timeline at same offset) -->
-<asset-clip ref="r9" lane="-1" offset="{{.Offset}}" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
+<asset-clip ref="r9" lane="-1" offset="3600s" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
