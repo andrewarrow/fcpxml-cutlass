@@ -19,13 +19,15 @@ data = {
 }
 
 response = requests.post(export_url, headers=headers, json=data)
-if response.status_code != 202:
+if response.status_code not in [200, 202]:
     print("Error creating export job:", response.text)
     exit()
 
 export_job = response.json()
 job = export_job["job"]
 export_id = job["id"]
+
+print(f"Export job created with ID: {export_id}, status: {job['status']}")
 
 # Step 2: Poll the export job until it's complete
 get_job_url = f"https://api.canva.com/rest/v1/exports/{export_id}"
