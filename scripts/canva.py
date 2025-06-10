@@ -1,5 +1,6 @@
 import requests
 import os
+import time
 
 ACCESS_TOKEN = os.getenv("CANVA_ACCESS_TOKEN")
 DESIGN_ID = os.getenv("CANVA_DESIGN_ID")
@@ -23,25 +24,51 @@ if response.status_code != 202:
     exit()
 
 export_job = response.json()
-export_id = export_job["export_id"]
+job = export_job["job"]
+export_id = job["id"]
 
 # Step 2: Poll the export job until it's complete
 get_job_url = f"https://api.canva.com/rest/v1/exports/{export_id}"
-while True:
+max_attempts = 60  # Maximum 60 attempts (1 minute with 1-second intervals)
+attempts = 0
+
+while attempts < max_attempts:
     job_response = requests.get(get_job_url, headers={"Authorization": f"Bearer {ACCESS_TOKEN}"})
-    job = job_response.json()
+    if job_response.status_code != 200:
+        print(f"Error polling job status: {job_response.status_code} - {job_response.text}")
+        exit()
+    
+    job_data = job_response.json()
+    job = job_data.get("job", job_data)  # Handle both wrapped and unwrapped responses
     status = job["status"]
-    if status == "COMPLETED":
+    
+    print(f"Job status: {status}")
+    
+    if status == "completed":
         download_url = job["download_url"]
         break
-    elif status in ["FAILED", "CANCELLED"]:
+    elif status in ["failed", "cancelled"]:
         print("Export job failed or was cancelled:", job)
         exit()
-    # Wait before polling again
-    import time; time.sleep(1)
+    elif status == "in_progress":
+        attempts += 1
+        time.sleep(1)
+    else:
+        print(f"Unknown status: {status}")
+        attempts += 1
+        time.sleep(1)
+
+if attempts >= max_attempts:
+    print("Timeout: Export job took too long to complete")
+    exit()
 
 # Step 3: Download the PNG file
+print(f"Downloading from: {download_url}")
 download_response = requests.get(download_url)
+if download_response.status_code != 200:
+    print(f"Error downloading file: {download_response.status_code} - {download_response.text}")
+    exit()
+
 with open("design.png", "wb") as f:
     f.write(download_response.content)
 print("PNG downloaded as design.png")
