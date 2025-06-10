@@ -8,7 +8,7 @@
 */}}
 
 <!-- Number Card Title Element -->
-<title ref="r8" lane="1" offset="3600s" name="NUMBER {{add 5 (mul . -1)}} - Basic 3D" start="3600s" duration="5100/2500s">
+<title ref="r8" lane="1" offset="{{mul . 8300}}/2500s" name="NUMBER {{add 5 (mul . -1)}} - Basic 3D" start="3600s" duration="5100/2500s">
     <param name="Build Out" key="9999/10000/2/102" value="0"/>
     <param name="Position" key="9999/10085/10086/1/100/101" value="0 -200"/>
     <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
@@ -220,5 +220,5 @@
     </text-style-def>
 </title>
 
-<!-- Associated Sound Effect -->
-<asset-clip ref="r9" lane="-1" offset="432001139/120000s" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
+<!-- Associated Sound Effect -->  
+<asset-clip ref="r9" lane="-1" offset="{{if eq . 0}}1989/80000s{{else if eq . 1}}23/5s{{else if eq . 2}}198/25s{{else if eq . 3}}281/25s{{else}}364/25s{{end}}" name="Synth Zap Accent 06" duration="243661/120000s" format="r5" audioRole="effects"/>
