@@ -188,8 +188,9 @@ def upload_image():
     design_url = "https://api.canva.com/rest/v1/designs"
     design_data = {
         "design_type": {
-            "type": "preset",
-            "name": "doc"
+            "type": "custom",
+            "width": 1280,
+            "height": 720
         },
         "title": "YouTube Thumbnail",
         "asset_id": asset_id
@@ -204,22 +205,6 @@ def upload_image():
     design_response = response.json()
     design_id = design_response['design']['id']
     print(f"YouTube thumbnail design created with ID: {design_id}")
-    
-    # Step 3: Add the uploaded image to the design
-    print("Adding image to design...")
-    add_element_url = f"https://api.canva.com/rest/v1/designs/{design_id}/elements"
-    element_data = {
-        "element": {
-            "type": "image",
-            "asset_id": asset_id
-        }
-    }
-    
-    response = requests.post(add_element_url, headers={**headers, "Content-Type": "application/json"}, json=element_data)
-    
-    if response.status_code != 200:
-        print(f"Error adding image to design: {response.status_code} - {response.text}")
-        return
     
     print("Image successfully added to YouTube thumbnail design!")
     print(f"Design ID: {design_id}")
