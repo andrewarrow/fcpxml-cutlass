@@ -28,8 +28,10 @@
         <format id="r5" name="FFVideoFormatRateUndefined"/>
         <effect id="r6" name="Fade 3D" uid=".../Titles.localized/3D.localized/Fade 3D.localized/Fade 3D.moti"/>
         {{range $index, $video := .Videos}}
-        <asset id="r{{add $index 10}}" name="CLIP{{add 5 (mul $index -1)}}" uid="data/{{$video.ID}}.mov" start="0s" duration="960000/32000s" hasVideo="1" format="r1" hasAudio="1" videoSources="1" audioSources="1" audioChannels="2" audioRate="44100">
-          <media-rep kind="original-media" sig="data/{{$video.ID}}.mov" src="data/{{$video.ID}}.mov"/>
+        <asset id="r{{add $index 10}}" name="CLIP{{add 5 (mul $index -1)}}" uid="{{$video.UID}}" start="0s" duration="960000/32000s" hasVideo="1" format="r1" hasAudio="1" videoSources="1" audioSources="1" audioChannels="2" audioRate="44100">
+          <media-rep kind="original-media" sig="{{$video.UID}}" src="file:///Users/aa/cs/cutlass/data/{{$video.ID}}.mov">{{if $video.Bookmark}}
+                <bookmark>{{$video.Bookmark}}</bookmark>{{end}}
+            </media-rep>
             <metadata>
                 <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
                 <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
