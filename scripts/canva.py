@@ -116,6 +116,146 @@ def list_designs():
             print(f"   Created: {design['created']}")
         print()
 
+def display_tree(elements, prefix="", is_last=True):
+    """Display elements in a tree ASCII format"""
+    if not elements:
+        return
+    
+    for i, element in enumerate(elements):
+        is_current_last = (i == len(elements) - 1)
+        current_prefix = "└── " if is_current_last else "├── "
+        
+        # Get element type and basic info
+        element_type = element.get('type', 'unknown')
+        element_name = element.get('name', element.get('text', ''))
+        
+        # Display the element
+        display_text = f"{element_type}"
+        if element_name:
+            display_text += f": {element_name}"
+        
+        print(f"{prefix}{current_prefix}{display_text}")
+        
+        # Add details about the element
+        next_prefix = prefix + ("    " if is_current_last else "│   ")
+        
+        # Show dimensions if available
+        if 'width' in element and 'height' in element:
+            print(f"{next_prefix}├── Size: {element['width']}x{element['height']}")
+        
+        # Show position if available
+        if 'x' in element and 'y' in element:
+            print(f"{next_prefix}├── Position: ({element['x']}, {element['y']})")
+        
+        # Show color if available
+        if 'color' in element:
+            print(f"{next_prefix}├── Color: {element['color']}")
+        
+        # Show any additional properties
+        props = []
+        for key, value in element.items():
+            if key not in ['type', 'name', 'text', 'width', 'height', 'x', 'y', 'color', 'children']:
+                if isinstance(value, (str, int, float, bool)):
+                    props.append(f"{key}: {value}")
+        
+        if props:
+            for j, prop in enumerate(props):
+                is_prop_last = (j == len(props) - 1)
+                prop_prefix = "└── " if is_prop_last else "├── "
+                print(f"{next_prefix}{prop_prefix}{prop}")
+        
+        # Recursively display children if they exist
+        if 'children' in element and element['children']:
+            print(f"{next_prefix}└── Children:")
+            display_tree(element['children'], next_prefix + "    ", True)
+
+def inspect_design():
+    """Inspect a design and display all elements in a tree view"""
+    DESIGN_ID = input("Enter the design ID to inspect: ").strip()
+    if not DESIGN_ID:
+        print("Error: No design ID provided")
+        return
+    
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}"
+    }
+    
+    # Get design details
+    design_url = f"https://api.canva.com/rest/v1/designs/{DESIGN_ID}"
+    response = requests.get(design_url, headers=headers)
+    
+    if response.status_code != 200:
+        print(f"Error fetching design: {response.status_code} - {response.text}")
+        return
+    
+    design_data = response.json()
+    design = design_data.get('design', design_data)
+    
+    print(f"\nDesign: {design.get('title', design.get('name', 'Untitled'))}")
+    print(f"ID: {design['id']}")
+    print(f"Type: {design.get('design_type', {}).get('type', 'unknown')}")
+    
+    if 'width' in design and 'height' in design:
+        print(f"Dimensions: {design['width']}x{design['height']}")
+    elif 'design_type' in design and 'width' in design['design_type']:
+        print(f"Dimensions: {design['design_type']['width']}x{design['design_type']['height']}")
+    
+    print("\nDesign Elements:")
+    print("="*50)
+    
+    # Try to get pages/elements from the design
+    # Note: The Canva Connect API may have limited access to element details
+    # We'll display what's available in the design response
+    
+    elements = []
+    
+    # Check if there are pages in the design
+    if 'pages' in design:
+        for page_idx, page in enumerate(design['pages']):
+            page_element = {
+                'type': 'page',
+                'name': f"Page {page_idx + 1}",
+                'children': []
+            }
+            
+            # Add page properties
+            if 'elements' in page:
+                for element in page['elements']:
+                    page_element['children'].append(element)
+            
+            elements.append(page_element)
+    
+    # If no pages, try to find elements directly
+    elif 'elements' in design:
+        elements = design['elements']
+    
+    # If still no elements, show the raw design structure
+    elif not elements:
+        print("Design structure (raw API response):")
+        print("├── Design Properties:")
+        for key, value in design.items():
+            if key not in ['id', 'title', 'name'] and isinstance(value, (str, int, float, bool)):
+                print(f"│   ├── {key}: {value}")
+            elif key not in ['id', 'title', 'name'] and isinstance(value, dict):
+                print(f"│   ├── {key}:")
+                for sub_key, sub_value in value.items():
+                    if isinstance(sub_value, (str, int, float, bool)):
+                        print(f"│   │   ├── {sub_key}: {sub_value}")
+                    else:
+                        print(f"│   │   ├── {sub_key}: [complex object]")
+        
+        print("\nNote: Limited element details available via Canva Connect API.")
+        print("The Connect API primarily provides design metadata rather than detailed element information.")
+        return
+    
+    # Display the tree
+    if elements:
+        display_tree(elements)
+    else:
+        print("No elements found in design response.")
+        print("\nNote: The Canva Connect API may have limited access to design element details.")
+        print("This is normal for the Connect API, which focuses on design management rather than editing.")
+
 def upload_image():
     filename = input("Enter the image filename to upload: ").strip()
     if not filename:
@@ -183,28 +323,73 @@ def upload_image():
         print("Upload timed out")
         return
     
-    # Step 2: Create a YouTube thumbnail design
-    print("Creating YouTube thumbnail design...")
+    # Step 2: Create a design using a preset that supports text overlays
+    print("Creating design with text overlay capabilities...")
     design_url = "https://api.canva.com/rest/v1/designs"
+    
+    # Try using a preset design type that might support text better
     design_data = {
         "design_type": {
-            "type": "custom",
-            "width": 1280,
-            "height": 720
+            "type": "preset",
+            "name": "youtube-thumbnail"  # Use preset which may have better text support
         },
-        "title": "YouTube Thumbnail",
-        "asset_id": asset_id
+        "title": "cutlass test - YouTube Thumbnail"
     }
     
     response = requests.post(design_url, headers={**headers, "Content-Type": "application/json"}, json=design_data)
     
     if response.status_code != 200:
-        print(f"Error creating design: {response.status_code} - {response.text}")
-        return
+        print(f"Preset failed, trying custom design: {response.status_code}")
+        # Fallback to custom design
+        design_data = {
+            "design_type": {
+                "type": "custom", 
+                "width": 1280,
+                "height": 720
+            },
+            "title": "cutlass test - YouTube Thumbnail"
+        }
+        response = requests.post(design_url, headers={**headers, "Content-Type": "application/json"}, json=design_data)
+        
+        if response.status_code != 200:
+            print(f"Error creating design: {response.status_code} - {response.text}")
+            return
     
     design_response = response.json()
     design_id = design_response['design']['id']
-    print(f"YouTube thumbnail design created with ID: {design_id}")
+    print(f"Design created with ID: {design_id}")
+    
+    # Step 3: Add the uploaded image to the design first
+    print("Adding uploaded image to design...")
+    # Note: Based on API research, the Connect API has limited support for adding elements after creation
+    # The image needs to be added during design creation or through autofill templates
+    
+    # Create a new design with the asset
+    print("Recreating design with uploaded image...")
+    design_with_asset = {
+        "design_type": {
+            "type": "custom",
+            "width": 1280, 
+            "height": 720
+        },
+        "title": "cutlass test - YouTube Thumbnail with Image",
+        "asset_id": asset_id  # This adds the image during creation
+    }
+    
+    asset_response = requests.post(design_url, headers={**headers, "Content-Type": "application/json"}, json=design_with_asset)
+    
+    if asset_response.status_code == 200:
+        final_design = asset_response.json()
+        final_design_id = final_design['design']['id']
+        print(f"Design with image created! Design ID: {final_design_id}")
+        print("Note: Based on Canva Connect API limitations, text must be added manually in Canva.")
+        print("The Connect API primarily supports text through autofill templates, not direct element addition.")
+        print(f"Open the design in Canva and add your 'cutlass test' text with blue/violet styling.")
+        print(f"Design URL: https://www.canva.com/design/{final_design_id}")
+    else:
+        print(f"Could not add image to design: {asset_response.status_code} - {asset_response.text}")
+        print(f"Basic design created with ID: {design_id}")
+        print("You'll need to manually add both the image and text in Canva.")
     
     print("Image successfully added to YouTube thumbnail design!")
     print(f"Design ID: {design_id}")
@@ -221,9 +406,10 @@ def main_menu():
         print("1. Download design")
         print("2. List designs")
         print("3. Upload image and create YouTube thumbnail")
-        print("4. Exit")
+        print("4. Inspect design")
+        print("5. Exit")
         
-        choice = input("\nEnter your choice (1-4): ").strip()
+        choice = input("\nEnter your choice (1-5): ").strip()
         
         if choice == "1":
             download_design()
@@ -232,10 +418,12 @@ def main_menu():
         elif choice == "3":
             upload_image()
         elif choice == "4":
+            inspect_design()
+        elif choice == "5":
             print("Goodbye!")
             break
         else:
-            print("Invalid choice. Please enter 1, 2, 3, or 4.")
+            print("Invalid choice. Please enter 1, 2, 3, 4, or 5.")
 
 if __name__ == "__main__":
     main_menu()
