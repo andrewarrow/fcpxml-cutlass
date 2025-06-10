@@ -2,8 +2,10 @@ package segments
 
 import (
 	"cutlass/fcp"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,20 +21,30 @@ func GenerateSegments(videoID, timecodesStr, outputFile string) error {
 		return fmt.Errorf("video file not found: %s", videoFile)
 	}
 
-	// Parse timecodes (format: "01:21_6,02:20_3,03:34_9,05:07_18")
-	timecodeStrs := strings.Split(timecodesStr, ",")
-	if len(timecodeStrs) == 0 {
-		return fmt.Errorf("no timecodes provided")
-	}
-
 	var timecodes []TimecodeWithDuration
-	for _, tc := range timecodeStrs {
-		tc = strings.TrimSpace(tc)
-		timecodeData, err := ParseTimecodeWithDuration(tc)
+	var err error
+
+	if timecodesStr == "" {
+		// No timecodes provided, generate 30-second segments
+		timecodes, err = GenerateThirtySecondSegments(videoFile)
 		if err != nil {
-			return fmt.Errorf("invalid timecode '%s': %v", tc, err)
+			return fmt.Errorf("failed to generate 30-second segments: %v", err)
 		}
-		timecodes = append(timecodes, timecodeData)
+	} else {
+		// Parse provided timecodes (format: "01:21_6,02:20_3,03:34_9,05:07_18")
+		timecodeStrs := strings.Split(timecodesStr, ",")
+		if len(timecodeStrs) == 0 {
+			return fmt.Errorf("no timecodes provided")
+		}
+
+		for _, tc := range timecodeStrs {
+			tc = strings.TrimSpace(tc)
+			timecodeData, err := ParseTimecodeWithDuration(tc)
+			if err != nil {
+				return fmt.Errorf("invalid timecode '%s': %v", tc, err)
+			}
+			timecodes = append(timecodes, timecodeData)
+		}
 	}
 
 	// Set default output file if not provided
@@ -48,7 +60,7 @@ func GenerateSegments(videoID, timecodesStr, outputFile string) error {
 
 	// Generate FCPXML with clips
 	fmt.Printf("Generating FCPXML with %d clips from %s\n", len(clips), videoFile)
-	err := fcp.GenerateClipFCPXML(clips, videoFile, outputFile)
+	err = fcp.GenerateClipFCPXML(clips, videoFile, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
@@ -128,4 +140,63 @@ func ParseTimecodeWithDuration(timecode string) (TimecodeWithDuration, error) {
 	result.StartTime = startTime
 	result.Duration = time.Duration(durationSeconds) * time.Second
 	return result, nil
+}
+
+// FFProbeOutput represents the JSON output from ffprobe
+type FFProbeOutput struct {
+	Format struct {
+		Duration string `json:"duration"`
+	} `json:"format"`
+}
+
+// GetVideoDuration uses ffprobe to get the duration of a video file
+func GetVideoDuration(videoFile string) (time.Duration, error) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", videoFile)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, fmt.Errorf("failed to run ffprobe: %v", err)
+	}
+
+	var probeOutput FFProbeOutput
+	if err := json.Unmarshal(output, &probeOutput); err != nil {
+		return 0, fmt.Errorf("failed to parse ffprobe output: %v", err)
+	}
+
+	durationFloat, err := strconv.ParseFloat(probeOutput.Format.Duration, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse duration: %v", err)
+	}
+
+	return time.Duration(durationFloat * float64(time.Second)), nil
+}
+
+// GenerateThirtySecondSegments creates 30-second segments for the entire video duration
+func GenerateThirtySecondSegments(videoFile string) ([]TimecodeWithDuration, error) {
+	duration, err := GetVideoDuration(videoFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var segments []TimecodeWithDuration
+	segmentDuration := 30 * time.Second
+	currentTime := time.Duration(0)
+
+	for currentTime < duration {
+		remainingTime := duration - currentTime
+		actualDuration := segmentDuration
+		
+		// If less than 30 seconds remaining, use the remaining time
+		if remainingTime < segmentDuration {
+			actualDuration = remainingTime
+		}
+
+		segments = append(segments, TimecodeWithDuration{
+			StartTime: currentTime,
+			Duration:  actualDuration,
+		})
+
+		currentTime += segmentDuration
+	}
+
+	return segments, nil
 }
