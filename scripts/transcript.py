@@ -5,6 +5,17 @@ import os
 from bs4 import BeautifulSoup
 import re
 
+def parse_timestamp_to_seconds(timestamp):
+    """Convert timestamp (e.g., '1:23') to total seconds."""
+    parts = timestamp.split(':')
+    if len(parts) == 2:
+        minutes, seconds = parts
+        return int(minutes) * 60 + int(seconds)
+    elif len(parts) == 3:
+        hours, minutes, seconds = parts
+        return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
+    return 0
+
 def extract_transcript(video_id):
     """Extract timecode and text from YouTube transcript HTML file."""
     html_file = f"../data/{video_id}.html"
@@ -37,7 +48,8 @@ def extract_transcript(video_id):
             text = ""
         
         if timestamp and text:
-            print(f"{timestamp}\t{text}")
+            total_seconds = parse_timestamp_to_seconds(timestamp)
+            print(f"{timestamp}\t{total_seconds}\t{text}")
 
 def main():
     if len(sys.argv) != 2:
