@@ -46,8 +46,9 @@ while attempts < max_attempts:
     
     print(f"Job status: {status}")
     
-    if status == "completed":
-        download_url = job["download_url"]
+    if status == "success":
+        print(job)
+        download_url = job["urls"][0]
         break
     elif status in ["failed", "cancelled"]:
         print("Export job failed or was cancelled:", job)
