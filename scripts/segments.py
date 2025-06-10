@@ -139,6 +139,116 @@ class TranscriptSegmenter:
         
         return score
     
+    def analyze_segment_importance(self, segment: Segment) -> float:
+        """Analyze how important/engaging a segment is for highlight reels."""
+        text = segment.text.lower()
+        score = 0.0
+        
+        # High-value announcement keywords
+        announcement_words = {
+            'new': 2.0, 'biggest': 3.0, 'major': 2.0, 'announced': 2.0, 'reveal': 2.0,
+            'introduce': 2.0, 'launching': 2.0, 'officially': 2.0, 'upgrade': 1.5,
+            'feature': 1.5, 'update': 1.0, 'redesign': 2.0, 'overhaul': 2.5
+        }
+        
+        # Technology and product keywords
+        tech_words = {
+            'liquid glass': 3.0, 'ai': 2.0, 'intelligence': 2.0, 'camera': 2.0,
+            'siri': 1.5, 'safari': 1.5, 'photos': 1.5, 'facetime': 1.5,
+            'messages': 1.5, 'design language': 2.5, 'vision os': 2.0
+        }
+        
+        # Excitement and impact words
+        excitement_words = {
+            'amazing': 1.5, 'incredible': 2.0, 'cool': 1.0, 'awesome': 1.5,
+            'revolutionary': 3.0, 'game changer': 2.5, 'breakthrough': 2.5,
+            'super': 1.0, 'really': 0.5, 'pretty': 0.5
+        }
+        
+        # Practical value words
+        practical_words = {
+            'how to': 2.0, 'you can': 1.0, 'free': 1.5, 'right now': 1.5,
+            'warning': 2.0, 'risk': 1.5, 'beta': 1.0, 'install': 1.0
+        }
+        
+        # Score based on keyword presence
+        for word, weight in announcement_words.items():
+            if word in text:
+                score += weight
+        
+        for word, weight in tech_words.items():
+            if word in text:
+                score += weight
+                
+        for word, weight in excitement_words.items():
+            if word in text:
+                score += weight
+                
+        for word, weight in practical_words.items():
+            if word in text:
+                score += weight
+        
+        # Bonus for being early in video (hook potential)
+        if segment.start_seconds < 60:  # First minute
+            score += 1.0
+        elif segment.start_seconds < 180:  # First 3 minutes
+            score += 0.5
+        
+        # Bonus for good duration (not too short/long)
+        if 10 <= segment.duration <= 25:
+            score += 0.5
+        
+        # Penalty for very short segments (hard to use)
+        if segment.duration < 6:
+            score -= 1.0
+        
+        return score
+    
+    def generate_highlight_reels(self, segments: List[Segment]) -> dict:
+        """Generate 3 different highlight reel recommendations."""
+        # Score all segments
+        scored_segments = [(self.analyze_segment_importance(seg), seg) for seg in segments]
+        scored_segments.sort(key=lambda x: x[0], reverse=True)
+        
+        # Quick Highlights (6-8 segments, ~1-2 minutes)
+        quick_segments = []
+        quick_duration = 0
+        for score, seg in scored_segments:
+            if len(quick_segments) < 8 and quick_duration < 120 and score > 1.0:
+                quick_segments.append(seg)
+                quick_duration += seg.duration
+        
+        # Extended Highlights (10-12 segments, ~2-3 minutes)  
+        extended_segments = []
+        extended_duration = 0
+        for score, seg in scored_segments:
+            if len(extended_segments) < 12 and extended_duration < 180 and score > 0.5:
+                extended_segments.append(seg)
+                extended_duration += seg.duration
+        
+        # Comprehensive Highlights (15-20 segments, ~3-4 minutes)
+        comprehensive_segments = []
+        comprehensive_duration = 0
+        for score, seg in scored_segments:
+            if len(comprehensive_segments) < 20 and comprehensive_duration < 240 and score > 0.2:
+                comprehensive_segments.append(seg)
+                comprehensive_duration += seg.duration
+        
+        # Sort by timeline order for each list
+        quick_segments.sort(key=lambda x: x.start_seconds)
+        extended_segments.sort(key=lambda x: x.start_seconds)
+        comprehensive_segments.sort(key=lambda x: x.start_seconds)
+        
+        return {
+            'quick': quick_segments,
+            'extended': extended_segments,
+            'comprehensive': comprehensive_segments
+        }
+    
+    def format_highlight_list(self, segments: List[Segment]) -> str:
+        """Format segments as comma-separated timecode_duration list."""
+        return ','.join(f"{seg.start_time}_{seg.duration}" for seg in segments)
+    
     def find_best_break_in_range(self, lines: List[TranscriptLine], start_idx: int, 
                                  min_end_idx: int, max_end_idx: int) -> int:
         """Find the best break point within the given range."""
@@ -375,6 +485,22 @@ def main():
         
         segments = segmenter.create_segments(lines)
         segmenter.display_segments(segments)
+        
+        # Generate and display highlight reels
+        highlights = segmenter.generate_highlight_reels(segments)
+        
+        print(f"\n{'='*80}")
+        print(f"HIGHLIGHT REELS")
+        print(f"{'='*80}")
+        
+        print(f"\nQuick Highlights (~1-2 min, {len(highlights['quick'])} clips):")
+        print(segmenter.format_highlight_list(highlights['quick']))
+        
+        print(f"\nExtended Highlights (~2-3 min, {len(highlights['extended'])} clips):")
+        print(segmenter.format_highlight_list(highlights['extended']))
+        
+        print(f"\nComprehensive Highlights (~3-4 min, {len(highlights['comprehensive'])} clips):")
+        print(segmenter.format_highlight_list(highlights['comprehensive']))
         
     except FileNotFoundError:
         print(f"Error: File '{args.file}' not found")

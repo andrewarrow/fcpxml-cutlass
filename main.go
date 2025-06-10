@@ -41,6 +41,8 @@ func main() {
 		vtt.HandleVTTCommand(args)
 	case "vtt-clips":
 		vtt.HandleVTTClipsCommand(args)
+	case "segments":
+		vtt.HandleSegmentsCommand(args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -64,6 +66,8 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  vtt-clips <vtt-file> <timecodes> Create FCPXML clips from VTT file at specified timecodes\n")
 	fmt.Fprintf(os.Stderr, "            Timecodes can be MM:SS or MM:SS_duration format\n")
 	fmt.Fprintf(os.Stderr, "            Example: 01:21_6,02:20_3,03:34_9,05:07_18\n")
+	fmt.Fprintf(os.Stderr, "  segments <video-id> <timecodes> Create FCPXML clips from video ID in ./data/ at specified timecodes\n")
+	fmt.Fprintf(os.Stderr, "            Similar to vtt-clips but looks for video_id in ./data/id.mov\n")
 	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	fmt.Fprintf(os.Stderr, "  -s, --segments           Break into logical clips with title cards (video/youtube)\n")

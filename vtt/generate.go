@@ -167,3 +167,70 @@ func GenerateVTTClips(vttFile, timecodesStr, outputFile string) error {
 	fmt.Printf("Successfully generated %s with %d clips\n", outputFile, len(clips))
 	return nil
 }
+
+// GenerateSegments generates FCPXML from video ID in ./data/ and timecodes
+func GenerateSegments(videoID, timecodesStr, outputFile string) error {
+	// Look for video file in ./data/ directory
+	videoFile := filepath.Join("./data", videoID+".mov")
+	
+	if _, err := os.Stat(videoFile); os.IsNotExist(err) {
+		return fmt.Errorf("video file not found: %s", videoFile)
+	}
+
+	// Look for corresponding VTT file in ./data/ directory
+	vttFile := filepath.Join("./data", videoID+".en.vtt")
+	if _, err := os.Stat(vttFile); os.IsNotExist(err) {
+		// Try without .en suffix
+		vttFile = filepath.Join("./data", videoID+".vtt")
+		if _, err := os.Stat(vttFile); os.IsNotExist(err) {
+			return fmt.Errorf("VTT file not found: %s.en.vtt or %s.vtt", 
+				filepath.Join("./data", videoID), filepath.Join("./data", videoID))
+		}
+	}
+
+	// Parse timecodes (format: "01:21_6,02:20_3,03:34_9,05:07_18")
+	timecodeStrs := strings.Split(timecodesStr, ",")
+	if len(timecodeStrs) == 0 {
+		return fmt.Errorf("no timecodes provided")
+	}
+
+	var timecodes []TimecodeWithDuration
+	for _, tc := range timecodeStrs {
+		tc = strings.TrimSpace(tc)
+		timecodeData, err := ParseTimecodeWithDuration(tc)
+		if err != nil {
+			return fmt.Errorf("invalid timecode '%s': %v", tc, err)
+		}
+		timecodes = append(timecodes, timecodeData)
+	}
+
+	// Set default output file if not provided
+	if outputFile == "" {
+		outputFile = filepath.Join("./data", videoID+"_segments.fcpxml")
+	}
+	if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
+		outputFile += ".fcpxml"
+	}
+
+	// Parse VTT file to get all segments
+	segments, err := ParseFile(vttFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse VTT file: %v", err)
+	}
+
+	// Create clips from timecodes with durations
+	clips, err := CreateClipsFromTimecodesWithDuration(segments, timecodes)
+	if err != nil {
+		return fmt.Errorf("failed to create clips: %v", err)
+	}
+
+	// Generate FCPXML with clips
+	fmt.Printf("Generating FCPXML with %d clips from %s\n", len(clips), videoFile)
+	err = fcp.GenerateClipFCPXML(clips, videoFile, outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to generate FCPXML: %v", err)
+	}
+
+	fmt.Printf("Successfully generated %s with %d clips\n", outputFile, len(clips))
+	return nil
+}
