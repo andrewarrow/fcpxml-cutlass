@@ -53,17 +53,8 @@
             <project name="test_project" uid="ED192620-E1BF-4284-8526-93B89ADF1721" modDate="2025-06-09 05:38:24 -0700">
                 <sequence format="r1" duration="4697600/320000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                     <spine>
-                        <video ref="r2" offset="0s" name="LOGOCLIP" start="3600s" duration="3200/2500s">
-                            <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
-                            <title ref="r6" lane="1" offset="3600s" name="cutlass - Fade 3D" start="8999100/2500s" duration="3200/2500s">
-                                <text>
-                                    <text-style font="Sabon Pro" fontSize="288" fontFace="Roman" fontColor="1 1 1 1" alignment="center">cutlass</text-style>
-                                </text>
-                            </title>
-                        </video>
                         {{range $index, $video := .Videos}}
                         <asset-clip ref="r{{add $index 10}}" offset="{{mul (add (mul $index 2) 1) 409600}}/320000s" name="CLIP{{add 5 (mul $index -1)}}" start="1689600/320000s" duration="3200/2500s" tcFormat="NDF" audioRole="dialogue"/>
-                        {{if lt $index 4}}
                         <video ref="r2" offset="{{add (mul (add (mul $index 2) 1) 409600) 12800}}/320000s" name="LOGOCLIP" start="3600s" duration="3200/2500s">
                             <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
                             <title ref="r6" lane="1" offset="3600s" name="cutlass - Fade 3D" start="8999100/2500s" duration="3200/2500s">
@@ -72,7 +63,6 @@
                                 </text>
                             </title>
                         </video>
-                        {{end}}
                         {{end}}
                     </spine>
                 </sequence>
