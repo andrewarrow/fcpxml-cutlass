@@ -6,6 +6,7 @@ Breaks transcripts into 18-36 second segments with smart breaking points.
 
 import argparse
 import re
+import random
 from typing import List, Tuple, Optional
 from dataclasses import dataclass
 
@@ -66,9 +67,13 @@ class TranscriptSegmenter:
         'including', 'like this', 'as follows', 'as well as'
     }
     
-    def __init__(self, min_duration: int = 18, max_duration: int = 36):
+    def __init__(self, min_duration: int = 18, max_duration: int = 36, long_duration: int = 60):
         self.min_duration = min_duration
         self.max_duration = max_duration
+        self.long_duration = long_duration
+        # Target distribution: ~60% medium (18-36s), ~25% short (<18s), ~15% long (45-60s)
+        self.target_long_ratio = 0.15
+        self.target_short_ratio = 0.25
     
     def parse_transcript_file(self, filepath: str) -> List[TranscriptLine]:
         """Parse the .codes transcript file into structured data."""
@@ -150,37 +155,124 @@ class TranscriptSegmenter:
         
         return best_idx
     
+    def should_create_long_segment(self, segments_created: int, total_estimated: int) -> bool:
+        """Decide if we should try to create a long segment based on distribution goals."""
+        if total_estimated == 0:
+            return False
+            
+        current_long_count = sum(1 for s in self.temp_segments if hasattr(self, 'temp_segments') and s.duration > 45)
+        current_ratio = current_long_count / max(1, segments_created)
+        
+        # Add some randomness but bias toward target distribution
+        target_exceeded = current_ratio >= self.target_long_ratio
+        random_factor = random.random()
+        
+        # 30% chance if we're at target, 60% if below target, 10% if above
+        if target_exceeded:
+            return random_factor < 0.1
+        elif current_ratio < self.target_long_ratio * 0.5:
+            return random_factor < 0.6
+        else:
+            return random_factor < 0.3
+    
+    def assess_text_complexity(self, lines: List[TranscriptLine], start_idx: int, end_idx: int) -> float:
+        """Assess if the text content is suitable for a longer segment."""
+        text = ' '.join(line.text for line in lines[start_idx:end_idx + 1]).lower()
+        
+        score = 0.0
+        
+        # Look for coherent topic indicators
+        topic_keywords = [
+            'feature', 'app', 'update', 'new', 'design', 'interface', 'camera', 'photos',
+            'messages', 'safari', 'settings', 'intelligence', 'siri', 'facetime'
+        ]
+        topic_count = sum(1 for keyword in topic_keywords if keyword in text)
+        if topic_count >= 3:  # Rich topic content
+            score += 2.0
+        elif topic_count >= 1:
+            score += 1.0
+        
+        # Look for explanation patterns
+        explanation_phrases = [
+            'basically', 'for example', 'what this means', 'how it works', 'the idea is',
+            'so what happens', 'this allows', 'you can now', 'the way this works'
+        ]
+        if any(phrase in text for phrase in explanation_phrases):
+            score += 1.5
+        
+        # Penalize if too many rapid topic changes
+        transition_count = sum(1 for word in self.TRANSITION_WORDS['strong'] if word in text)
+        if transition_count > 4:  # Too many hard transitions
+            score -= 1.0
+        
+        return score
+    
     def create_segments(self, lines: List[TranscriptLine]) -> List[Segment]:
-        """Create segments from transcript lines with intelligent breaking."""
+        """Create segments from transcript lines with intelligent breaking and varied durations."""
         segments = []
+        self.temp_segments = []
         current_start = 0
+        
+        # Estimate total segments for distribution planning
+        total_duration = lines[-1].seconds - lines[0].seconds if lines else 0
+        estimated_segments = max(1, total_duration // 25)  # Rough estimate
         
         while current_start < len(lines):
             start_line = lines[current_start]
+            segments_created = len(segments)
             
-            # Find the minimum and maximum end points based on duration
+            # Decide segment target duration with some randomness
+            should_go_long = self.should_create_long_segment(segments_created, estimated_segments)
+            
+            if should_go_long:
+                # Try for a longer segment (45-60s)
+                target_min = 45
+                target_max = self.long_duration
+            else:
+                # Regular segment duration
+                random_factor = random.random()
+                if random_factor < 0.3:  # 30% chance for shorter segments
+                    target_min = 12
+                    target_max = 22
+                else:  # 70% chance for medium segments
+                    target_min = self.min_duration
+                    target_max = self.max_duration
+            
+            # Find boundaries
             min_end_idx = current_start
             max_end_idx = current_start
             
             # Find minimum duration boundary
             for i in range(current_start, len(lines)):
                 duration = lines[i].seconds - start_line.seconds
-                if duration >= self.min_duration:
+                if duration >= target_min:
                     min_end_idx = i
                     break
             else:
-                # If we can't reach min_duration, use what we have
                 min_end_idx = len(lines) - 1
             
             # Find maximum duration boundary
             for i in range(min_end_idx, len(lines)):
                 duration = lines[i].seconds - start_line.seconds
-                if duration > self.max_duration:
+                if duration > target_max:
                     max_end_idx = i - 1
                     break
                 max_end_idx = i
             
-            # If we have room to choose, find the best break point
+            # For long segments, check if content is suitable
+            if should_go_long and max_end_idx > min_end_idx:
+                content_score = self.assess_text_complexity(lines, current_start, max_end_idx)
+                if content_score < 1.0:  # Content not suitable for long segment
+                    # Fall back to regular duration
+                    target_max = self.max_duration
+                    for i in range(min_end_idx, len(lines)):
+                        duration = lines[i].seconds - start_line.seconds
+                        if duration > target_max:
+                            max_end_idx = i - 1
+                            break
+                        max_end_idx = i
+            
+            # Find the best break point
             if max_end_idx > min_end_idx:
                 end_idx = self.find_best_break_in_range(lines, current_start, min_end_idx, max_end_idx)
             else:
@@ -208,6 +300,7 @@ class TranscriptSegmenter:
             )
             
             segments.append(segment)
+            self.temp_segments = segments  # For distribution tracking
             current_start = end_idx + 1
         
         return segments
@@ -246,13 +339,15 @@ class TranscriptSegmenter:
         
         # Duration distribution
         short = sum(1 for s in segments if s.duration < 18)
-        optimal = sum(1 for s in segments if 18 <= s.duration <= 36)
-        long = sum(1 for s in segments if s.duration > 36)
+        medium = sum(1 for s in segments if 18 <= s.duration <= 36)
+        long_medium = sum(1 for s in segments if 37 <= s.duration <= 45)
+        long = sum(1 for s in segments if s.duration > 45)
         
         print(f"Duration distribution:")
-        print(f"  Short (<18s): {short}")
-        print(f"  Optimal (18-36s): {optimal}")
-        print(f"  Long (>36s): {long}")
+        print(f"  Short (<18s): {short} ({short/len(segments)*100:.1f}%)")
+        print(f"  Medium (18-36s): {medium} ({medium/len(segments)*100:.1f}%)")
+        print(f"  Long-Medium (37-45s): {long_medium} ({long_medium/len(segments)*100:.1f}%)")
+        print(f"  Long (>45s): {long} ({long/len(segments)*100:.1f}%)")
 
 
 def main():
@@ -261,11 +356,18 @@ def main():
     parser.add_argument('--min-duration', type=int, default=18, 
                        help='Minimum segment duration in seconds (default: 18)')
     parser.add_argument('--max-duration', type=int, default=36,
-                       help='Maximum segment duration in seconds (default: 36)')
+                       help='Maximum regular segment duration in seconds (default: 36)')
+    parser.add_argument('--long-duration', type=int, default=60,
+                       help='Maximum long segment duration in seconds (default: 60)')
+    parser.add_argument('--seed', type=int, default=None,
+                       help='Random seed for reproducible results')
     
     args = parser.parse_args()
     
-    segmenter = TranscriptSegmenter(args.min_duration, args.max_duration)
+    if args.seed is not None:
+        random.seed(args.seed)
+    
+    segmenter = TranscriptSegmenter(args.min_duration, args.max_duration, args.long_duration)
     
     try:
         lines = segmenter.parse_transcript_file(args.file)
