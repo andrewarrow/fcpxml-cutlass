@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import argparse
+import pickle
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
+
+SCOPES = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly']
+API_SERVICE_NAME = 'youtube'
+API_VERSION = 'v3'
+CLIENT_SECRETS_FILE = 'client_secret.json'
+TOKEN_FILE = 'token.pickle'
+
+def authenticate_youtube():
+    """Authenticate with YouTube API and return service object."""
+    creds = None
+    
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, 'rb') as token:
+            creds = pickle.load(token)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            if not os.path.exists(CLIENT_SECRETS_FILE):
+                print(f"Error: {CLIENT_SECRETS_FILE} not found. Please download from Google Cloud Console.")
+                sys.exit(1)
+            
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CLIENT_SECRETS_FILE, SCOPES)
+            creds = flow.run_local_server(port=0)
+        
+        with open(TOKEN_FILE, 'wb') as token:
+            pickle.dump(creds, token)
+    
+    return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
+
+def verify_channel_access(youtube, channel_id):
+    """Verify that the authenticated user has access to the specified channel."""
+    try:
+        request = youtube.channels().list(
+            part="id,snippet",
+            id=channel_id
+        )
+        response = request.execute()
+        
+        if not response.get('items'):
+            print(f"Error: Channel ID '{channel_id}' not found or not accessible.")
+            return False
+        
+        channel = response['items'][0]
+        print(f"Uploading to channel: {channel['snippet']['title']}")
+        return True
+    
+    except HttpError as e:
+        print(f"Error verifying channel access: {e}")
+        return False
+
+def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private"):
+    """Upload a video to YouTube."""
+    if not os.path.exists(video_file):
+        print(f"Error: Video file '{video_file}' not found.")
+        return None
+    
+    if channel_id and not verify_channel_access(youtube, channel_id):
+        return None
+    
+    tags = tags or []
+    
+    body = {
+        'snippet': {
+            'title': title,
+            'description': description,
+            'tags': tags,
+            'categoryId': category_id
+        },
+        'status': {
+            'privacyStatus': privacy_status
+        }
+    }
+    
+    if channel_id:
+        body['snippet']['channelId'] = channel_id
+    
+    media = MediaFileUpload(video_file, chunksize=-1, resumable=True)
+    
+    try:
+        insert_request = youtube.videos().insert(
+            part=','.join(body.keys()),
+            body=body,
+            media_body=media
+        )
+        
+        print(f"Uploading video: {title}")
+        response = None
+        error = None
+        retry = 0
+        
+        while response is None:
+            try:
+                print("Uploading file...")
+                status, response = insert_request.next_chunk()
+                if status:
+                    print(f"Uploaded {int(status.progress() * 100)}%")
+            except HttpError as e:
+                if e.resp.status in [500, 502, 503, 504]:
+                    error = f"A retriable HTTP error {e.resp.status} occurred:\n{e.content}"
+                    retry += 1
+                    if retry > 5:
+                        print("Too many retry attempts.")
+                        return None
+                else:
+                    raise
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                return None
+        
+        if response is not None:
+            if 'id' in response:
+                print(f"Video uploaded successfully!")
+                print(f"Video ID: {response['id']}")
+                print(f"Video URL: https://www.youtube.com/watch?v={response['id']}")
+                return response['id']
+            else:
+                print(f"Upload failed with unexpected response: {response}")
+                return None
+    
+    except HttpError as e:
+        print(f"An HTTP error {e.resp.status} occurred: {e.content}")
+        return None
+
+def main():
+    parser = argparse.ArgumentParser(description='Upload video to YouTube')
+    parser.add_argument('video_file', help='Path to video file')
+    parser.add_argument('--title', required=True, help='Video title')
+    parser.add_argument('--description', default='', help='Video description')
+    parser.add_argument('--tags', help='Comma-separated list of tags')
+    parser.add_argument('--category', default='22', help='YouTube category ID (default: 22 for People & Blogs)')
+    parser.add_argument('--privacy', choices=['private', 'public', 'unlisted'], default='private', help='Privacy status')
+    parser.add_argument('--channel-id', help='YouTube channel ID to upload to (required if you have multiple channels)')
+    
+    args = parser.parse_args()
+    
+    tags = args.tags.split(',') if args.tags else []
+    tags = [tag.strip() for tag in tags]
+    
+    try:
+        youtube = authenticate_youtube()
+        video_id = upload_video(
+            youtube=youtube,
+            video_file=args.video_file,
+            title=args.title,
+            description=args.description,
+            channel_id=getattr(args, 'channel_id'),
+            tags=tags,
+            category_id=args.category,
+            privacy_status=args.privacy
+        )
+        
+        if video_id:
+            print(f"Upload completed successfully. Video ID: {video_id}")
+        else:
+            print("Upload failed.")
+            sys.exit(1)
+            
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
