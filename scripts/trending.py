@@ -60,10 +60,34 @@ async def scrape_youtube_trending():
                     if title:
                         # Clean up title (remove duration info if present)
                         title = re.sub(r'\s*\d+\s+minutes?(?:,\s*\d+\s+seconds?)?\s*$', '', title.strip())
-                        videos.append({'id': video_id, 'title': title})
+                        
+                        # Try to find duration
+                        duration = None
+                        duration_selectors = [
+                            '.ytd-thumbnail-overlay-time-status-renderer span',
+                            '#overlays .ytd-thumbnail-overlay-time-status-renderer',
+                            '.badge-shape-wiz__text',
+                            'span.style-scope.ytd-thumbnail-overlay-time-status-renderer',
+                            '[aria-label*="minutes"]'
+                        ]
+                        
+                        # Look for duration in the parent container
+                        parent = await element.evaluate('el => el.closest("ytd-rich-grid-media, ytd-video-renderer, ytd-compact-video-renderer")')
+                        if parent:
+                            for duration_selector in duration_selectors:
+                                duration_element = await page.query_selector(f'ytd-rich-grid-media:has(a[href*="{video_id}"]) {duration_selector}')
+                                if not duration_element:
+                                    duration_element = await page.query_selector(f'ytd-video-renderer:has(a[href*="{video_id}"]) {duration_selector}')
+                                if duration_element:
+                                    duration = await duration_element.text_content()
+                                    if duration and duration.strip():
+                                        duration = duration.strip()
+                                        break
+                        
+                        videos.append({'id': video_id, 'title': title, 'duration': duration})
                         processed_count += 1
                         if processed_count <= 3:  # Show debug for first few videos
-                            print(f"DEBUG: Added video: {title} ({video_id})")
+                            print(f"DEBUG: Added video: {title} ({video_id}) - Duration: {duration}")
                         elif processed_count == 4:
                             print("DEBUG: Processing more videos...")
                     
@@ -82,6 +106,8 @@ async def main():
     for i, video in enumerate(videos, 1):
         print(f"{i:2d}. {video['title']}")
         print(f"    Video ID: {video['id']}")
+        duration_text = f" ({video['duration']})" if video['duration'] else " (duration unknown)"
+        print(f"    Duration:{duration_text}")
         print(f"    URL: https://www.youtube.com/watch?v={video['id']}")
         print()
 
