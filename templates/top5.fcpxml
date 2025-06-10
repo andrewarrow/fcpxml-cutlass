@@ -59,8 +59,51 @@
                             <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
                             <title ref="r6" lane="1" offset="3600s" name="cutlass - Fade 3D" start="8999100/2500s" duration="3200/2500s">
                                 <text>
-                                    <text-style font="Sabon Pro" fontSize="288" fontFace="Roman" fontColor="1 1 1 1" alignment="center">cutlass</text-style>
+                                    <text-style ref="ts{{$index}}">cutlass</text-style>
                                 </text>
+                                <text-style-def id="ts{{$index}}">
+                                    <text-style font="Sabon Pro" fontSize="288" fontFace="Roman" fontColor="1 1 1 1" kerning="4.608" alignment="center">
+                                        <param name="Depth" key="504" value="9"/>
+                                        <param name="Depth Direction" key="506" value="2 (Centered)"/>
+                                        <param name="Weight" key="519" value="0.13"/>
+                                        <param name="Front Edge" key="500" value="1 (Bevel)"/>
+                                        <param name="Front Edge Size" key="502" value="2.6 2.6"/>
+                                        <param name="Back Edge" key="501" value="0 (Same As Front)"/>
+                                        <param name="Lighting" key="527">
+                                            <param name="Lighting Style" key="508" value="1 (Standard)"/>
+                                            <param name="Intensity" key="526" value="1"/>
+                                            <param name="Environment" key="512">
+                                                <param name="Type" key="533" value="7 (Soft Box Above)"/>
+                                                <param name="Intensity" key="514" value="0.5"/>
+                                                <param name="Rotation" key="516" value="-21.1 0 0 0 (Use Rotation)"/>
+                                            </param>
+                                        </param>
+                                        <param name="Material" key="509">
+                                            <param name="Material" key="528" value="0 (Single)"/>
+                                        </param>
+                                        <param name="Hidden Channel" key="532" value="1"/>
+                                        <param name="Material" key="material:Basic">
+                                            <param name="Layer" key="layer:Substance:3 (Plastic)">
+                                                <param name="Layer Type" key="3" value="3 (Plastic)"/>
+                                                <param name="Type" key="4" value="0 (Shiny)"/>
+                                                <param name="Shininess" key="109" value="1"/>
+                                                <param name="Color" key="106" value="0.879699 0.879699 0.879699"/>
+                                                <param name="Image Options" key="114">
+                                                    <param name="Placement" key="7">
+                                                        <param name="Scale" key="6" value="0.3 0.3 1 72 1 1"/>
+                                                    </param>
+                                                </param>
+                                                <param name="Texture Depth" key="110" value="0"/>
+                                                <param name="Enable Edge" key="116" enabled="0"/>
+                                            </param>
+                                            <param name="Sequence ID" key="2" value="2000"/>
+                                            <param name="Is Edited" key="5" value="1"/>
+                                        </param>
+                                        <param name="MotionSimpleValues" key="MotionTextStyle:SimpleValues">
+                                            <param name="motionTextTracking" key="tracking" value="4.608"/>
+                                        </param>
+                                    </text-style>
+                                </text-style-def>
                             </title>
                         </video>
                         {{end}}
