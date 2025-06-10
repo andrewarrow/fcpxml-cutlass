@@ -58,6 +58,12 @@
                         <video ref="r2" offset="{{add (mul (add (mul $index 2) 1) 409600) 12800}}/320000s" name="LOGOCLIP" start="3600s" duration="3200/2500s">
                             <asset-clip ref="r4" lane="-1" offset="3600s" name="Ethereal Accents" duration="3200/2500s" format="r5" audioRole="effects"/>
                             <title ref="r6" lane="1" offset="3600s" name="cutlass - Fade 3D" start="8999100/2500s" duration="3200/2500s">
+                                <param name="Position" key="9999/10085/10086/1/100/101" value="-50 -400"/>
+                                <param name="Anchor Point" key="9999/10085/10086/1/100/107" value="0 68.1327"/>
+                                <param name="Alignment" key="9999/10085/10086/2/354/2959511101/401" value="1 (Center)"/>
+                                <param name="Anchor Point" key="9999/10085/10086/2/357" value="3 (All)"/>
+                                <param name="Position" key="9999/10085/10086/2/358" value="0 69"/>
+                                <param name="Anchor Position" key="9999/10085/10086/2/375" value="2 (Typographic Center)"/>
                                 <text>
                                     <text-style ref="ts{{$index}}">cutlass</text-style>
                                 </text>
