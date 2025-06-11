@@ -4,7 +4,7 @@
 <fcpxml version="1.13">
     <resources>
         <format id="r1" name="FFVideoFormat720p30" frameDuration="100/3000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
-        <asset id="r2" name="Movie on 6-10-25 at 7.05 PM" uid="D761B5D186AF3CA475541285D99578AA" start="0s" duration="292530/44100s" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="44100">
+        <asset id="r2" name="Movie on 6-10-25 at 7.05 PM" uid="D761B5D186AF3CA475541285D99578AA" start="0s" duration="292530/44100s" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="44100">
             <media-rep kind="original-media" sig="D761B5D186AF3CA475541285D99578AA" src="file:///Users/aa/Movies/jun9.fcpbundle/Auto%20Generated%20Clips/Original%20Media/Movie%20on%206-10-25%20at%207.05%E2%80%AFPM.mov">
                 <bookmark>Ym9va5wDAAAAAAQQMAAAANLItpur3M9UX8uz03FY6jYkt7WGrMhcESFFargIIr1PdAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAADgAAAAEBAABqdW45LmZjcGJ1bmRsZQAAFAAAAAEBAABBdXRvIEdlbmVyYXRlZCBDbGlwcw4AAAABAQAAT3JpZ2luYWwgTWVkaWEAACEAAAABAQAATW92aWUgb24gNi0xMC0yNSBhdCA3LjA14oCvUE0ubW92AAAAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAVAAAAHAAAACIAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAAByeBIEAAAAAAgAAAAEAwAAJXkSBAAAAAAIAAAABAMAAC15EgQAAAAACAAAAAQDAAAnRjcEAAAAABwAAAABBgAA2AAAAOgAAAD4AAAACAEAABgBAAAoAQAAOAEAAAgAAAAABAAAQcb8jf9EzJ4YAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAALQAAAAAAAAABRAAAEgBAAAAAAAAEBAAAHwBAAAAAAAAQBAAAGwBAAAAAAAAVBAAAKQBAAAAAAAAVRAAALABAAAAAAAAVhAAAJwBAAAAAAAAAiAAAGgCAAAAAAAABSAAANgBAAAAAAAAECAAAOgBAAAAAAAAESAAABwCAAAAAAAAEiAAAPwBAAAAAAAAEyAAAAwCAAAAAAAAICAAAEgCAAAAAAAAMCAAAJwBAAAAAAAAAcAAALwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAMwBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
             </media-rep>
@@ -30,8 +30,25 @@
             <project name="slide5" uid="B5264DB7-B6CD-4391-A286-E9B81D43C183" modDate="2025-06-10 19:26:50 -0700">
                 <sequence format="r1" duration="20400/3000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                     <spine>
-                        <asset-clip ref="r2" offset="0s" name="Movie on 6-10-25 at 7.05 PM" duration="3980/600s" format="r3" tcFormat="NDF" audioRole="dialogue">
-                            <video ref="r4" lane="1" offset="0s" name="Custom" start="3600s" duration="20400/3000s"/>
+                        <asset-clip ref="r2" offset="0s" name="Movie on 6-10-25 at 7.05 PM" duration="3980/600s" format="r3" tcFormat="NDF" audioRole="dialogue">
+                            <adjust-transform>
+                                <param name="Position" value="0 0">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0 0"/>
+                                        <keyframe time="2s" value="640 0"/>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>
+                            <video ref="r4" lane="1" offset="0s" name="Custom" start="3600s" duration="20400/3000s">
+                                <adjust-transform>
+                                    <param name="Position" value="-640 0">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="-640 0"/>
+                                            <keyframe time="2s" value="0 0"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                </adjust-transform>
+                            </video>
                         </asset-clip>
                     </spine>
                 </sequence>
