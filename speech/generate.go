@@ -2,12 +2,31 @@ package speech
 
 import (
 	"bufio"
+	"crypto/md5"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 )
+
+// generateVideoUID generates a unique identifier for the video file based on its content
+func generateVideoUID(videoPath string) (string, error) {
+	file, err := os.Open(videoPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	// Convert to uppercase hex string like FCP UIDs
+	return fmt.Sprintf("%X", hash.Sum(nil)), nil
+}
 
 type TextElement struct {
 	Text      string
@@ -19,9 +38,11 @@ type TextElement struct {
 
 type SpeechData struct {
 	TextElements []TextElement
+	VideoPath    string
+	VideoUID     string
 }
 
-func GenerateSpeechFCPXML(inputFile, outputFile string) error {
+func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 	// Read the text file
 	file, err := os.Open(inputFile)
 	if err != nil {
@@ -68,9 +89,23 @@ func GenerateSpeechFCPXML(inputFile, outputFile string) error {
 		})
 	}
 
+	// Get absolute path for video file
+	absVideoPath, err := filepath.Abs(videoFile)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for video file: %v", err)
+	}
+
+	// Generate unique UID for the video file
+	videoUID, err := generateVideoUID(videoFile)
+	if err != nil {
+		return fmt.Errorf("failed to generate video UID: %v", err)
+	}
+
 	// Create the speech data
 	speechData := SpeechData{
 		TextElements: textElements,
+		VideoPath:    "file://" + absVideoPath,
+		VideoUID:     videoUID,
 	}
 
 	// Read the template
