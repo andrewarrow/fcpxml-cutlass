@@ -72,28 +72,20 @@ type TextElement struct {
 	Text                string
 	Index               int
 	Offset              string
-	Duration            string
 	YPosition           int
 	Lane                int
-	ReverseStartTime    string
-	ReverseEndTime      string
 	ReverseStartTimeNano string
 	ReverseEndTimeNano   string
 }
 
 type SpeechData struct {
-	TextElements         []TextElement
-	VideoPath            string
-	VideoUID             string
-	VideoDuration        string
-	VideoClipDuration    string
-	ReverseStartTime     string
-	ReverseEndTime       string
-	ConsolidatedText     string
-	ConsolidationStartTime string
-	IndividualTextEndTime string
-	ConsolidatedYPosition int
-	ConsolidatedLineSpacing int
+	TextElements      []TextElement
+	VideoPath         string
+	VideoUID          string
+	VideoDuration     string
+	VideoClipDuration string
+	ReverseStartTime  string
+	ReverseEndTime    string
 }
 
 func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
@@ -129,59 +121,33 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 	yPositionBase := 800             // Base Y position
 	ySpacing := 300                  // Vertical spacing between text elements
 	
-	// Calculate timing for consolidation and reverse animation
+	// Calculate reverse animation timing
 	// Last text appears at: baseOffsetFrames + (len(lines)-1) * pauseDurationFrames
 	lastTextOffsetFrames := baseOffsetFrames + ((len(lines) - 1) * pauseDurationFrames)
-	consolidationDelay := 2000       // 2/3 seconds after last text before consolidation
-	pauseAfterConsolidation := 4000  // 1.33 seconds pause after consolidation appears
+	pauseAfterLastText := 6000       // 2 seconds pause after last text appears
 	reverseAnimationDuration := 4000 // 1.33 seconds for reverse animation
 	
-	consolidationStartFrames := lastTextOffsetFrames + consolidationDelay
-	reverseStartFrames := consolidationStartFrames + pauseAfterConsolidation
+	reverseStartFrames := lastTextOffsetFrames + pauseAfterLastText
 	reverseEndFrames := reverseStartFrames + reverseAnimationDuration
 	
-	consolidationStartTime := fmt.Sprintf("%d/%ds", consolidationStartFrames, timeBase)
-	individualTextEndTime := consolidationStartTime // Individual texts end when consolidation starts
 	reverseStartTime := fmt.Sprintf("%d/%ds", reverseStartFrames, timeBase)
 	reverseEndTime := fmt.Sprintf("%d/%ds", reverseEndFrames, timeBase)
 	
 	// Convert to nanoseconds for text animation (matching the existing format)
 	reverseStartNano := fmt.Sprintf("%d/1000000000s", (reverseStartFrames * 1000000000) / timeBase)
 	reverseEndNano := fmt.Sprintf("%d/1000000000s", (reverseEndFrames * 1000000000) / timeBase)
-	
-	// Create consolidated text content
-	consolidatedText := strings.Join(lines, "\n")
-	
-	// Calculate consolidated text positioning to match individual text spacing
-	// Individual texts are positioned at yPositionBase, yPositionBase-ySpacing, etc.
-	// We want the consolidated text to be centered on the same area
-	topY := yPositionBase
-	bottomY := yPositionBase - ((len(lines) - 1) * ySpacing)
-	consolidatedYPosition := (topY + bottomY) / 2
-	
-	// Line spacing calculation: 300px spacing with 196px font = about 104px extra spacing per line
-	// FCPXML line spacing is a multiplier, negative values add space
-	// For 300px spacing between 196px fonts, we need roughly -104 line spacing
-	consolidatedLineSpacing := -104
 
 	for i, line := range lines {
 		offsetFrames := baseOffsetFrames + (i * pauseDurationFrames)
 		yPos := yPositionBase - (i * ySpacing) // Stack text elements vertically
 		lane := len(lines) - i                 // Assign lanes in descending order (3, 2, 1 for 3 items)
-		
-		// Calculate duration from this element's start to consolidation start
-		durationFrames := consolidationStartFrames - offsetFrames
-		duration := fmt.Sprintf("%d/%ds", durationFrames, timeBase)
 
 		textElements = append(textElements, TextElement{
 			Text:                 line,
 			Index:                i + 1,
 			Offset:               fmt.Sprintf("%d/%d", offsetFrames, timeBase),
-			Duration:             duration,
 			YPosition:            yPos,
 			Lane:                 lane,
-			ReverseStartTime:     reverseStartTime,
-			ReverseEndTime:       reverseEndTime,
 			ReverseStartTimeNano: reverseStartNano,
 			ReverseEndTimeNano:   reverseEndNano,
 		})
@@ -207,18 +173,13 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 
 	// Create the speech data
 	speechData := SpeechData{
-		TextElements:         textElements,
-		VideoPath:            "file://" + absVideoPath,
-		VideoUID:             videoUID,
-		VideoDuration:        videoDuration,
-		VideoClipDuration:    videoClipDuration,
-		ReverseStartTime:     reverseStartTime,
-		ReverseEndTime:       reverseEndTime,
-		ConsolidatedText:     consolidatedText,
-		ConsolidationStartTime: consolidationStartTime,
-		IndividualTextEndTime: individualTextEndTime,
-		ConsolidatedYPosition: consolidatedYPosition,
-		ConsolidatedLineSpacing: consolidatedLineSpacing,
+		TextElements:      textElements,
+		VideoPath:         "file://" + absVideoPath,
+		VideoUID:          videoUID,
+		VideoDuration:     videoDuration,
+		VideoClipDuration: videoClipDuration,
+		ReverseStartTime:  reverseStartTime,
+		ReverseEndTime:    reverseEndTime,
 	}
 
 	// Read the template
