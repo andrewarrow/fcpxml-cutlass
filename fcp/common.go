@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -15,6 +16,37 @@ func FormatDurationForFCPXML(d time.Duration) string {
 	totalFrames := int64(d.Seconds() * 30000 / 1001)
 	// Ensure frame alignment
 	return fmt.Sprintf("%d/30000s", totalFrames*1001)
+}
+
+// FormatRationalTime converts FCPXML rational time format (e.g. "8300/3000s") to readable seconds (e.g. "2.77s")
+func FormatRationalTime(rationalTime string) string {
+	if rationalTime == "" {
+		return ""
+	}
+	
+	// Remove trailing 's' if present
+	time := strings.TrimSuffix(rationalTime, "s")
+	
+	// Check if it contains a fraction
+	if strings.Contains(time, "/") {
+		parts := strings.Split(time, "/")
+		if len(parts) == 2 {
+			numerator, err1 := strconv.ParseFloat(parts[0], 64)
+			denominator, err2 := strconv.ParseFloat(parts[1], 64)
+			if err1 == nil && err2 == nil && denominator != 0 {
+				result := numerator / denominator
+				return fmt.Sprintf("%.2fs", result)
+			}
+		}
+	}
+	
+	// If not a fraction, try to parse as a simple number
+	if value, err := strconv.ParseFloat(time, 64); err == nil {
+		return fmt.Sprintf("%.2fs", value)
+	}
+	
+	// Return original if parsing fails
+	return rationalTime
 }
 
 func GenerateStandard(inputFile, outputFile string) error {
@@ -342,8 +374,8 @@ func displayTier1Structure(fcpxml *FCPXML, options ParseOptions) {
 		for j, project := range event.Projects {
 			fmt.Printf("         📁 Project %d: %s\n", j+1, project.Name)
 			for k, sequence := range project.Sequences {
-				fmt.Printf("            🎬 Sequence %d: %s duration, %s layout\n", 
-					k+1, sequence.Duration, sequence.AudioLayout)
+				fmt.Printf("            🎬 Sequence %d: %s (%s) duration, %s layout\n", 
+					k+1, sequence.Duration, FormatRationalTime(sequence.Duration), sequence.AudioLayout)
 				if options.ShowStructure {
 					fmt.Printf("               Frame Rate: %s\n", sequence.Format)
 					fmt.Printf("               Timecode: %s (%s)\n", sequence.TCStart, sequence.TCFormat)
@@ -372,7 +404,7 @@ func displayResourceDetails(fcpxml *FCPXML, options ParseOptions) {
 		fmt.Printf("\n   📁 Media Assets:\n")
 		for i, asset := range fcpxml.Resources.Assets {
 			fmt.Printf("      Asset %d (%s): %s\n", i+1, asset.ID, asset.Name)
-			fmt.Printf("         Duration: %s\n", asset.Duration)
+			fmt.Printf("         Duration: %s (%s)\n", asset.Duration, FormatRationalTime(asset.Duration))
 			
 			mediaType := []string{}
 			if asset.HasVideo == "1" {
@@ -436,7 +468,7 @@ func displayTier3Details(fcpxml *FCPXML, options ParseOptions) {
 	
 	if options.ShowAnimation {
 		fmt.Printf("🎭 Animation Details:\n")
-		fmt.Printf("   [Detailed keyframe analysis would appear here]\n\n")
+		displayAnimationDetails(fcpxml, "   ")
 	}
 	
 	if options.ShowParams {
@@ -466,7 +498,7 @@ func parseSpineContentTiered(content, indent string, options ParseOptions) {
 	for i, clip := range spineData.AssetClips {
 		fmt.Printf("%s🎬 Asset Clip %d: %s\n", indent, i+1, clip.Name)
 		fmt.Printf("%s   📎 Reference: %s\n", indent, clip.Ref)
-		fmt.Printf("%s   ⏰ Timeline: offset %s, duration %s\n", indent, clip.Offset, clip.Duration)
+		fmt.Printf("%s   ⏰ Timeline: offset %s (%s), duration %s (%s)\n", indent, clip.Offset, FormatRationalTime(clip.Offset), clip.Duration, FormatRationalTime(clip.Duration))
 		if clip.Start != "" {
 			fmt.Printf("%s   🎯 Source start: %s\n", indent, clip.Start)
 		}
@@ -484,7 +516,7 @@ func parseSpineContentTiered(content, indent string, options ParseOptions) {
 	for i, title := range spineData.Titles {
 		fmt.Printf("%s✍️  Title %d: %s\n", indent, i+1, title.Name)
 		fmt.Printf("%s   📎 Reference: %s\n", indent, title.Ref)
-		fmt.Printf("%s   ⏰ Timeline: offset %s, duration %s\n", indent, title.Offset, title.Duration)
+		fmt.Printf("%s   ⏰ Timeline: offset %s (%s), duration %s (%s)\n", indent, title.Offset, FormatRationalTime(title.Offset), title.Duration, FormatRationalTime(title.Duration))
 		if title.Lane != "" {
 			fmt.Printf("%s   🎚️  Lane: %s\n", indent, title.Lane)
 		}
@@ -508,7 +540,7 @@ func parseSpineContentTiered(content, indent string, options ParseOptions) {
 	// Display gaps
 	for i, gap := range spineData.Gaps {
 		fmt.Printf("%s⏸️  Gap %d: %s\n", indent, i+1, gap.Name)
-		fmt.Printf("%s   ⏰ Timeline: offset %s, duration %s\n", indent, gap.Offset, gap.Duration)
+		fmt.Printf("%s   ⏰ Timeline: offset %s (%s), duration %s (%s)\n", indent, gap.Offset, FormatRationalTime(gap.Offset), gap.Duration, FormatRationalTime(gap.Duration))
 	}
 }
 
@@ -522,7 +554,7 @@ func displayVideoElementTiered(video Video, index int, baseIndent string, level 
 	}
 	
 	fmt.Printf("%s   📎 Reference: %s\n", indent, video.Ref)
-	fmt.Printf("%s   ⏰ Timeline: offset %s, duration %s\n", indent, video.Offset, video.Duration)
+	fmt.Printf("%s   ⏰ Timeline: offset %s (%s), duration %s (%s)\n", indent, video.Offset, FormatRationalTime(video.Offset), video.Duration, FormatRationalTime(video.Duration))
 	if video.Lane != "" && level == 0 {
 		fmt.Printf("%s   🎚️  Lane: %s\n", indent, video.Lane)
 	}
@@ -566,6 +598,163 @@ func displayVideoElementTiered(video Video, index int, baseIndent string, level 
 	for _, nestedTitle := range video.NestedTitles {
 		fmt.Printf("%s  ✍️  Nested Title (Lane %s): %s\n", indent, nestedTitle.Lane, nestedTitle.Name)
 		fmt.Printf("%s     📎 Reference: %s\n", indent, nestedTitle.Ref)
-		fmt.Printf("%s     ⏰ Timeline: offset %s, duration %s\n", indent, nestedTitle.Offset, nestedTitle.Duration)
+		fmt.Printf("%s     ⏰ Timeline: offset %s (%s), duration %s (%s)\n", indent, nestedTitle.Offset, FormatRationalTime(nestedTitle.Offset), nestedTitle.Duration, FormatRationalTime(nestedTitle.Duration))
 	}
+}
+
+// displayAnimationDetails analyzes and displays keyframe animations throughout the project
+func displayAnimationDetails(fcpxml *FCPXML, indent string) {
+	animationCount := 0
+	
+	// Scan through all events, projects, and sequences
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				spineContent := strings.TrimSpace(sequence.Spine.Content)
+				if spineContent != "" {
+					animationCount += analyzeSpineAnimations(spineContent, indent, project.Name)
+				}
+			}
+		}
+	}
+	
+	if animationCount == 0 {
+		fmt.Printf("%sNo keyframe animations found in this project\n\n", indent)
+	} else {
+		fmt.Printf("%sTotal animated parameters: %d\n\n", indent, animationCount)
+	}
+}
+
+// analyzeSpineAnimations parses spine content and analyzes animations
+func analyzeSpineAnimations(content, indent, projectName string) int {
+	// Wrap content in a root element to make it valid XML
+	wrappedContent := "<spine>" + content + "</spine>"
+	
+	var spineData struct {
+		Videos     []Video     `xml:"video"`
+		Titles     []Title     `xml:"title"`
+		AssetClips []AssetClip `xml:"asset-clip"`
+		Gaps       []Gap       `xml:"gap"`
+	}
+	
+	err := xml.Unmarshal([]byte(wrappedContent), &spineData)
+	if err != nil {
+		fmt.Printf("%sError parsing spine content for animations: %v\n", indent, err)
+		return 0
+	}
+	
+	animationCount := 0
+	
+	// Analyze video elements
+	for i, video := range spineData.Videos {
+		count := analyzeVideoAnimations(video, i+1, indent, projectName, 0)
+		animationCount += count
+	}
+	
+	// Analyze title elements
+	for i, title := range spineData.Titles {
+		count := analyzeTitleAnimations(title, i+1, indent, projectName)
+		animationCount += count
+	}
+	
+	// Analyze gaps (which can contain generator clips and titles)
+	for _, gap := range spineData.Gaps {
+		for i, title := range gap.Titles {
+			count := analyzeTitleAnimations(title, i+1, indent, projectName)
+			animationCount += count
+		}
+	}
+	
+	return animationCount
+}
+
+// analyzeVideoAnimations analyzes animations in video elements
+func analyzeVideoAnimations(video Video, index int, baseIndent, projectName string, level int) int {
+	indent := baseIndent + strings.Repeat("  ", level)
+	animationCount := 0
+	
+	// Check parameters for animations
+	for _, param := range video.Params {
+		if param.KeyframeAnimation != nil && len(param.KeyframeAnimation.Keyframes) > 0 {
+			if animationCount == 0 {
+				if level == 0 {
+					fmt.Printf("%s🎨 Video Element %d (\"%s\") in project \"%s\":\n", indent, index, video.Name, projectName)
+				} else {
+					fmt.Printf("%s🎨 Nested Video (\"%s\", Lane %s):\n", indent, video.Name, video.Lane)
+				}
+			}
+			
+			fmt.Printf("%s   🎭 Parameter \"%s\" animated:\n", indent, param.Name)
+			fmt.Printf("%s      Keyframes: %d total\n", indent, len(param.KeyframeAnimation.Keyframes))
+			
+			// Show first few keyframes for detail
+			maxShow := 3
+			if len(param.KeyframeAnimation.Keyframes) < maxShow {
+				maxShow = len(param.KeyframeAnimation.Keyframes)
+			}
+			
+			for i := 0; i < maxShow; i++ {
+				kf := param.KeyframeAnimation.Keyframes[i]
+				fmt.Printf("%s      • Frame %d: %s (%s) → %s\n", indent, i+1, kf.Time, FormatRationalTime(kf.Time), kf.Value)
+			}
+			
+			if len(param.KeyframeAnimation.Keyframes) > maxShow {
+				fmt.Printf("%s      • ... and %d more frames\n", indent, len(param.KeyframeAnimation.Keyframes)-maxShow)
+			}
+			
+			animationCount++
+		}
+	}
+	
+	// Analyze nested elements
+	for i, nestedVideo := range video.NestedVideos {
+		count := analyzeVideoAnimations(nestedVideo, i+1, baseIndent, projectName, level+1)
+		animationCount += count
+	}
+	
+	for _, nestedTitle := range video.NestedTitles {
+		count := analyzeTitleAnimations(nestedTitle, 1, baseIndent, projectName)
+		animationCount += count
+	}
+	
+	return animationCount
+}
+
+// analyzeTitleAnimations analyzes animations in title elements
+func analyzeTitleAnimations(title Title, index int, indent, projectName string) int {
+	animationCount := 0
+	
+	// Check parameters for animations
+	for _, param := range title.Params {
+		if param.KeyframeAnimation != nil && len(param.KeyframeAnimation.Keyframes) > 0 {
+			if animationCount == 0 {
+				fmt.Printf("%s✍️  Title Element %d (\"%s\") in project \"%s\":\n", indent, index, title.Name, projectName)
+				if title.Lane != "" {
+					fmt.Printf("%s   Lane: %s\n", indent, title.Lane)
+				}
+			}
+			
+			fmt.Printf("%s   🎭 Parameter \"%s\" animated:\n", indent, param.Name)
+			fmt.Printf("%s      Keyframes: %d total\n", indent, len(param.KeyframeAnimation.Keyframes))
+			
+			// Show first few keyframes for detail
+			maxShow := 3
+			if len(param.KeyframeAnimation.Keyframes) < maxShow {
+				maxShow = len(param.KeyframeAnimation.Keyframes)
+			}
+			
+			for i := 0; i < maxShow; i++ {
+				kf := param.KeyframeAnimation.Keyframes[i]
+				fmt.Printf("%s      • Frame %d: %s (%s) → %s\n", indent, i+1, kf.Time, FormatRationalTime(kf.Time), kf.Value)
+			}
+			
+			if len(param.KeyframeAnimation.Keyframes) > maxShow {
+				fmt.Printf("%s      • ... and %d more frames\n", indent, len(param.KeyframeAnimation.Keyframes)-maxShow)
+			}
+			
+			animationCount++
+		}
+	}
+	
+	return animationCount
 }
