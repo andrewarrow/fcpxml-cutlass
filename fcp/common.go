@@ -645,6 +645,12 @@ func analyzeSpineAnimations(content, indent, projectName string) int {
 	
 	animationCount := 0
 	
+	// Analyze asset clips (main video/audio clips with potential transforms and titles)
+	for i, clip := range spineData.AssetClips {
+		count := analyzeAssetClipAnimations(clip, i+1, indent, projectName)
+		animationCount += count
+	}
+	
 	// Analyze video elements
 	for i, video := range spineData.Videos {
 		count := analyzeVideoAnimations(video, i+1, indent, projectName, 0)
@@ -704,6 +710,11 @@ func analyzeVideoAnimations(video Video, index int, baseIndent, projectName stri
 			
 			animationCount++
 		}
+		
+		// Recursively check nested parameters
+		headerPrinted := (animationCount > 0)
+		nestedCount := analyzeNestedParameterAnimations(param.NestedParams, indent, video.Name, projectName, "Video", &headerPrinted)
+		animationCount += nestedCount
 	}
 	
 	// Analyze nested elements
@@ -723,15 +734,17 @@ func analyzeVideoAnimations(video Video, index int, baseIndent, projectName stri
 // analyzeTitleAnimations analyzes animations in title elements
 func analyzeTitleAnimations(title Title, index int, indent, projectName string) int {
 	animationCount := 0
+	headerPrinted := false
 	
 	// Check parameters for animations
 	for _, param := range title.Params {
 		if param.KeyframeAnimation != nil && len(param.KeyframeAnimation.Keyframes) > 0 {
-			if animationCount == 0 {
+			if !headerPrinted {
 				fmt.Printf("%s✍️  Title Element %d (\"%s\") in project \"%s\":\n", indent, index, title.Name, projectName)
 				if title.Lane != "" {
 					fmt.Printf("%s   Lane: %s\n", indent, title.Lane)
 				}
+				headerPrinted = true
 			}
 			
 			fmt.Printf("%s   🎭 Parameter \"%s\" animated:\n", indent, param.Name)
@@ -754,6 +767,118 @@ func analyzeTitleAnimations(title Title, index int, indent, projectName string) 
 			
 			animationCount++
 		}
+		
+		// Recursively check nested parameters
+		nestedCount := analyzeNestedParameterAnimations(param.NestedParams, indent, title.Name, projectName, "Title", &headerPrinted)
+		animationCount += nestedCount
+		if nestedCount > 0 && !headerPrinted {
+			fmt.Printf("%s✍️  Title Element %d (\"%s\") in project \"%s\":\n", indent, index, title.Name, projectName)
+			if title.Lane != "" {
+				fmt.Printf("%s   Lane: %s\n", indent, title.Lane)
+			}
+			headerPrinted = true
+		}
+	}
+	
+	return animationCount
+}
+
+// analyzeNestedParameterAnimations recursively analyzes nested parameters for animations
+func analyzeNestedParameterAnimations(params []Param, indent, elementName, projectName, elementType string, headerPrinted *bool) int {
+	animationCount := 0
+	
+	for _, param := range params {
+		if param.KeyframeAnimation != nil && len(param.KeyframeAnimation.Keyframes) > 0 {
+			if !*headerPrinted {
+				fmt.Printf("%s🎯 %s Element (\"%s\") in project \"%s\":\n", indent, elementType, elementName, projectName)
+				*headerPrinted = true
+			}
+			
+			// Show the parameter path
+			paramPath := param.Name
+			if param.Key != "" {
+				paramPath += fmt.Sprintf(" (key: %s)", param.Key)
+			}
+			
+			fmt.Printf("%s   🎭 Parameter \"%s\" animated:\n", indent, paramPath)
+			fmt.Printf("%s      Keyframes: %d total\n", indent, len(param.KeyframeAnimation.Keyframes))
+			
+			// Show first few keyframes for detail
+			maxShow := 3
+			if len(param.KeyframeAnimation.Keyframes) < maxShow {
+				maxShow = len(param.KeyframeAnimation.Keyframes)
+			}
+			
+			for i := 0; i < maxShow; i++ {
+				kf := param.KeyframeAnimation.Keyframes[i]
+				fmt.Printf("%s      • Frame %d: %s (%s) → %s\n", indent, i+1, kf.Time, FormatRationalTime(kf.Time), kf.Value)
+			}
+			
+			if len(param.KeyframeAnimation.Keyframes) > maxShow {
+				fmt.Printf("%s      • ... and %d more frames\n", indent, len(param.KeyframeAnimation.Keyframes)-maxShow)
+			}
+			
+			animationCount++
+		}
+		
+		// Recursively check further nested parameters
+		animationCount += analyzeNestedParameterAnimations(param.NestedParams, indent, elementName, projectName, elementType, headerPrinted)
+	}
+	
+	return animationCount
+}
+
+// analyzeAssetClipAnimations analyzes animations in asset clip elements
+func analyzeAssetClipAnimations(clip AssetClip, index int, indent, projectName string) int {
+	animationCount := 0
+	headerPrinted := false
+	
+	// Check adjust-transform for animations
+	if clip.AdjustTransform != nil {
+		for _, param := range clip.AdjustTransform.Params {
+			if param.KeyframeAnimation != nil && len(param.KeyframeAnimation.Keyframes) > 0 {
+				if !headerPrinted {
+					fmt.Printf("%s🎬 Asset Clip %d (\"%s\") in project \"%s\":\n", indent, index, clip.Name, projectName)
+					headerPrinted = true
+				}
+				
+				fmt.Printf("%s   🎭 Transform Parameter \"%s\" animated:\n", indent, param.Name)
+				fmt.Printf("%s      Keyframes: %d total\n", indent, len(param.KeyframeAnimation.Keyframes))
+				
+				// Show first few keyframes for detail
+				maxShow := 3
+				if len(param.KeyframeAnimation.Keyframes) < maxShow {
+					maxShow = len(param.KeyframeAnimation.Keyframes)
+				}
+				
+				for i := 0; i < maxShow; i++ {
+					kf := param.KeyframeAnimation.Keyframes[i]
+					fmt.Printf("%s      • Frame %d: %s (%s) → %s\n", indent, i+1, kf.Time, FormatRationalTime(kf.Time), kf.Value)
+				}
+				
+				if len(param.KeyframeAnimation.Keyframes) > maxShow {
+					fmt.Printf("%s      • ... and %d more frames\n", indent, len(param.KeyframeAnimation.Keyframes)-maxShow)
+				}
+				
+				animationCount++
+			}
+			
+			// Recursively check nested parameters in transform
+			nestedCount := analyzeNestedParameterAnimations(param.NestedParams, indent, clip.Name, projectName, "Asset Clip", &headerPrinted)
+			animationCount += nestedCount
+		}
+	}
+	
+	// Check nested titles for animations
+	for i, title := range clip.Titles {
+		count := analyzeTitleAnimations(title, i+1, indent, projectName)
+		animationCount += count
+	}
+	
+	// Check nested videos for animations
+	for i, video := range clip.Videos {
+		count := analyzeVideoAnimations(video, i+1, indent, projectName, 0)
+		animationCount += count
 	}
 	
 	return animationCount

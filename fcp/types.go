@@ -88,15 +88,18 @@ type Spine struct {
 }
 
 type AssetClip struct {
-	XMLName   xml.Name `xml:"asset-clip"`
-	Ref       string `xml:"ref,attr"`
-	Offset    string `xml:"offset,attr"`
-	Name      string `xml:"name,attr"`
-	Start     string `xml:"start,attr,omitempty"`
-	Duration  string `xml:"duration,attr"`
-	Format    string `xml:"format,attr"`
-	TCFormat  string `xml:"tcFormat,attr"`
-	AudioRole string `xml:"audioRole,attr,omitempty"`
+	XMLName         xml.Name         `xml:"asset-clip"`
+	Ref             string           `xml:"ref,attr"`
+	Offset          string           `xml:"offset,attr"`
+	Name            string           `xml:"name,attr"`
+	Start           string           `xml:"start,attr,omitempty"`
+	Duration        string           `xml:"duration,attr"`
+	Format          string           `xml:"format,attr"`
+	TCFormat        string           `xml:"tcFormat,attr"`
+	AudioRole       string           `xml:"audioRole,attr,omitempty"`
+	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
+	Titles          []Title          `xml:"title,omitempty"`
+	Videos          []Video          `xml:"video,omitempty"`
 }
 
 type Gap struct {
@@ -137,8 +140,9 @@ type Video struct {
 }
 
 type AdjustTransform struct {
-	Position string `xml:"position,attr,omitempty"`
-	Scale    string `xml:"scale,attr,omitempty"`
+	Position string  `xml:"position,attr,omitempty"`
+	Scale    string  `xml:"scale,attr,omitempty"`
+	Params   []Param `xml:"param,omitempty"`
 }
 
 
@@ -157,6 +161,7 @@ type Param struct {
 	Key                string              `xml:"key,attr"`
 	Value              string              `xml:"value,attr"`
 	KeyframeAnimation  *KeyframeAnimation  `xml:"keyframeAnimation,omitempty"`
+	NestedParams       []Param             `xml:"param,omitempty"`
 }
 
 type KeyframeAnimation struct {
