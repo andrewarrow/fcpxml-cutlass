@@ -56,7 +56,7 @@
 {{end}}
 {{range .TextElements}}
                             <title ref="r4" lane="{{.Lane}}" offset="{{.Offset}}" name="{{.Text}} - Text" start="3600s" duration="{{.Duration}}">
-                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 {{.YPosition}}"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
                                 <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
                                 <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
                                 <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>

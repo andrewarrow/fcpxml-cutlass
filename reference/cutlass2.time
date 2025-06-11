@@ -1,0 +1,8 @@
+./assets/speech1.mov
+  3s:2s SLIDE -> 0% to 30%
+  PAUSE 3s
+  3s:2s SLIDE -> 30% to 0%
+text Point3
+  3s:2s SLIDE -> -100% to -30%
+  PAUSE 3s
+  3s:2s SLIDE -> -30 to -100%
