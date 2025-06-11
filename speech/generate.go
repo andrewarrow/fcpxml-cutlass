@@ -72,6 +72,7 @@ type TextElement struct {
 	Text                string
 	Index               int
 	Offset              string
+	Duration            string
 	YPosition           int
 	Lane                int
 	ReverseStartTimeNano string
@@ -140,12 +141,18 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 	for i, line := range lines {
 		offsetFrames := baseOffsetFrames + (i * pauseDurationFrames)
 		yPos := yPositionBase - (i * ySpacing) // Stack text elements vertically
-		lane := len(lines) - i                 // Assign lanes in descending order (3, 2, 1 for 3 items)
+		lane := -(i + 1)                       // Assign negative lanes (-1, -2, -3, -4 for items)
+		
+		// Calculate duration so each title ends just before the slide-back animation
+		// Duration = reverseStartFrames - offsetFrames
+		durationFrames := reverseStartFrames - offsetFrames
+		duration := fmt.Sprintf("%d/%d", durationFrames, timeBase)
 
 		textElements = append(textElements, TextElement{
 			Text:                 line,
 			Index:                i + 1,
 			Offset:               fmt.Sprintf("%d/%d", offsetFrames, timeBase),
+			Duration:             duration,
 			YPosition:            yPos,
 			Lane:                 lane,
 			ReverseStartTimeNano: reverseStartNano,

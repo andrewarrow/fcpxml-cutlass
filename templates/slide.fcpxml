@@ -49,7 +49,7 @@
                                 </param>
                             </adjust-transform>
 {{range .TextElements}}
-                            <title ref="r4" lane="{{.Lane}}" offset="{{.Offset}}s" name="{{.Text}} - Text" start="3600s" duration="10s">
+                            <title ref="r4" lane="{{.Lane}}" offset="{{.Offset}}s" name="{{.Text}} - Text" start="3600s" duration="{{.Duration}}s">
                                 <param name="Build In" key="9999/10000/2/101" value="0"/>
                                 <param name="Build Out" key="9999/10000/2/102" value="0"/>
                                 <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 {{.YPosition}}"/>
