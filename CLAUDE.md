@@ -17,5 +17,6 @@ have main.go call funcs in a package instead.
 make sure your code compiles, but do not run any of the menu options yourself. You can run xmllint but do not run ./cutlass
 
 review reference/FCPCAFE.md
-review reference/FCPXML.md
-and review FCPXMLv1_13.dtd
+reference/FCPXML.md
+reference/ANIMATION.md
+and FCPXMLv1_13.dtd
