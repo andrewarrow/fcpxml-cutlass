@@ -31,6 +31,21 @@
                 <sequence format="r1" duration="20400/3000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                     <spine>
                         <asset-clip ref="r2" offset="0s" name="Movie on 6-10-25 at 7.05 PM" duration="3980/600s" format="r3" tcFormat="NDF" audioRole="dialogue">
+                            <adjust-transform>
+                                <param name="position">
+                                    <param name="X" key="1">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="0"/>
+                                            <keyframe time="6800/1000s" value="920"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                    <param name="Y" key="2">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="0" curve="linear"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                </param>
+                            </adjust-transform>
                             <video ref="r4" lane="1" offset="0s" name="Custom" start="3600s" duration="20400/3000s">
                                 <adjust-transform>
                                     <param name="position">
