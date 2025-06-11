@@ -1,4 +1,4 @@
 ./assets/speech1.mov
-  3s SLIDE -> 0% to 50%
+  3s:2s SLIDE -> 0% to 50%
 text Point1
-  3s SLIDE -> -100% to -50%
+  3s:2s SLIDE -> -100% to -50%
