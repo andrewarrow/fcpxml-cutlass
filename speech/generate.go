@@ -3,10 +3,13 @@ package speech
 import (
 	"bufio"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -28,6 +31,40 @@ func generateVideoUID(videoPath string) (string, error) {
 	return fmt.Sprintf("%X", hash.Sum(nil)), nil
 }
 
+// getVideoDuration gets the duration of a video file using ffprobe
+func getVideoDuration(videoPath string) (string, string, error) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_entries", "format=duration", videoPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to run ffprobe: %v", err)
+	}
+
+	var result struct {
+		Format struct {
+			Duration string `json:"duration"`
+		} `json:"format"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return "", "", fmt.Errorf("failed to parse ffprobe output: %v", err)
+	}
+
+	duration, err := strconv.ParseFloat(result.Format.Duration, 64)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse duration: %v", err)
+	}
+
+	// Convert to FCP asset format (frames/44100s)
+	assetFrames := int64(duration * 44100)
+	assetDuration := fmt.Sprintf("%d/44100s", assetFrames)
+
+	// Convert to FCP clip format (frames/600s)
+	clipFrames := int64(duration * 600)
+	clipDuration := fmt.Sprintf("%d/600s", clipFrames)
+
+	return assetDuration, clipDuration, nil
+}
+
 type TextElement struct {
 	Text      string
 	Index     int
@@ -40,6 +77,8 @@ type SpeechData struct {
 	TextElements []TextElement
 	VideoPath    string
 	VideoUID     string
+	VideoDuration string
+	VideoClipDuration string
 }
 
 func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
@@ -101,11 +140,19 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 		return fmt.Errorf("failed to generate video UID: %v", err)
 	}
 
+	// Get video duration
+	videoDuration, videoClipDuration, err := getVideoDuration(videoFile)
+	if err != nil {
+		return fmt.Errorf("failed to get video duration: %v", err)
+	}
+
 	// Create the speech data
 	speechData := SpeechData{
-		TextElements: textElements,
-		VideoPath:    "file://" + absVideoPath,
-		VideoUID:     videoUID,
+		TextElements:      textElements,
+		VideoPath:         "file://" + absVideoPath,
+		VideoUID:          videoUID,
+		VideoDuration:     videoDuration,
+		VideoClipDuration: videoClipDuration,
 	}
 
 	// Read the template
