@@ -37,6 +37,8 @@
                                         <keyframeAnimation>
                                             <keyframe time="0s" value="0"/>
                                             <keyframe time="4000/3000s" value="41.6667"/>
+                                            <keyframe time="{{.ReverseStartTime}}" value="41.6667"/>
+                                            <keyframe time="{{.ReverseEndTime}}" value="0"/>
                                         </keyframeAnimation>
                                     </param>
                                     <param name="Y" key="2">
@@ -66,6 +68,8 @@
                                     <keyframeAnimation>
                                         <keyframe time="-469658744/1000000000s" value="0"/>
                                         <keyframe time="12328542033/1000000000s" value="1"/>
+                                        <keyframe time="{{.ReverseStartTimeNano}}" value="1"/>
+                                        <keyframe time="{{.ReverseEndTimeNano}}" value="0"/>
                                     </keyframeAnimation>
                                 </param>
                                 <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>

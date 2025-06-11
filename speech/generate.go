@@ -69,19 +69,23 @@ func getVideoDuration(videoPath string) (string, string, error) {
 }
 
 type TextElement struct {
-	Text      string
-	Index     int
-	Offset    string
-	YPosition int
-	Lane      int
+	Text                string
+	Index               int
+	Offset              string
+	YPosition           int
+	Lane                int
+	ReverseStartTimeNano string
+	ReverseEndTimeNano   string
 }
 
 type SpeechData struct {
-	TextElements []TextElement
-	VideoPath    string
-	VideoUID     string
-	VideoDuration string
+	TextElements      []TextElement
+	VideoPath         string
+	VideoUID          string
+	VideoDuration     string
 	VideoClipDuration string
+	ReverseStartTime  string
+	ReverseEndTime    string
 }
 
 func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
@@ -116,6 +120,22 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 	timeBase := 3000                 // From format frameDuration="100/3000s"
 	yPositionBase := 800             // Base Y position
 	ySpacing := 300                  // Vertical spacing between text elements
+	
+	// Calculate reverse animation timing
+	// Last text appears at: baseOffsetFrames + (len(lines)-1) * pauseDurationFrames
+	lastTextOffsetFrames := baseOffsetFrames + ((len(lines) - 1) * pauseDurationFrames)
+	pauseAfterLastText := 6000       // 2 seconds pause after last text appears
+	reverseAnimationDuration := 4000 // 1.33 seconds for reverse animation
+	
+	reverseStartFrames := lastTextOffsetFrames + pauseAfterLastText
+	reverseEndFrames := reverseStartFrames + reverseAnimationDuration
+	
+	reverseStartTime := fmt.Sprintf("%d/%ds", reverseStartFrames, timeBase)
+	reverseEndTime := fmt.Sprintf("%d/%ds", reverseEndFrames, timeBase)
+	
+	// Convert to nanoseconds for text animation (matching the existing format)
+	reverseStartNano := fmt.Sprintf("%d/1000000000s", (reverseStartFrames * 1000000000) / timeBase)
+	reverseEndNano := fmt.Sprintf("%d/1000000000s", (reverseEndFrames * 1000000000) / timeBase)
 
 	for i, line := range lines {
 		offsetFrames := baseOffsetFrames + (i * pauseDurationFrames)
@@ -123,11 +143,13 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 		lane := len(lines) - i                 // Assign lanes in descending order (3, 2, 1 for 3 items)
 
 		textElements = append(textElements, TextElement{
-			Text:      line,
-			Index:     i + 1,
-			Offset:    fmt.Sprintf("%d/%d", offsetFrames, timeBase),
-			YPosition: yPos,
-			Lane:      lane,
+			Text:                 line,
+			Index:                i + 1,
+			Offset:               fmt.Sprintf("%d/%d", offsetFrames, timeBase),
+			YPosition:            yPos,
+			Lane:                 lane,
+			ReverseStartTimeNano: reverseStartNano,
+			ReverseEndTimeNano:   reverseEndNano,
 		})
 	}
 
@@ -156,6 +178,8 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 		VideoUID:          videoUID,
 		VideoDuration:     videoDuration,
 		VideoClipDuration: videoClipDuration,
+		ReverseStartTime:  reverseStartTime,
+		ReverseEndTime:    reverseEndTime,
 	}
 
 	// Read the template
