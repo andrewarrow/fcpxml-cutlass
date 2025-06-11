@@ -6,7 +6,7 @@
         <format id="r1" name="FFVideoFormat720p30" frameDuration="100/3000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
         <asset id="r2" name="Movie on 6-10-25 at 7.05 PM" uid="D761B5D186AF3CA475541285D99578AA" start="0s" duration="292530/44100s" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="44100">
             <media-rep kind="original-media" sig="D761B5D186AF3CA475541285D99578AA" src="file:///Users/aa/Movies/jun9.fcpbundle/Auto%20Generated%20Clips/Original%20Media/Movie%20on%206-10-25%20at%207.05%E2%80%AFPM.mov">
-                <bookmark>Ym9va5wDAAAAAAQQMAAAAODlPu9Gf7V5OxS77xwcdfx9+ggm3gdNxUrEoKP+7MdadAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAADgAAAAEBAABqdW45LmZjcGJ1bmRsZQAAFAAAAAEBAABBdXRvIEdlbmVyYXRlZCBDbGlwcw4AAAABAQAAT3JpZ2luYWwgTWVkaWEAACEAAAABAQAATW92aWUgb24gNi0xMC0yNSBhdCA3LjA14oCvUE0ubW92AAAAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAVAAAAHAAAACIAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAAByeBIEAAAAAAgAAAAEAwAAJXkSBAAAAAAIAAAABAMAAC15EgQAAAAACAAAAAQDAAAnRjcEAAAAABwAAAABBgAA2AAAAOgAAAD4AAAACAEAABgBAAAoAQAAOAEAAAgAAAAABAAAQcb8jf9EzJ4YAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAALQAAAAAAAAABRAAAEgBAAAAAAAAEBAAAHwBAAAAAAAAQBAAAGwBAAAAAAAAVBAAAKQBAAAAAAAAVRAAALABAAAAAAAAVhAAAJwBAAAAAAAAAiAAAGgCAAAAAAAABSAAANgBAAAAAAAAECAAAOgBAAAAAAAAESAAABwCAAAAAAAAEiAAAPwBAAAAAAAAEyAAAAwCAAAAAAAAICAAAEgCAAAAAAAAMCAAAJwBAAAAAAAAAcAAALwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAMwBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+                <bookmark>Ym9va5wDAAAAAAQQMAAAAIyOwVC8wIPakjoIaEBX2fpL4BKD+9d93fs4rd1aXLybdAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAADgAAAAEBAABqdW45LmZjcGJ1bmRsZQAAFAAAAAEBAABBdXRvIEdlbmVyYXRlZCBDbGlwcw4AAAABAQAAT3JpZ2luYWwgTWVkaWEAACEAAAABAQAATW92aWUgb24gNi0xMC0yNSBhdCA3LjA14oCvUE0ubW92AAAAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAVAAAAHAAAACIAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAAByeBIEAAAAAAgAAAAEAwAAJXkSBAAAAAAIAAAABAMAAC15EgQAAAAACAAAAAQDAAAnRjcEAAAAABwAAAABBgAA2AAAAOgAAAD4AAAACAEAABgBAAAoAQAAOAEAAAgAAAAABAAAQcb8jf9EzJ4YAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAALQAAAAAAAAABRAAAEgBAAAAAAAAEBAAAHwBAAAAAAAAQBAAAGwBAAAAAAAAVBAAAKQBAAAAAAAAVRAAALABAAAAAAAAVhAAAJwBAAAAAAAAAiAAAGgCAAAAAAAABSAAANgBAAAAAAAAECAAAOgBAAAAAAAAESAAABwCAAAAAAAAEiAAAPwBAAAAAAAAEyAAAAwCAAAAAAAAICAAAEgCAAAAAAAAMCAAAJwBAAAAAAAAAcAAALwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAMwBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
             </media-rep>
             <metadata>
                 <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
@@ -23,12 +23,12 @@
             </metadata>
         </asset>
         <format id="r3" frameDuration="20/600s" width="1620" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
-        <effect id="r4" name="Custom" uid=".../Generators.localized/Solids.localized/Custom.localized/Custom.motn"/>
+        <effect id="r4" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
     </resources>
     <library location="file:///Users/aa/Movies/jun9.fcpbundle/">
         <event name="Auto Generated Clips" uid="8B5C94AD-D7EB-49C3-B19B-771633F7538C">
-            <project name="slide5" uid="553FBFD2-B848-46C1-B455-AC63129208BA" modDate="2025-06-10 19:41:48 -0700">
-                <sequence format="r1" duration="20400/3000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+            <project name="slide5" uid="8AED3047-AE9C-4CF4-81D7-D09432FBB588" modDate="2025-06-10 20:12:17 -0700">
+                <sequence format="r1" duration="8934400/768000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                     <spine>
                         <asset-clip ref="r2" offset="0s" name="Movie on 6-10-25 at 7.05 PM" duration="3980/600s" format="r3" tcFormat="NDF" audioRole="dialogue">
                             <adjust-transform>
@@ -36,7 +36,7 @@
                                     <param name="X" key="1">
                                         <keyframeAnimation>
                                             <keyframe time="0s" value="0"/>
-                                            <keyframe time="3300/3000s" value="133.333"/>
+                                            <keyframe time="4000/3000s" value="41.6667"/>
                                         </keyframeAnimation>
                                     </param>
                                     <param name="Y" key="2">
@@ -46,23 +46,35 @@
                                     </param>
                                 </param>
                             </adjust-transform>
-                            <video ref="r4" lane="1" offset="0s" name="Custom" start="3600s" duration="20400/3000s">
-                                <adjust-transform>
-                                    <param name="position">
-                                        <param name="X" key="1">
-                                            <keyframeAnimation>
-                                                <keyframe time="3600s" value="-266.667"/>
-                                                <keyframe time="10803300/3000s" value="0"/>
-                                            </keyframeAnimation>
-                                        </param>
-                                        <param name="Y" key="2">
-                                            <keyframeAnimation>
-                                                <keyframe time="3600s" value="0" curve="linear"/>
-                                            </keyframeAnimation>
-                                        </param>
-                                    </param>
-                                </adjust-transform>
-                            </video>
+                            <title ref="r4" lane="1" offset="4900/3000s" name="Point1 - Text" start="3600s" duration="10s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 800"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="3 (Justify Last Line Left)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 1 (Middle)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1">Point1</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="justified" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
                         </asset-clip>
                     </spine>
                 </sequence>
