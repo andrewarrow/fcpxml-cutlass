@@ -58,8 +58,11 @@ func getVideoDuration(videoPath string) (string, string, error) {
 	assetFrames := int64(duration * 44100)
 	assetDuration := fmt.Sprintf("%d/44100s", assetFrames)
 
-	// Convert to FCP clip format (frames/600s)
+	// Convert to FCP clip format (frames/600s) aligned to frame boundaries
+	// Frame duration is 20/600s, so we need to round to multiples of 20
 	clipFrames := int64(duration * 600)
+	// Round to nearest frame boundary (multiple of 20)
+	clipFrames = (clipFrames / 20) * 20
 	clipDuration := fmt.Sprintf("%d/600s", clipFrames)
 
 	return assetDuration, clipDuration, nil
