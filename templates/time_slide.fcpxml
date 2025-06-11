@@ -55,13 +55,14 @@
                             </adjust-transform>
 {{end}}
 {{range .TextElements}}
-                            <title ref="r4" lane="{{.Lane}}" offset="{{.Offset}}" name="{{.Text}} - Text" start="3600s" duration="{{.Duration}}">
+                            <title ref="r4" lane="{{.Lane}}" offset="{{.Offset}}" name="{{.Text}} - Text" start="3600s" duration="{{.Duration}}">{{if ne .YPosition "0"}}
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 {{.YPosition}}"/>{{end}}
                                 <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
                                 <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
                                 <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
                                 <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
                                 <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
-                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="2 (Right)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="{{.Alignment}}"/>
                                 <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
                                 <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
                                 <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
@@ -79,9 +80,9 @@
                                     <text-style ref="ts{{.Index}}">{{.Text}}</text-style>
                                 </text>
                                 <text-style-def id="ts{{.Index}}">
-                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="right" lineSpacing="-19"/>
+                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="{{if eq .Alignment "2 (Right)"}}right{{else}}left{{end}}" lineSpacing="-19"/>
                                 </text-style-def>
-                                <adjust-transform>
+{{if .XKeyframes}}                                <adjust-transform>
                                     <param name="position">
                                         <param name="X" key="1">
                                             <keyframeAnimation>
@@ -98,7 +99,7 @@
                                             </keyframeAnimation>
                                         </param>
                                     </param>
-                                </adjust-transform>
+                                </adjust-transform>{{end}}
                             </title>
 {{end}}
                         </asset-clip>

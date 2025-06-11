@@ -35,6 +35,7 @@ type TextElement struct {
 	Offset        string
 	Duration      string
 	YPosition     string
+	Alignment     string
 	XKeyframes    []Keyframe
 	YKeyframes    []Keyframe
 	SpeedKeyframes []Keyframe
@@ -75,6 +76,8 @@ type TimelineItem struct {
 	VideoPath    string
 	Text         string
 	Lane         int
+	YOffset      int    // Y offset in pixels relative to previous text
+	IsStandalone bool   // True if text is not part of a slide (has 2+ spaces)
 	Animations   []TimeAnimation
 }
 
@@ -157,7 +160,7 @@ func parseTimeFile(filePath string) ([]TimelineItem, error) {
 	// Regular expressions for parsing
 	videoPathRegex := regexp.MustCompile(`^\.\/`)
 	animationRegex := regexp.MustCompile(`^\s+(\d+s):(\d+s)\s+(\w+)\s+->\s+(.+?)\s+to\s+(.+)$`)
-	textRegex := regexp.MustCompile(`^text\s+(.+)$`)
+	textRegex := regexp.MustCompile(`^(\s*)text\s+([^\s]+)(?:\s+(\d+))?$`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -191,11 +194,23 @@ func parseTimeFile(filePath string) ([]TimelineItem, error) {
 				items = append(items, *currentItem)
 			}
 			
+			// Check spacing to determine if it's standalone
+			spacing := matches[1]
+			isStandalone := len(spacing) >= 2 // 2+ spaces means standalone
+			
+			// Parse Y offset if provided
+			yOffset := 0
+			if matches[3] != "" {
+				yOffset, _ = strconv.Atoi(matches[3])
+			}
+			
 			lane++ // Text elements go on subsequent lanes
 			currentItem = &TimelineItem{
-				Type: "text",
-				Text: matches[1],
-				Lane: lane,
+				Type:         "text",
+				Text:         matches[2],
+				Lane:         lane,
+				YOffset:      yOffset,
+				IsStandalone: isStandalone,
 			}
 			continue
 		}
@@ -277,6 +292,22 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 
 	if len(items) == 0 {
 		return fmt.Errorf("no items found in time file")
+	}
+
+	// First pass: Reassign lane numbers according to FCP requirements
+	// Standalone text (Point3) should be lane 1 (-1), non-standalone text (Point2) should be lane 2 (-2)
+	standaloneLane := 1
+	nonStandaloneLane := 2
+	for i := range items {
+		if items[i].Type == "text" {
+			if items[i].IsStandalone {
+				items[i].Lane = standaloneLane
+				standaloneLane++
+			} else {
+				items[i].Lane = nonStandaloneLane
+				nonStandaloneLane++
+			}
+		}
 	}
 
 	var videoAssets []VideoAsset
@@ -396,14 +427,39 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 				return fmt.Errorf("text element found without a video clip: %s", item.Text)
 			}
 
+			// Calculate Y position based on offset
+			// Point2 (lane 2) has 0 offset, so Y = 0
+			// Point3 (lane 1) has 100 offset, so Y = -100 (100px below Point2)
+			yPosition := fmt.Sprintf("%d", -item.YOffset)
+			
+			// Determine timing based on whether it's standalone
+			var offset, duration string
+			if item.IsStandalone {
+				// Standalone text appears after slide ends (at 5s mark)
+				offset = "14800/3000s" // 5s converted to frames/3000s
+				duration = "31027200/768000s" // Long duration to end of video
+			} else {
+				// Text that's part of a slide
+				offset = "8700/3000s" // Based on correct.fcpxml timing (2.9s)
+				duration = "10s" // Default duration
+			}
+
+			// Determine alignment based on lane
+			// Lane 1 (Point3) = left alignment, Lane 2 (Point2) = right alignment
+			alignment := "0 (Left)"
+			if item.Lane == 2 {
+				alignment = "2 (Right)"
+			}
+			
 			// Create text element - based on correct.fcpxml structure
 			textElement := TextElement{
 				Text:      item.Text,
 				Index:     itemIndex + 1,
 				Lane:      -item.Lane, // Use negative lane numbers like correct.fcpxml
-				Offset:    "8700/3000s", // Based on correct.fcpxml timing (2.9s)
-				Duration:  "10s", // Default duration
-				YPosition: "700", // Based on correct.fcpxml Y position
+				Offset:    offset,
+				Duration:  duration,
+				YPosition: yPosition,
+				Alignment: alignment,
 			}
 
 			// Process text animations
