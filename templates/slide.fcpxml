@@ -36,7 +36,7 @@
                                     <param name="X" key="1">
                                         <keyframeAnimation>
                                             <keyframe time="0s" value="0"/>
-                                            <keyframe time="2200/3000s" value="133.333"/>
+                                            <keyframe time="3300/3000s" value="133.333"/>
                                         </keyframeAnimation>
                                     </param>
                                     <param name="Y" key="2">
