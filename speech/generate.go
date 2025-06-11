@@ -14,6 +14,7 @@ type TextElement struct {
 	Index     int
 	Offset    string
 	YPosition int
+	Lane      int
 }
 
 type SpeechData struct {
@@ -56,12 +57,14 @@ func GenerateSpeechFCPXML(inputFile, outputFile string) error {
 	for i, line := range lines {
 		offsetFrames := baseOffsetFrames + (i * pauseDurationFrames)
 		yPos := yPositionBase - (i * ySpacing) // Stack text elements vertically
+		lane := len(lines) - i                 // Assign lanes in descending order (3, 2, 1 for 3 items)
 
 		textElements = append(textElements, TextElement{
 			Text:      line,
 			Index:     i + 1,
 			Offset:    fmt.Sprintf("%d/%d", offsetFrames, timeBase),
 			YPosition: yPos,
+			Lane:      lane,
 		})
 	}
 
