@@ -52,7 +52,7 @@ func GenerateSpeechFCPXML(inputFile, outputFile string) error {
 	pauseDurationFrames := 6000      // 2 seconds = 6000/3000s between each text appearance
 	timeBase := 3000                 // From format frameDuration="100/3000s"
 	yPositionBase := 800             // Base Y position
-	ySpacing := 200                  // Vertical spacing between text elements
+	ySpacing := 300                  // Vertical spacing between text elements
 
 	for i, line := range lines {
 		offsetFrames := baseOffsetFrames + (i * pauseDurationFrames)
