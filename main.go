@@ -77,7 +77,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "            Similar to vtt-clips but looks for video_id in ./data/id.mov\n")
 	fmt.Fprintf(os.Stderr, "  speech <text-file>        Generate FCPXML with multiple text elements appearing over time\n")
 	fmt.Fprintf(os.Stderr, "            Creates slide animation with each line from text file\n")
-	fmt.Fprintf(os.Stderr, "  time <time-file>          Generate FCPXML from .time format file\n")
+	fmt.Fprintf(os.Stderr, "  time [options] <time-file> Generate FCPXML from .time format file\n")
 	fmt.Fprintf(os.Stderr, "            Format: video paths and timed slide animations with text elements\n")
 	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
 	fmt.Fprintf(os.Stderr, "Options:\n")

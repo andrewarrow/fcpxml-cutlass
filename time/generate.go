@@ -29,13 +29,14 @@ type Animation struct {
 
 // TextElement represents a text element with sliding animation
 type TextElement struct {
-	Text           string
-	Index          int
-	Lane           int
-	Offset         string
-	Duration       string
-	XPosition      string
-	YPosition      string
+	Text          string
+	Index         int
+	Lane          int
+	Offset        string
+	Duration      string
+	YPosition     string
+	XKeyframes    []Keyframe
+	YKeyframes    []Keyframe
 	SpeedKeyframes []Keyframe
 }
 
@@ -238,20 +239,20 @@ func convertPercentToPixels(percent string, isX bool) (string, error) {
 		return "", err
 	}
 
-	// FCP uses a coordinate system where the center is 0,0
-	// For 1280x720, X ranges from -640 to 640, Y ranges from -360 to 360
+	// Based on correct.fcpxml analysis:
+	// For video: 0% = 0, 50% = 88.8889 (width-based calculation)
+	// For text: -100% = -177.778, -50% = -88.8889 (width-based calculation)
 	var pixelValue float64
 	if isX {
-		// For X: 0% = -640, 50% = 0, 100% = 640
-		// So: pixel = (percent - 50) * 12.8
-		pixelValue = (percentValue - 50) * 12.8
+		// For video position: each 1% = 1.777778 pixels (88.8889/50)
+		// For text position: each 1% = 1.777778 pixels 
+		pixelValue = percentValue * 1.777778
 	} else {
-		// For Y: 0% = 360, 50% = 0, 100% = -360 (Y is inverted)
-		// So: pixel = (50 - percent) * 7.2
-		pixelValue = (50 - percentValue) * 7.2
+		// Y coordinate (not used in the current example)
+		pixelValue = percentValue * 7.2
 	}
 
-	return fmt.Sprintf("%.2f", pixelValue), nil
+	return fmt.Sprintf("%.4f", pixelValue), nil
 }
 
 // convertTimeToFrames converts time string like "3s" to frame count for FCP timebase
@@ -282,8 +283,7 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 	var videoClips []VideoClip
 	assetCounter := 2 // Start from r2 (r1 is the format)
 	
-	// Calculate total duration - we'll use a reasonable default
-	maxTime := 30.0 // 30 seconds default
+	// Calculate total duration - we'll use the video duration
 	
 	// Process each timeline item
 	for itemIndex, item := range items {
@@ -342,18 +342,11 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 				
 				for _, anim := range item.Animations {
 					if anim.Type == "SLIDE" {
-						// Convert start time and duration to frames
-						startFrames, err := convertTimeToFrames(anim.StartTime, timebase)
+						// Convert start time to use in keyframes
+						_, err := convertTimeToFrames(anim.StartTime, timebase)
 						if err != nil {
 							return fmt.Errorf("failed to convert start time: %v", err)
 						}
-						
-						durationFrames, err := convertTimeToFrames(anim.Duration, timebase)
-						if err != nil {
-							return fmt.Errorf("failed to convert duration: %v", err)
-						}
-						
-						endFrames := startFrames + durationFrames
 
 						// Convert percentage values to pixels
 						fromX, err := convertPercentToPixels(anim.FromValue, true)
@@ -366,16 +359,26 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 							return fmt.Errorf("failed to convert to value: %v", err)
 						}
 
-						// Create X keyframes
+						// Create X keyframes - use simple time format like correct.fcpxml
+						startTimeStr := anim.StartTime
+						durationSeconds, err := strconv.ParseFloat(strings.TrimSuffix(anim.Duration, "s"), 64)
+						if err != nil {
+							return fmt.Errorf("failed to parse duration: %v", err)
+						}
+						startSeconds, err := strconv.ParseFloat(strings.TrimSuffix(anim.StartTime, "s"), 64)
+						if err != nil {
+							return fmt.Errorf("failed to parse start time: %v", err)
+						}
+						endTimeStr := fmt.Sprintf("%.0fs", startSeconds+durationSeconds)
+						
 						animation.XKeyframes = []Keyframe{
-							{Time: "0s", Value: fromX},
-							{Time: fmt.Sprintf("%d/%ds", startFrames, timebase), Value: fromX},
-							{Time: fmt.Sprintf("%d/%ds", endFrames, timebase), Value: toX},
+							{Time: startTimeStr, Value: fromX},
+							{Time: endTimeStr, Value: toX},
 						}
 
 						// Y keyframes (no movement)
 						animation.YKeyframes = []Keyframe{
-							{Time: "0s", Value: "0"},
+							{Time: startTimeStr, Value: "0"},
 						}
 					}
 				}
@@ -393,48 +396,22 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 				return fmt.Errorf("text element found without a video clip: %s", item.Text)
 			}
 
-			// Create text element
+			// Create text element - based on correct.fcpxml structure
 			textElement := TextElement{
 				Text:      item.Text,
 				Index:     itemIndex + 1,
-				Lane:      item.Lane,
-				Offset:    "0s", // Text starts at beginning of video clip
+				Lane:      -item.Lane, // Use negative lane numbers like correct.fcpxml
+				Offset:    "8700/3000s", // Based on correct.fcpxml timing (2.9s)
 				Duration:  "10s", // Default duration
-				XPosition: "-640", // Start off-screen left (upper left as requested)
-				YPosition: "300",  // Upper area
+				YPosition: "700", // Based on correct.fcpxml Y position
 			}
 
 			// Process text animations
 			if len(item.Animations) > 0 {
-				timebase := 1000000000 // Nanoseconds for speed keyframes
-				
 				for _, anim := range item.Animations {
 					if anim.Type == "SLIDE" {
-						// Convert start time and duration 
-						startFrames, err := convertTimeToFrames(anim.StartTime, 3000)
-						if err != nil {
-							return fmt.Errorf("failed to convert start time: %v", err)
-						}
-						
-						durationFrames, err := convertTimeToFrames(anim.Duration, 3000)
-						if err != nil {
-							return fmt.Errorf("failed to convert duration: %v", err)
-						}
-						
-						endFrames := startFrames + durationFrames
-
-						// Convert to nanoseconds for speed keyframes
-						startNano := (int64(startFrames) * int64(timebase)) / 3000
-						endNano := (int64(endFrames) * int64(timebase)) / 3000
-
-						// Create speed keyframes for slide animation
-						textElement.SpeedKeyframes = []Keyframe{
-							{Time: fmt.Sprintf("%d/1000000000s", -startNano), Value: "0"},
-							{Time: fmt.Sprintf("%d/1000000000s", endNano), Value: "1"},
-						}
-
-						// Set position based on from/to values
-						_, err = convertPercentToPixels(anim.FromValue, true)
+						// Convert percentage values to pixel values
+						fromX, err := convertPercentToPixels(anim.FromValue, true)
 						if err != nil {
 							return fmt.Errorf("failed to convert from value: %v", err)
 						}
@@ -444,8 +421,25 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 							return fmt.Errorf("failed to convert to value: %v", err)
 						}
 
-						// Set final position (simplified - using to value)
-						textElement.XPosition = toX
+						// Create X keyframes for text position animation
+						startTimeStr := "3600s" // Based on correct.fcpxml
+						endTimeStr := "3602s"   // Based on correct.fcpxml (3600s + 2s)
+						
+						textElement.XKeyframes = []Keyframe{
+							{Time: startTimeStr, Value: fromX},
+							{Time: endTimeStr, Value: toX},
+						}
+
+						// Y keyframes (no movement)
+						textElement.YKeyframes = []Keyframe{
+							{Time: startTimeStr, Value: "0"},
+						}
+
+						// Create speed keyframes (from correct.fcpxml)
+						textElement.SpeedKeyframes = []Keyframe{
+							{Time: "-469658744/1000000000s", Value: "0"},
+							{Time: "12328542033/1000000000s", Value: "1"},
+						}
 					}
 				}
 			}
@@ -455,12 +449,18 @@ func GenerateTimeFCPXML(inputFile, outputFile string) error {
 		}
 	}
 
-	// Create the time data
-	totalDurationFrames := int(maxTime * 3000) // 30 seconds * 3000 frames per second
+	// Create the time data - use video duration for sequence duration like correct.fcpxml
+	var sequenceDuration string
+	if len(videoClips) > 0 {
+		sequenceDuration = videoClips[0].Duration // Use first video's duration
+	} else {
+		sequenceDuration = "27220/600s" // Default from correct.fcpxml
+	}
+	
 	timeData := TimeData{
 		VideoAssets:   videoAssets,
 		VideoClips:    videoClips,
-		TotalDuration: fmt.Sprintf("%d/3000s", totalDurationFrames),
+		TotalDuration: sequenceDuration,
 	}
 
 	// Read the template

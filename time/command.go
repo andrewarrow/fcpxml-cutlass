@@ -19,7 +19,7 @@ func HandleTimeCommand(args []string) {
 
 	if fs.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "Error: .time file required\n")
-		fmt.Fprintf(os.Stderr, "Usage: %s time <time-file> [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s time [options] <time-file>\n", os.Args[0])
 		os.Exit(1)
 	}
 
