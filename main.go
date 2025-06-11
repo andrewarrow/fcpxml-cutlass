@@ -9,6 +9,7 @@ import (
 
 	"cutlass/fcp"
 	"cutlass/segments"
+	"cutlass/speech"
 	"cutlass/vtt"
 	"cutlass/wikipedia"
 	"cutlass/youtube"
@@ -44,6 +45,8 @@ func main() {
 		vtt.HandleVTTClipsCommand(args)
 	case "segments":
 		segments.HandleSegmentsCommand(args)
+	case "speech":
+		speech.HandleSpeechCommand(args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -69,6 +72,8 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "            Example: 01:21_6,02:20_3,03:34_9,05:07_18\n")
 	fmt.Fprintf(os.Stderr, "  segments <video-id> <timecodes> Create FCPXML clips from video ID in ./data/ at specified timecodes\n")
 	fmt.Fprintf(os.Stderr, "            Similar to vtt-clips but looks for video_id in ./data/id.mov\n")
+	fmt.Fprintf(os.Stderr, "  speech <text-file>        Generate FCPXML with multiple text elements appearing over time\n")
+	fmt.Fprintf(os.Stderr, "            Creates slide animation with each line from text file\n")
 	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	fmt.Fprintf(os.Stderr, "  -s, --segments           Break into logical clips with title cards (video/youtube)\n")

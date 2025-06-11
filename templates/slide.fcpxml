@@ -46,10 +46,11 @@
                                     </param>
                                 </param>
                             </adjust-transform>
-                            <title ref="r4" lane="1" offset="4900/3000s" name="Point1 - Text" start="3600s" duration="10s">
+{{range .TextElements}}
+                            <title ref="r4" lane="1" offset="{{.Offset}}s" name="{{.Text}} - Text" start="3600s" duration="10s">
                                 <param name="Build In" key="9999/10000/2/101" value="0"/>
                                 <param name="Build Out" key="9999/10000/2/102" value="0"/>
-                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 800"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 {{.YPosition}}"/>
                                 <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
                                 <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
                                 <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
@@ -69,12 +70,13 @@
                                 </param>
                                 <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
                                 <text>
-                                    <text-style ref="ts1">Point1</text-style>
+                                    <text-style ref="ts{{.Index}}">{{.Text}}</text-style>
                                 </text>
-                                <text-style-def id="ts1">
+                                <text-style-def id="ts{{.Index}}">
                                     <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="justified" lineSpacing="-19"/>
                                 </text-style-def>
                             </title>
+{{end}}
                         </asset-clip>
                     </spine>
                 </sequence>
