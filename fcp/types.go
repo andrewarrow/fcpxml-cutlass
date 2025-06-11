@@ -191,3 +191,12 @@ type TextStyle struct {
 	Alignment   string `xml:"alignment,attr"`
 	LineSpacing string `xml:"lineSpacing,attr,omitempty"`
 }
+
+type ParseOptions struct {
+	Tier          int
+	ShowElements  bool
+	ShowParams    bool
+	ShowAnimation bool
+	ShowResources bool
+	ShowStructure bool
+}
