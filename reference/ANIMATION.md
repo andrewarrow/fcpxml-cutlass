@@ -53,6 +53,8 @@ FCPXML uses a nested parameter structure for transforms, not flat parameters:
 - Animation timing is **relative to media start time**, not absolute project timeline
 - If video starts at `start="3600s"`, keyframes begin at `time="3600s"`
 - End time calculations: `start_time + duration` (e.g., `3600s + 2.4s = 10803300/3000s`)
+- **CRITICAL**: For asset-clip animations (video layer), timing is **relative to clip offset**, not media start time
+- Asset-clip keyframes start at `time="0s"` regardless of video element timing
 
 ### 4. Component-Level Animation
 - Each axis (X, Y) is animated independently
@@ -64,8 +66,9 @@ FCPXML uses a nested parameter structure for transforms, not flat parameters:
 - Example: `-266.667` for precise positioning calculations
 - Maintain precision for smooth animations
 
-## Complete Transform Animation Example
+## Complete Transform Animation Examples
 
+### Video Element Animation (Overlay Layer)
 ```xml
 <asset-clip ref="r2" offset="0s" duration="3980/600s">
     <video ref="r4" lane="1" offset="0s" start="3600s" duration="20400/3000s">
@@ -84,6 +87,30 @@ FCPXML uses a nested parameter structure for transforms, not flat parameters:
                 </param>
             </param>
         </adjust-transform>
+    </video>
+</asset-clip>
+```
+
+### Asset-Clip Animation (Video Layer)
+```xml
+<asset-clip ref="r2" offset="0s" duration="3980/600s">
+    <adjust-transform>
+        <param name="position">
+            <param name="X" key="1">
+                <keyframeAnimation>
+                    <keyframe time="0s" value="0"/>
+                    <keyframe time="2200/3000s" value="133.333"/>
+                </keyframeAnimation>
+            </param>
+            <param name="Y" key="2">
+                <keyframeAnimation>
+                    <keyframe time="0s" value="0" curve="linear"/>
+                </keyframeAnimation>
+            </param>
+        </param>
+    </adjust-transform>
+    <video ref="r4" lane="1" offset="0s" start="3600s" duration="20400/3000s">
+        <!-- video element animations use different timing -->
     </video>
 </asset-clip>
 ```
@@ -128,11 +155,18 @@ End Time = Start Time + Animation Duration
 - Using absolute project time instead of relative media time
 - Forgetting to account for media start offset
 - Incorrect rational time calculations
+- **Mixing timing contexts**: Asset-clip animations use clip-relative timing (start at 0s), video element animations use media-relative timing
 
 ### 3. Parameter Naming
 - Case sensitivity errors (`Position` vs `position`)
 - Missing key attributes on parameter components
 - Incorrect component names (`x` vs `X`)
+
+### 4. Animation Layer Confusion
+- Asset-clip transforms affect the entire video clip
+- Video element transforms affect overlay layers (generators, effects)
+- Duration calculations differ between layers
+- Coordinate systems may vary between animation contexts
 
 ## Best Practices
 
