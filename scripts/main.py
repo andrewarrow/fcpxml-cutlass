@@ -62,7 +62,7 @@ def verify_channel_access(youtube, channel_id):
         print(f"Error verifying channel access: {e}")
         return False
 
-def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private"):
+def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None):
     """Upload a video to YouTube."""
     if not os.path.exists(video_file):
         print(f"Error: Video file '{video_file}' not found.")
@@ -123,16 +123,46 @@ def upload_video(youtube, video_file, title, description, channel_id=None, tags=
         
         if response is not None:
             if 'id' in response:
+                video_id = response['id']
                 print(f"Video uploaded successfully!")
-                print(f"Video ID: {response['id']}")
-                print(f"Video URL: https://www.youtube.com/watch?v={response['id']}")
-                return response['id']
+                print(f"Video ID: {video_id}")
+                print(f"Video URL: https://www.youtube.com/watch?v={video_id}")
+                
+                # Upload thumbnail if provided
+                if thumbnail_path and os.path.exists(thumbnail_path):
+                    upload_thumbnail(youtube, video_id, thumbnail_path)
+                elif thumbnail_path:
+                    print(f"Warning: Thumbnail file '{thumbnail_path}' not found.")
+                
+                return video_id
             else:
                 print(f"Upload failed with unexpected response: {response}")
                 return None
     
     except HttpError as e:
         print(f"An HTTP error {e.resp.status} occurred: {e.content}")
+        return None
+
+def upload_thumbnail(youtube, video_id, thumbnail_path):
+    """Upload a thumbnail for the specified video."""
+    try:
+        print(f"Uploading thumbnail: {thumbnail_path}")
+        media = MediaFileUpload(thumbnail_path)
+        
+        request = youtube.thumbnails().set(
+            videoId=video_id,
+            media_body=media
+        )
+        
+        response = request.execute()
+        print("Thumbnail uploaded successfully!")
+        return response
+        
+    except HttpError as e:
+        print(f"An HTTP error occurred while uploading thumbnail: {e}")
+        return None
+    except Exception as e:
+        print(f"An error occurred while uploading thumbnail: {e}")
         return None
 
 def main():
@@ -144,6 +174,7 @@ def main():
     parser.add_argument('--category', default='22', help='YouTube category ID (default: 22 for People & Blogs)')
     parser.add_argument('--privacy', choices=['private', 'public', 'unlisted'], default='private', help='Privacy status')
     parser.add_argument('--channel-id', help='YouTube channel ID to upload to (required if you have multiple channels)')
+    parser.add_argument('--thumbnail', help='Path to PNG thumbnail image file')
     
     args = parser.parse_args()
     
@@ -160,7 +191,8 @@ def main():
             channel_id=getattr(args, 'channel_id'),
             tags=tags,
             category_id=args.category,
-            privacy_status=args.privacy
+            privacy_status=args.privacy,
+            thumbnail_path=args.thumbnail
         )
         
         if video_id:
