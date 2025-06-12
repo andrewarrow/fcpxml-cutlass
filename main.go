@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"cutlass/fcp"
+	"cutlass/resume"
 	"cutlass/segments"
 	"cutlass/speech"
 	"cutlass/time"
@@ -50,6 +51,8 @@ func main() {
 		speech.HandleSpeechCommand(args)
 	case "time":
 		time.HandleTimeCommand(args)
+	case "resume":
+		resume.HandleResumeCommand(args)
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -79,6 +82,9 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "            Creates slide animation with each line from text file\n")
 	fmt.Fprintf(os.Stderr, "  time [options] <time-file> Generate FCPXML from .time format file\n")
 	fmt.Fprintf(os.Stderr, "            Format: video paths and timed slide animations with text elements\n")
+	fmt.Fprintf(os.Stderr, "  resume <file>             Take screenshots of domains found in resume file\n")
+	fmt.Fprintf(os.Stderr, "            Looks for lines with two spaces containing domains like bizrate.com\n")
+	fmt.Fprintf(os.Stderr, "            Saves screenshots to ./assets/ as domain.png\n")
 	fmt.Fprintf(os.Stderr, "  help                      Show this help message\n\n")
 	fmt.Fprintf(os.Stderr, "Options:\n")
 	fmt.Fprintf(os.Stderr, "  -s, --segments           Break into logical clips with title cards (video/youtube)\n")

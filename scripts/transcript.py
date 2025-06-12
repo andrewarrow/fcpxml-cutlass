@@ -49,7 +49,8 @@ def extract_transcript(video_id):
         
         if timestamp and text:
             total_seconds = parse_timestamp_to_seconds(timestamp)
-            print(f"{timestamp}\t{total_seconds}\t{text}")
+            #print(f"{timestamp}\t{total_seconds}\t{text}")
+            print(f"{text}")
 
 def main():
     if len(sys.argv) != 2:
