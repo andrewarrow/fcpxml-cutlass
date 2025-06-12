@@ -1,5 +1,8 @@
-./assets/speech1.mov
+0 ./assets/speech1.mov
   3s:2s SLIDE -> 0% to 30%
-text Point2 0
+3 text Point2 0
   3s:2s SLIDE -> -100% to -73%
-  text Point3 100
+!2 text Point3 200
+  7s:5s SHOW
+!1 text Point4 400
+  12s:5s SHOW
