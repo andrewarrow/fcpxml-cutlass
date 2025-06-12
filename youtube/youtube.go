@@ -93,12 +93,6 @@ func readVideoIDsFromFile(filename string) ([]string, error) {
 			continue
 		}
 
-		// Validate YouTube ID
-		if !IsYouTubeID(line) {
-			fmt.Fprintf(os.Stderr, "Warning: Invalid YouTube ID on line %d: %s\n", lineNum, line)
-			continue
-		}
-
 		videoIDs = append(videoIDs, line)
 	}
 
