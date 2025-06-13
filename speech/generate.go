@@ -386,15 +386,55 @@ func generateResumeXML(data ResumeData, outputFile string) error {
 					<spine>
 						{{range $sectionIndex, $section := .Sections}}
 						<video ref="r{{add $sectionIndex 10}}" offset="{{mul $sectionIndex 12000}}/600s" duration="12000/600s" start="0s" name="{{base $section.ImagePath}}">
+							<adjust-transform>
+								<param name="position">
+									<param name="X" key="1">
+										<keyframeAnimation>
+											<keyframe time="0s" value="0"/>
+											<keyframe time="4000/3000s" value="41.6667"/>
+											<keyframe time="28900/3000s" value="41.6667"/>
+											<keyframe time="32900/3000s" value="0"/>
+										</keyframeAnimation>
+									</param>
+									<param name="Y" key="2">
+										<keyframeAnimation>
+											<keyframe time="0s" value="0" curve="linear"/>
+										</keyframeAnimation>
+									</param>
+								</param>
+							</adjust-transform>
 							{{range $textIndex, $text := $section.TextLines}}
 							<title ref="r2" offset="{{add (mul $textIndex 1800) 1800}}/600s" duration="{{sub 12000 (add (mul $textIndex 1800) 1800)}}/600s" name="{{$text}}" lane="{{sub 0 (add $textIndex 1)}}" start="1800/600s">
+								<param name="Build In" key="9999/10000/2/101" value="0"/>
+								<param name="Build Out" key="9999/10000/2/102" value="0"/>
+								<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 {{sub 800 (mul $textIndex 300)}}"/>
+								<param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+								<param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+								<param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+								<param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+								<param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+								<param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="3 (Justify Last Line Left)"/>
+								<param name="Justification" key="9999/10003/13260/3296672360/2/354/3296667315/402" value="2 (Full)"/>
+								<param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+								<param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+								<param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 1 (Middle)"/>
+								<param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+								<param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+								<param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+									<keyframeAnimation>
+										<keyframe time="-469658744/1000000000s" value="0"/>
+										<keyframe time="9633333333/1000000000s" value="1"/>
+										<keyframe time="10966666666/1000000000s" value="0"/>
+										<keyframe time="12328542033/1000000000s" value="1"/>
+									</keyframeAnimation>
+								</param>
+								<param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
 								<text>
 									<text-style ref="ts{{add $sectionIndex 10}}{{add $textIndex 1}}">{{$text}}</text-style>
 								</text>
 								<text-style-def id="ts{{add $sectionIndex 10}}{{add $textIndex 1}}">
 									<text-style font="Helvetica Neue" fontSize="48" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
 								</text-style-def>
-								<adjust-transform position="0 {{sub 800 (mul $textIndex 300)}}" anchor="0 0"/>
 							</title>
 							{{end}}
 						</video>
