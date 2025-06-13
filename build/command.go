@@ -151,7 +151,7 @@ func addVideoToProject(projectFile, videoFile string) error {
 		// Asset already exists, just add asset-clip to spine
 		duration, err := getVideoDuration(absVideoPath)
 		if err != nil {
-			duration = "240/24s" // 10 seconds at 24fps
+			duration = "240240/24000s" // 10 seconds at 23.976fps
 		}
 		
 		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
@@ -175,6 +175,9 @@ func addVideoToProject(projectFile, videoFile string) error {
 				// Add proper indentation
 				indentedXML := strings.ReplaceAll(string(assetClipXML), "\n", "\n                        ")
 				project.Sequences[0].Spine.Content = "\n                        " + indentedXML + "\n                    "
+				
+				// Update sequence duration to match the content
+				project.Sequences[0].Duration = duration
 			}
 		}
 		
@@ -205,7 +208,7 @@ func addVideoToProject(projectFile, videoFile string) error {
 	duration, err := getVideoDuration(absVideoPath)
 	if err != nil {
 		// Fallback to default duration on frame boundary
-		duration = "240/24s" // 10 seconds at 24fps
+		duration = "240240/24000s" // 10 seconds at 23.976fps
 	}
 	
 	// Generate consistent UID from file path
@@ -257,6 +260,9 @@ func addVideoToProject(projectFile, videoFile string) error {
 			// Add proper indentation
 			indentedXML := strings.ReplaceAll(string(assetClipXML), "\n", "\n                        ")
 			project.Sequences[0].Spine.Content = "\n                        " + indentedXML + "\n                    "
+			
+			// Update sequence duration to match the content
+			project.Sequences[0].Duration = duration
 		}
 	}
 	
@@ -384,7 +390,11 @@ func getVideoDuration(videoPath string) (string, error) {
 		return "", err
 	}
 	
-	// Convert to frame count at 24fps and format as rational
-	frames := int(durationFloat * 24)
-	return fmt.Sprintf("%d/24s", frames), nil
+	// Convert to frame count using the sequence time base (1001/24000s frame duration)
+	// This means 24000/1001 frames per second ≈ 23.976 fps
+	framesPerSecond := 24000.0 / 1001.0
+	frames := int(durationFloat * framesPerSecond)
+	
+	// Format as rational using the sequence time base
+	return fmt.Sprintf("%d/24000s", frames*1001), nil
 }
