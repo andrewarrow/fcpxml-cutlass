@@ -1,8 +1,8 @@
         <media id="{{ .ImageAssetID }}" name="{{ .AudioName }}" uid="{{ .ImageUID }}" modDate="{{ .IngestDate }}">
-            <sequence format="r1" duration="{{ .VideoDuration }}" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+            <sequence format="r1" duration="{{ .AudioDuration }}" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                 <spine>
-                    <video ref="{{ .AudioAssetID }}" offset="0s" name="{{ .AudioName }}" start="86399313/24000s" duration="{{ .VideoDuration }}">
-                        <asset-clip ref="{{ .AudioAssetID }}_audio" lane="-1" offset="28799771/8000s" name="{{ .AudioName }}" duration="{{ .VideoDuration }}" format="r1" audioRole="dialogue"/>
+                    <video ref="{{ .AudioAssetID }}" offset="0s" name="{{ .AudioName }}" start="86399313/24000s" duration="{{ .AudioDuration }}">
+                        <asset-clip ref="{{ .AudioAssetID }}_audio" lane="-1" offset="28799771/8000s" name="{{ .AudioName }}" duration="{{ .AudioDuration }}" format="r1" audioRole="dialogue"/>
                     </video>
                 </spine>
             </sequence>
