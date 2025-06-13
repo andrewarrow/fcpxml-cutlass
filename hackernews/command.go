@@ -5,6 +5,7 @@ import (
 	"cutlass/browser"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,21 +34,32 @@ func HandleHackerNewsCommand(args []string) {
 	}
 	defer session.Close()
 
-	// Navigate to Hacker News
+	// Navigate to Hacker News and fetch all articles
 	fmt.Println("Loading Hacker News homepage...")
 	if err := session.NavigateAndWait("https://news.ycombinator.com/"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading Hacker News: %v\n", err)
 		return
 	}
 
-	// Get first article
-	article, err := getFirstHNArticle(session)
+	// Get all articles from the homepage
+	fmt.Println("Fetching all articles from Hacker News...")
+	articles, err := getAllHNArticles(session)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting first article: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error getting articles: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Found article: %s\n", article.Title)
+	fmt.Printf("Found %d articles to process\n", len(articles))
+
+	// Process each article in sequence
+	for i, article := range articles {
+		processHNArticle(session, article, i)
+	}
+}
+
+// processHNArticle processes a single HN article through the full pipeline
+func processHNArticle(session *browser.BrowserSession, article *HNArticle, index int) {
+	fmt.Printf("Processing article %d: %s\n", index+1, article.Title)
 	fmt.Printf("Article URL: %s\n", article.URL)
 
 	// Append URL to hnlist.txt
@@ -62,15 +74,15 @@ func HandleHackerNewsCommand(args []string) {
 		fmt.Printf("\n%s\n\n", article.Summary)
 	}
 
-	// Create filename-safe version of title
-	filenameTitle := sanitizeFilename(article.Title)
+	// Create filename-safe version of title with index
+	filenameTitle := fmt.Sprintf("%d_%s", index+1, sanitizeFilename(article.Title))
 
 	videoURL := ""
 	tokens := strings.Split(article.Title, " ")
 	// Navigate to Google Videos search
 	for {
 		searchQuery := fmt.Sprintf("https://www.google.com/search?tbm=vid&q=%s",
-			strings.Join(tokens, "+"))
+			url.QueryEscape(strings.Join(tokens, " ")))
 		fmt.Printf("Searching Google Videos for: %s\n", article.Title)
 
 		if err := session.NavigateAndWait(searchQuery); err != nil {
@@ -79,89 +91,90 @@ func HandleHackerNewsCommand(args []string) {
 		}
 
 		// Find and get the first video link
+		var err error
 		videoURL, err = getFirstVideoLink(session)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error finding video link: %v\n", err)
-			tokens = tokens[0:2]
-			continue
+			if len(tokens) > 2 {
+				tokens = tokens[0:2]
+				continue
+			} else {
+				fmt.Printf("Skipping video download for this article\n")
+				break
+			}
 		}
 		break
 	}
 
-	fmt.Printf("Found video URL: %s\n", videoURL)
+	if videoURL != "" {
+		fmt.Printf("Found video URL: %s\n", videoURL)
 
-	// Append video URL to youtube.txt
-	if err := appendToYouTubeList(videoURL); err != nil {
-		fmt.Printf("Warning: Could not append video URL to youtube.txt: %v\n", err)
-	} else {
-		fmt.Printf("Video URL appended to data/youtube.txt\n")
-	}
-
-	// Close browser before running external commands
-	session.Close()
-
-	// Use yt-dlp to download thumbnail
-	fmt.Println("Using yt-dlp to download video thumbnail...")
-
-	// Create final filename
-	finalFilename := filepath.Join("data", fmt.Sprintf("hn_%s.png", filenameTitle))
-
-	// Run yt-dlp command
-	cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join("data", "temp_thumbnail.%(ext)s"), videoURL)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error running yt-dlp: %v\n", err)
-		fmt.Fprintf(os.Stderr, "yt-dlp output: %s\n", string(output))
-		return
-	}
-
-	fmt.Printf("yt-dlp output: %s\n", string(output))
-
-	// Find the downloaded thumbnail file and rename it
-	thumbnailFiles, err := filepath.Glob(filepath.Join("data", "temp_thumbnail.*"))
-	if err != nil || len(thumbnailFiles) == 0 {
-		fmt.Fprintf(os.Stderr, "Error: Could not find downloaded thumbnail file\n")
-		return
-	}
-
-	// Rename the first thumbnail file to our desired name
-	err = os.Rename(thumbnailFiles[0], finalFilename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error renaming thumbnail file: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Thumbnail saved: %s\n", finalFilename)
-
-	// Generate speech from article title/summary using chatterbox
-	speechText := article.Title
-	if article.Summary != "" {
-		speechText = article.Summary
-	}
-
-	fmt.Println("Generating speech from article content...")
-	audioFilename := filepath.Join("data", fmt.Sprintf("hn_%s.wav", filenameTitle))
-
-	// Call chatterbox CLI to generate speech
-	chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
-		"/Users/aa/os/chatterbox/dia/cli.py",
-		speechText,
-		"--output="+audioFilename)
-
-	chatterboxOutput, err := chatterboxCmd.CombinedOutput()
-	if err != nil {
-		fmt.Printf("Warning: Could not generate speech: %v\n", err)
-		fmt.Printf("Chatterbox output: %s\n", string(chatterboxOutput))
-	} else {
-		fmt.Printf("Speech generated: %s\n", audioFilename)
-
-		// Generate FCPXML and append to hn.fcpxml
-		if err := generateAndAppendHNFCPXML(finalFilename, audioFilename, filenameTitle, article.Title); err != nil {
-			fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
+		// Append video URL to youtube.txt
+		if err := appendToYouTubeList(videoURL); err != nil {
+			fmt.Printf("Warning: Could not append video URL to youtube.txt: %v\n", err)
 		} else {
-			fmt.Printf("FCPXML appended to data/hn.fcpxml\n")
+			fmt.Printf("Video URL appended to data/youtube.txt\n")
+		}
+
+		// Use yt-dlp to download thumbnail
+		fmt.Println("Using yt-dlp to download video thumbnail...")
+
+		// Create final filename
+		finalFilename := filepath.Join("data", fmt.Sprintf("hn_%s.png", filenameTitle))
+
+		// Run yt-dlp command
+		cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join("data", "temp_thumbnail.%(ext)s"), videoURL)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("Warning: Could not download thumbnail: %v\n", err)
+			fmt.Printf("yt-dlp output: %s\n", string(output))
+		} else {
+			fmt.Printf("yt-dlp output: %s\n", string(output))
+
+			// Find the downloaded thumbnail file and rename it
+			thumbnailFiles, err := filepath.Glob(filepath.Join("data", "temp_thumbnail.*"))
+			if err != nil || len(thumbnailFiles) == 0 {
+				fmt.Printf("Warning: Could not find downloaded thumbnail file\n")
+			} else {
+				// Rename the first thumbnail file to our desired name
+				err = os.Rename(thumbnailFiles[0], finalFilename)
+				if err != nil {
+					fmt.Printf("Warning: Could not rename thumbnail file: %v\n", err)
+				} else {
+					fmt.Printf("Thumbnail saved: %s\n", finalFilename)
+
+					// Generate speech from article title using chatterbox
+					speechText := article.Title
+
+					fmt.Println("Generating speech from article title...")
+					audioFilename := filepath.Join("data", fmt.Sprintf("hn_%s.wav", filenameTitle))
+
+					// Call chatterbox CLI to generate speech
+					chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
+						"/Users/aa/os/chatterbox/dia/cli.py",
+						speechText,
+						"--output="+audioFilename)
+
+					chatterboxOutput, err := chatterboxCmd.CombinedOutput()
+					if err != nil {
+						fmt.Printf("Warning: Could not generate speech: %v\n", err)
+						fmt.Printf("Chatterbox output: %s\n", string(chatterboxOutput))
+					} else {
+						fmt.Printf("Speech generated: %s\n", audioFilename)
+
+						// Generate FCPXML and append to hn.fcpxml
+						if err := generateAndAppendHNFCPXML(finalFilename, audioFilename, filenameTitle, article.Title); err != nil {
+							fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
+						} else {
+							fmt.Printf("FCPXML appended to data/hn.fcpxml\n")
+						}
+					}
+				}
+			}
 		}
 	}
+
+	fmt.Printf("Completed processing article %d\n\n", index+1)
 }
 
 // HNArticle represents a Hacker News article
@@ -171,38 +184,49 @@ type HNArticle struct {
 	Summary string
 }
 
-// getFirstHNArticle gets the first article from Hacker News
-func getFirstHNArticle(session *browser.BrowserSession) (*HNArticle, error) {
-	// Get first title
+// getAllHNArticles gets all articles from Hacker News homepage
+func getAllHNArticles(session *browser.BrowserSession) ([]*HNArticle, error) {
+	// Get all title elements
 	titleElements, err := session.Page.Elements("span.titleline a")
 	if err != nil || len(titleElements) == 0 {
 		return nil, fmt.Errorf("could not find title elements")
 	}
 
-	title, err := titleElements[0].Text()
-	if err != nil {
-		return nil, fmt.Errorf("could not get title text: %v", err)
+	var articles []*HNArticle
+	for i, element := range titleElements {
+		title, err := element.Text()
+		if err != nil {
+			fmt.Printf("Warning: Could not get title text for article %d: %v\n", i, err)
+			continue
+		}
+
+		articleURL, err := element.Attribute("href")
+		if err != nil || articleURL == nil {
+			fmt.Printf("Warning: Could not get article URL for article %d\n", i)
+			continue
+		}
+
+		// Handle relative URLs
+		url := *articleURL
+		if strings.HasPrefix(url, "item?id=") {
+			url = "https://news.ycombinator.com/" + url
+		}
+
+		// Try to get article summary by looking for comment count or points
+		summary := ""
+
+		articles = append(articles, &HNArticle{
+			Title:   title,
+			URL:     url,
+			Summary: summary,
+		})
 	}
 
-	articleURL, err := titleElements[0].Attribute("href")
-	if err != nil || articleURL == nil {
-		return nil, fmt.Errorf("could not get article URL")
+	if len(articles) == 0 {
+		return nil, fmt.Errorf("no valid articles found")
 	}
 
-	// Handle relative URLs
-	url := *articleURL
-	if strings.HasPrefix(url, "item?id=") {
-		url = "https://news.ycombinator.com/" + url
-	}
-
-	// Try to get article summary by looking for comment count or points
-	summary := ""
-
-	return &HNArticle{
-		Title:   title,
-		URL:     url,
-		Summary: summary,
-	}, nil
+	return articles, nil
 }
 
 // getFirstVideoLink finds the first video link from Google search results
@@ -416,10 +440,174 @@ func generateAndAppendHNFCPXML(imagePath, audioPath, name, title string) error {
 
 	newHNContent := hnStr[:resourcesEnd] + result.String() + "\n" + hnStr[resourcesEnd:]
 
+	// Now add the video clip to the timeline
+	// Find the last video element in the spine to get the end offset
+	lastVideoEnd := findLastVideoOffset(newHNContent)
+
+	// Convert audio duration to 24000s format for video duration
+	videoDuration, err := convertAudioDurationToVideo(audioDuration)
+	if err != nil {
+		return fmt.Errorf("failed to convert audio duration: %v", err)
+	}
+
+	// Create video element for timeline (reuse Wikipedia logic)
+	videoElement := fmt.Sprintf(`                        <video ref="%s" offset="%s" start="86399313/24000s" duration="%s">
+                            <asset-clip ref="%s" lane="-1" offset="28799771/8000s" name="%s" duration="%s" format="r1" audioRole="dialogue"/>
+                            <title ref="%s" lane="1" offset="86399313/24000s" name="%s - Lower Third Text &amp; Subhead" start="86486400/24000s" duration="%s">
+                                <param name="Position" key="9999/10003/13260/11488/1/100/101" value="-55.875 1522.87"/>
+                                <param name="Layout Method" key="9999/10003/13260/11488/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/11488/2/323" value="-1728"/>
+                                <param name="Right Margin" key="9999/10003/13260/11488/2/324" value="1728"/>
+                                <param name="Top Margin" key="9999/10003/13260/11488/2/325" value="-794"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/11488/2/326" value="-966.1"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/11488/2/370" value="3 (To All Margins)"/>
+                                <param name="Auto-Shrink Scale" key="9999/10003/13260/11488/2/376" value="0.74"/>
+                                <param name="Opacity" key="9999/10003/13260/11488/4/13051/1000/1044" value="0"/>
+                                <param name="Animate" key="9999/10003/13260/11488/4/13051/201/203" value="3 (Line)"/>
+                                <param name="Spread" key="9999/10003/13260/11488/4/13051/201/204" value="5"/>
+                                <param name="Speed" key="9999/10003/13260/11488/4/13051/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/11488/4/13051/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="10s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/11488/4/13051/201/211" value="2 (Per Object)"/>
+                                <param name="Start Offset" key="9999/10003/13260/11488/4/13051/201/235" value="34"/>
+                                <param name="Position" key="9999/10003/13260/3296674397/1/100/101" value="-61.6875 1516.64"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296674397/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296674397/2/323" value="-1728"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296674397/2/324" value="1728"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296674397/2/325" value="972"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296674397/2/326" value="-776.6"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296674397/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296674397/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296674397/2/373" value="0 (Left) 2 (Bottom)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296674397/4/3296674797/1000/1044" value="0"/>
+                                <param name="Animate" key="9999/10003/13260/3296674397/4/3296674797/201/203" value="3 (Line)"/>
+                                <param name="Spread" key="9999/10003/13260/3296674397/4/3296674797/201/204" value="5"/>
+                                <param name="Speed" key="9999/10003/13260/3296674397/4/3296674797/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296674397/4/3296674797/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-71680/153600s" value="0"/>
+                                        <keyframe time="1896960/153600s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296674397/4/3296674797/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1_%d">%s</text-style>
+                                </text>
+                                <text>
+                                    <text-style ref="ts2_%d">This content is adapted from Hacker News article above.</text-style>
+                                </text>
+                                <text-style-def id="ts1_%d">
+                                    <text-style font="Helvetica Neue" fontSize="170" fontColor="1 1 1 1" bold="1" shadowColor="0 0 0 0.75" shadowOffset="5 315" lineSpacing="-19"/>
+                                </text-style-def>
+                                <text-style-def id="ts2_%d">
+                                    <text-style font="Helvetica Neue" fontSize="69.56" fontFace="Medium" fontColor="1 1 1 1" shadowColor="0 0 0 0.75" shadowOffset="5 315"/>
+                                </text-style-def>
+                            </title>
+                        </video>`,
+		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, timestamp, title, timestamp, timestamp, timestamp)
+
+	// Insert video element before </spine>
+	spineEnd := strings.Index(newHNContent, "                    </spine>")
+	if spineEnd == -1 {
+		return fmt.Errorf("could not find </spine> tag")
+	}
+
+	finalContent := newHNContent[:spineEnd] + videoElement + "\n" + newHNContent[spineEnd:]
+
+	// Update sequence duration to include new clip
+	finalContent = updateSequenceDuration(finalContent, lastVideoEnd, videoDuration)
+
 	// Write back to file
-	if err := os.WriteFile(hnPath, []byte(newHNContent), 0644); err != nil {
+	if err := os.WriteFile(hnPath, []byte(finalContent), 0644); err != nil {
 		return fmt.Errorf("failed to write hn.fcpxml: %v", err)
 	}
 
 	return nil
+}
+
+// Helper functions from Wikipedia (for FCPXML timeline management)
+func findLastVideoOffset(xmlContent string) string {
+	// Find the last video offset in the timeline
+	// Look for pattern: offset="XXXX/24000s"
+	re := regexp.MustCompile(`offset="(\d+/24000s)"`)
+	matches := re.FindAllStringSubmatch(xmlContent, -1)
+
+	if len(matches) == 0 {
+		return "0s"
+	}
+
+	// Get the last match
+	lastOffset := matches[len(matches)-1][1]
+
+	// Extract numerator and add the duration to get new offset
+	parts := strings.Split(lastOffset, "/")
+	if len(parts) != 2 {
+		return "0s"
+	}
+
+	offsetNum, _ := strconv.Atoi(parts[0])
+
+	// Find the duration of that last video
+	re2 := regexp.MustCompile(`duration="(\d+/24000s)"`)
+	durMatches := re2.FindAllStringSubmatch(xmlContent, -1)
+
+	if len(durMatches) > 0 {
+		lastDur := durMatches[len(durMatches)-1][1]
+		durParts := strings.Split(lastDur, "/")
+		if len(durParts) == 2 {
+			durNum, _ := strconv.Atoi(durParts[0])
+			newOffset := offsetNum + durNum
+			return fmt.Sprintf("%d/24000s", newOffset)
+		}
+	}
+
+	return fmt.Sprintf("%d/24000s", offsetNum+100000) // fallback
+}
+
+func convertAudioDurationToVideo(audioDuration string) (string, error) {
+	// Convert from samples/44100s to frames/24000s
+	// audioDuration format: "XXXXX/44100s"
+	parts := strings.Split(strings.TrimSuffix(audioDuration, "s"), "/")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid audio duration format: %s", audioDuration)
+	}
+
+	samples, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid samples: %v", err)
+	}
+
+	// Convert samples at 44100Hz to frames at 24000Hz (24fps)
+	// duration_seconds = samples / 44100
+	// frames = duration_seconds * 24000
+	frames := (samples * 24000) / 44100
+
+	// FCPXML requires frame durations to be on edit boundaries
+	// Round to nearest multiple of 1001 (for 23.976fps compatibility)
+	frames = ((frames + 500) / 1001) * 1001
+
+	return fmt.Sprintf("%d/24000s", frames), nil
+}
+
+func updateSequenceDuration(xmlContent, lastOffset, videoDuration string) string {
+	// Extract numbers from lastOffset and videoDuration
+	offsetParts := strings.Split(strings.TrimSuffix(lastOffset, "s"), "/")
+	durationParts := strings.Split(strings.TrimSuffix(videoDuration, "s"), "/")
+
+	if len(offsetParts) == 2 && len(durationParts) == 2 {
+		offsetNum, _ := strconv.Atoi(offsetParts[0])
+		durNum, _ := strconv.Atoi(durationParts[0])
+		newTotal := offsetNum + durNum
+
+		// Update sequence duration
+		re := regexp.MustCompile(`<sequence format="r1" duration="(\d+/24000s)"`)
+		replacement := fmt.Sprintf(`<sequence format="r1" duration="%d/24000s"`, newTotal)
+		return re.ReplaceAllString(xmlContent, replacement)
+	}
+
+	return xmlContent
 }
