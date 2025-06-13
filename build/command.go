@@ -145,126 +145,86 @@ func addVideoToProject(projectFile, videoFile string) error {
 	// Create asset ID and UID
 	baseName := strings.TrimSuffix(filepath.Base(videoFile), filepath.Ext(videoFile))
 	
-	// Check if asset already exists in the project
-	existingAssetID := findExistingAsset(&fcpxml, absVideoPath)
-	if existingAssetID != "" {
-		// Asset already exists, just add asset-clip to spine
-		duration, err := getVideoDuration(absVideoPath)
-		if err != nil {
-			duration = "240240/24000s" // 10 seconds at 23.976fps
-		}
-		
-		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
-			project := &fcpxml.Library.Events[0].Projects[0]
-			if len(project.Sequences) > 0 {
-				assetClip := fcp.AssetClip{
-					Ref:      existingAssetID,
-					Offset:   "0s",
-					Name:     baseName,
-					Duration: duration,
-					Format:   "r1",
-					TCFormat: "NDF",
-				}
-				
-				// Convert asset clip to XML string and add to spine
-				assetClipXML, err := xml.Marshal(assetClip)
-				if err != nil {
-					return fmt.Errorf("failed to marshal asset clip: %v", err)
-				}
-				
-				// Add proper indentation
-				indentedXML := strings.ReplaceAll(string(assetClipXML), "\n", "\n                        ")
-				project.Sequences[0].Spine.Content = "\n                        " + indentedXML + "\n                    "
-				
-				// Update sequence duration to match the content
-				project.Sequences[0].Duration = duration
-			}
-		}
-		
-		// Generate the XML output
-		output, err := xml.MarshalIndent(fcpxml, "", "    ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal XML: %v", err)
-		}
-		
-		// Add XML declaration and DOCTYPE
-		xmlContent := `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE fcpxml>
-
-` + string(output)
-		
-		// Write back to project file
-		err = ioutil.WriteFile(projectFile, []byte(xmlContent), 0644)
-		if err != nil {
-			return fmt.Errorf("failed to write project file: %v", err)
-		}
-		
-		return nil
-	}
-	
-	assetID := fmt.Sprintf("r%d", len(fcpxml.Resources.Assets)+2) // Start from r2 since r1 is format
-	
-	// Get video duration using ffprobe
+	// Get video duration
 	duration, err := getVideoDuration(absVideoPath)
 	if err != nil {
-		// Fallback to default duration on frame boundary
 		duration = "240240/24000s" // 10 seconds at 23.976fps
 	}
 	
-	// Generate consistent UID from file path
-	assetUID := generateUID(absVideoPath)
-	
-	// Generate bookmark for the video file
-	_, _ = generateBookmark(absVideoPath) // Ignore errors, continue without bookmark
-	
-	// Add asset to resources
-	asset := fcp.Asset{
-		ID:            assetID,
-		Name:          baseName,
-		UID:           assetUID,
-		Start:         "0s",
-		HasVideo:      "1",
-		Format:        "r1",
-		HasAudio:      "1",
-		AudioSources:  "1",
-		AudioChannels: "2",
-		Duration:      duration,
-		MediaRep: fcp.MediaRep{
-			Kind: "original-media",
-			Sig:  assetUID, // Use same UID for sig
-			Src:  "file://" + absVideoPath,
-		},
+	// Check if asset already exists in the project
+	existingAssetID := findExistingAsset(&fcpxml, absVideoPath)
+	if existingAssetID == "" {
+		// Asset doesn't exist, create it
+		assetID := fmt.Sprintf("r%d", len(fcpxml.Resources.Assets)+2) // Start from r2 since r1 is format
+		
+		// Generate consistent UID from file path
+		assetUID := generateUID(absVideoPath)
+		
+		// Generate bookmark for the video file
+		_, _ = generateBookmark(absVideoPath) // Ignore errors, continue without bookmark
+		
+		// Add asset to resources
+		asset := fcp.Asset{
+			ID:            assetID,
+			Name:          baseName,
+			UID:           assetUID,
+			Start:         "0s",
+			HasVideo:      "1",
+			Format:        "r1",
+			HasAudio:      "1",
+			AudioSources:  "1",
+			AudioChannels: "2",
+			Duration:      duration,
+			MediaRep: fcp.MediaRep{
+				Kind: "original-media",
+				Sig:  assetUID, // Use same UID for sig
+				Src:  "file://" + absVideoPath,
+			},
+		}
+		
+		fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+		existingAssetID = assetID
 	}
-	
-	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
 	
 	// Add asset-clip to the spine
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
 		project := &fcpxml.Library.Events[0].Projects[0]
 		if len(project.Sequences) > 0 {
+			// Calculate offset by parsing existing spine content
+			offset := calculateTimelineOffset(project.Sequences[0].Spine.Content)
+			
 			assetClip := fcp.AssetClip{
-				Ref:      assetID,
-				Offset:   "0s",
+				Ref:      existingAssetID,
+				Offset:   offset,
 				Name:     baseName,
 				Duration: duration,
 				Format:   "r1",
 				TCFormat: "NDF",
 			}
 			
-			// Convert asset clip to XML string and add to spine
+			// Convert asset clip to XML string
 			assetClipXML, err := xml.Marshal(assetClip)
 			if err != nil {
 				return fmt.Errorf("failed to marshal asset clip: %v", err)
 			}
 			
-			// Add proper indentation
+			// Append to existing spine content
 			indentedXML := strings.ReplaceAll(string(assetClipXML), "\n", "\n                        ")
-			project.Sequences[0].Spine.Content = "\n                        " + indentedXML + "\n                    "
+			if strings.TrimSpace(project.Sequences[0].Spine.Content) == "" {
+				// First clip
+				project.Sequences[0].Spine.Content = "\n                        " + indentedXML + "\n                    "
+			} else {
+				// Append to existing clips
+				project.Sequences[0].Spine.Content = strings.TrimSuffix(project.Sequences[0].Spine.Content, "\n                    ") + 
+					"\n                        " + indentedXML + "\n                    "
+			}
 			
-			// Update sequence duration to match the content
-			project.Sequences[0].Duration = duration
+			// Update sequence duration to total timeline length
+			totalDuration := calculateTotalDuration(project.Sequences[0].Spine.Content)
+			project.Sequences[0].Duration = totalDuration
 		}
 	}
+	
 	
 	// Generate the XML output
 	output, err := xml.MarshalIndent(fcpxml, "", "    ")
@@ -363,6 +323,56 @@ func findExistingAsset(fcpxml *fcp.FCPXML, filePath string) string {
 		}
 	}
 	return ""
+}
+
+// calculateTimelineOffset parses existing spine content and calculates where the next clip should start
+func calculateTimelineOffset(spineContent string) string {
+	if strings.TrimSpace(spineContent) == "" {
+		return "0s"
+	}
+	
+	// Parse existing asset-clips to find the total timeline length
+	totalDuration := calculateTotalDuration(spineContent)
+	return totalDuration
+}
+
+// calculateTotalDuration parses spine content and calculates the total timeline duration
+func calculateTotalDuration(spineContent string) string {
+	if strings.TrimSpace(spineContent) == "" {
+		return "0s"
+	}
+	
+	// Simple regex to find all duration values in asset-clips
+	// Look for pattern: duration="X/24000s"
+	totalFrames := 0
+	
+	// Split by asset-clip tags and look for duration attributes
+	lines := strings.Split(spineContent, "asset-clip")
+	for _, line := range lines {
+		if strings.Contains(line, "duration=") {
+			// Extract duration value
+			start := strings.Index(line, "duration=\"") + 10
+			if start > 9 {
+				end := strings.Index(line[start:], "\"")
+				if end > 0 {
+					durationStr := line[start : start+end]
+					// Parse "frames/24000s" format
+					if strings.HasSuffix(durationStr, "/24000s") {
+						framesStr := strings.TrimSuffix(durationStr, "/24000s")
+						if frames, err := strconv.Atoi(framesStr); err == nil {
+							totalFrames += frames
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	if totalFrames == 0 {
+		return "0s"
+	}
+	
+	return fmt.Sprintf("%d/24000s", totalFrames)
 }
 
 // getVideoDuration uses ffprobe to get video duration in FCP time format
