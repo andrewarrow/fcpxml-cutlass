@@ -169,7 +169,7 @@ def main():
     parser = argparse.ArgumentParser(description='Upload video to YouTube')
     parser.add_argument('video_file', help='Path to video file')
     parser.add_argument('--title', required=True, help='Video title')
-    parser.add_argument('--description', default='', help='Video description')
+    parser.add_argument('--description', default='', help='Path to file containing video description')
     parser.add_argument('--tags', help='Comma-separated list of tags')
     parser.add_argument('--category', default='22', help='YouTube category ID (default: 22 for People & Blogs)')
     parser.add_argument('--privacy', choices=['private', 'public', 'unlisted'], default='private', help='Privacy status')
@@ -181,13 +181,26 @@ def main():
     tags = args.tags.split(',') if args.tags else []
     tags = [tag.strip() for tag in tags]
     
+    # Load description from file if provided
+    description = ''
+    if args.description:
+        try:
+            with open(args.description, 'r', encoding='utf-8') as f:
+                description = f.read().strip()
+        except FileNotFoundError:
+            print(f"Error: Description file '{args.description}' not found.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error reading description file '{args.description}': {e}")
+            sys.exit(1)
+    
     try:
         youtube = authenticate_youtube()
         video_id = upload_video(
             youtube=youtube,
             video_file=args.video_file,
             title=args.title,
-            description=args.description,
+            description=description,
             channel_id=getattr(args, 'channel_id'),
             tags=tags,
             category_id=args.category,
