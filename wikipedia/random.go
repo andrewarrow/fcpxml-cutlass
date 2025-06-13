@@ -433,11 +433,22 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
 		return fmt.Errorf("failed to execute template: %v", err)
 	}
 
-	// Read existing wiki.fcpxml
+	// Read or create wiki.fcpxml
 	wikiPath := "data/wiki.fcpxml"
-	wikiContent, err := os.ReadFile(wikiPath)
-	if err != nil {
-		return fmt.Errorf("failed to read wiki.fcpxml: %v", err)
+	var wikiContent []byte
+
+	if _, err := os.Stat(wikiPath); os.IsNotExist(err) {
+		// Create new wiki.fcpxml based on two_wiki.fcpxml template
+		templateContent, err := os.ReadFile("templates/two_wiki.fcpxml")
+		if err != nil {
+			return fmt.Errorf("failed to read wiki.fcpxml template: %v", err)
+		}
+		wikiContent = templateContent
+	} else {
+		wikiContent, err = os.ReadFile(wikiPath)
+		if err != nil {
+			return fmt.Errorf("failed to read wiki.fcpxml: %v", err)
+		}
 	}
 
 	// Find insertion points

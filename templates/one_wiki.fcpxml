@@ -1,13 +1,13 @@
-        <media id="{{ .ImageAssetID }}_media" name="{{ .AudioName }}" uid="{{ .ImageUID }}_media" modDate="{{ .IngestDate }}">
+        <media id="{{ .ImageAssetID }}" name="{{ .AudioName }}" uid="{{ .ImageUID }}" modDate="{{ .IngestDate }}">
             <sequence format="r1" duration="{{ .AudioDuration }}" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                 <spine>
-                    <video ref="{{ .ImageAssetID }}" offset="0s" name="{{ .ImageName }}" start="86399313/24000s" duration="{{ .AudioDuration }}">
-                        <asset-clip ref="{{ .AudioAssetID }}" lane="-1" offset="3599771/1000s" name="{{ .AudioName }}" duration="{{ .AudioDuration }}" format="r10" audioRole="dialogue"/>
+                    <video ref="{{ .AudioAssetID }}" offset="0s" name="{{ .AudioName }}" start="86399313/24000s" duration="{{ .AudioDuration }}">
+                        <asset-clip ref="{{ .AudioAssetID }}_audio" lane="-1" offset="28799771/8000s" name="{{ .AudioName }}" duration="{{ .AudioDuration }}" format="r1" audioRole="dialogue"/>
                     </video>
                 </spine>
             </sequence>
         </media>
-        <asset id="{{ .ImageAssetID }}" name="{{ .ImageName }}" uid="{{ .ImageUID }}" start="0s" duration="0s" hasVideo="1" format="{{ .ImageFormatID }}" videoSources="1">
+        <asset id="{{ .AudioAssetID }}" name="{{ .AudioName }}" uid="{{ .ImageUID }}" start="0s" duration="0s" hasVideo="1" format="{{ .ImageFormatID }}" videoSources="1">
             <media-rep kind="original-media" sig="{{ .ImageUID }}" src="file://{{ .ImagePath }}">
                 <bookmark>{{ .ImageBookmark }}</bookmark>
             </media-rep>
@@ -20,7 +20,7 @@
             </metadata>
         </asset>
         <format id="{{ .ImageFormatID }}" name="FFVideoFormatRateUndefined" width="{{ .ImageWidth }}" height="{{ .ImageHeight }}" colorSpace="1-13-1"/>
-        <asset id="{{ .AudioAssetID }}" name="{{ .AudioName }}" uid="{{ .AudioUID }}" start="0s" duration="{{ .AudioDuration }}" hasAudio="1" audioSources="1" audioChannels="1" audioRate="24000">
+        <asset id="{{ .AudioAssetID }}_audio" name="{{ .AudioName }}" uid="{{ .AudioUID }}" start="0s" duration="{{ .AudioDuration }}" hasAudio="1" audioSources="1" audioChannels="1" audioRate="24000">
             <media-rep kind="original-media" sig="{{ .AudioUID }}" src="file://{{ .AudioPath }}">
                 <bookmark>{{ .AudioBookmark }}</bookmark>
             </media-rep>
