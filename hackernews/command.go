@@ -59,6 +59,17 @@ func HandleHackerNewsCommand(args []string) {
 
 // processHNArticle processes a single HN article through the full pipeline
 func processHNArticle(session *browser.BrowserSession, article *HNArticle, index int) {
+	// Create a fresh browser session for this article
+	freshSession, err := browser.NewBrowserSession()
+	if err != nil {
+		fmt.Printf("Warning: Could not create fresh browser session for article %d: %v\n", index+1, err)
+		// Fall back to using the existing session
+		freshSession = session
+	} else {
+		defer freshSession.Close()
+		// Use the fresh session for all operations
+		session = freshSession
+	}
 	fmt.Printf("Processing article %d: %s\n", index+1, article.Title)
 	fmt.Printf("Article URL: %s\n", article.URL)
 
