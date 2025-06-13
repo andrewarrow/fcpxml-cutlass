@@ -44,3 +44,26 @@ func HandleSpeechCommand(args []string) {
 
 	fmt.Printf("Successfully generated '%s' from '%s' using media '%s'\n", outputFile, inputFile, videoFile)
 }
+
+func HandleResumeCommandWithOutput(args []string, outputFile string) {
+	if len(args) < 1 {
+		fmt.Fprintf(os.Stderr, "Error: resume file required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s content resume <resume-file> [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "       The resume file should contain PNG filenames followed by their associated text lines\n")
+		os.Exit(1)
+	}
+
+	resumeFile := args[0]
+
+	if _, err := os.Stat(resumeFile); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: Resume file '%s' does not exist\n", resumeFile)
+		os.Exit(1)
+	}
+
+	if err := GenerateResumeFCPXML(resumeFile, outputFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating resume FCPXML: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Successfully generated '%s' from '%s'\n", outputFile, resumeFile)
+}

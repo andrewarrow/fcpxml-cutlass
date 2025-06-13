@@ -249,3 +249,191 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 
 	return nil
 }
+
+type ResumeSection struct {
+	ImagePath string
+	TextLines []string
+}
+
+type ResumeData struct {
+	Sections []ResumeSection
+	TotalDuration string
+	TotalClipDuration string
+}
+
+func GenerateResumeFCPXML(resumeFile, outputFile string) error {
+	// Parse the resume file
+	sections, err := parseResumeFile(resumeFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse resume file: %v", err)
+	}
+
+	if len(sections) == 0 {
+		return fmt.Errorf("no sections found in resume file")
+	}
+
+	// Calculate total duration based on number of sections
+	// Each section gets 20 seconds
+	sectionDuration := 20.0
+	totalDuration := float64(len(sections)) * sectionDuration
+	
+	// Convert to FCP asset format (frames/44100s)
+	assetFrames := int64(totalDuration * 44100)
+	totalAssetDuration := fmt.Sprintf("%d/44100s", assetFrames)
+
+	// Convert to FCP clip format (frames/600s) aligned to frame boundaries
+	clipFrames := int64(totalDuration * 600)
+	// Round to nearest frame boundary (multiple of 20)
+	clipFrames = (clipFrames / 20) * 20
+	totalClipDuration := fmt.Sprintf("%d/600s", clipFrames)
+
+	// Create the resume data
+	resumeData := ResumeData{
+		Sections: sections,
+		TotalDuration: totalAssetDuration,
+		TotalClipDuration: totalClipDuration,
+	}
+
+	// Generate FCPXML using template
+	if err := generateResumeXML(resumeData, outputFile); err != nil {
+		return fmt.Errorf("failed to generate XML: %v", err)
+	}
+
+	return nil
+}
+
+func parseResumeFile(resumeFile string) ([]ResumeSection, error) {
+	file, err := os.Open(resumeFile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var sections []ResumeSection
+	var currentSection *ResumeSection
+	
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		// Check if this line is a PNG filename
+		if strings.HasSuffix(strings.ToLower(line), ".png") {
+			// Start a new section
+			if currentSection != nil {
+				sections = append(sections, *currentSection)
+			}
+			
+			// Get absolute path for the image
+			imagePath := filepath.Join("assets", line)
+			absImagePath, err := filepath.Abs(imagePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get absolute path for image %s: %v", line, err)
+			}
+			
+			// Check if image file exists
+			if _, err := os.Stat(absImagePath); os.IsNotExist(err) {
+				return nil, fmt.Errorf("image file does not exist: %s", absImagePath)
+			}
+			
+			currentSection = &ResumeSection{
+				ImagePath: "file://" + absImagePath,
+				TextLines: []string{},
+			}
+		} else if currentSection != nil {
+			// Add text line to current section (any non-PNG line)
+			text := strings.TrimSpace(line)
+			if text != "" {
+				currentSection.TextLines = append(currentSection.TextLines, text)
+			}
+		}
+	}
+
+	// Add the last section
+	if currentSection != nil {
+		sections = append(sections, *currentSection)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return sections, nil
+}
+
+func generateResumeXML(data ResumeData, outputFile string) error {
+	// Create a multi-section FCPXML template
+	tmplContent := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+	<resources>
+		<format id="r1" name="FFVideoFormat720p30" frameDuration="100/3000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+		{{range $sectionIndex, $section := .Sections}}
+		<asset id="r{{add $sectionIndex 10}}" name="{{base $section.ImagePath}}" uid="{{printf "%08X" (add $sectionIndex 1)}}" start="0s" duration="{{$.TotalDuration}}" hasVideo="1" format="r1" hasAudio="0">
+			<media-rep kind="original-media" sig="{{printf "%032X" (add $sectionIndex 1)}}" src="{{$section.ImagePath}}"></media-rep>
+		</asset>
+		{{end}}
+		<effect id="r2" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+	</resources>
+
+	<library location="file:///Users/aa/Desktop/">
+		<event name="Test Project" uid="AC90D6CC-5C26-44CA-805E-7BA143E57440">
+			<project name="Resume" uid="63FC3253-EB57-4F5E-9653-0C4F64E72E40" id="r3">
+				<sequence duration="{{.TotalClipDuration}}" format="r1" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+					<spine>
+						{{range $sectionIndex, $section := .Sections}}
+						<video ref="r{{add $sectionIndex 10}}" offset="{{mul $sectionIndex 12000}}/600s" duration="12000/600s" start="0s" name="{{base $section.ImagePath}}">
+							{{range $textIndex, $text := $section.TextLines}}
+							<title ref="r2" offset="{{add (mul $textIndex 1800) 1800}}/600s" duration="{{sub 12000 (add (mul $textIndex 1800) 1800)}}/600s" name="{{$text}}" lane="{{sub 0 (add $textIndex 1)}}" start="1800/600s">
+								<text>
+									<text-style ref="ts{{add $sectionIndex 10}}{{add $textIndex 1}}">{{$text}}</text-style>
+								</text>
+								<text-style-def id="ts{{add $sectionIndex 10}}{{add $textIndex 1}}">
+									<text-style font="Helvetica Neue" fontSize="48" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
+								</text-style-def>
+								<adjust-transform position="0 {{sub 800 (mul $textIndex 300)}}" anchor="0 0"/>
+							</title>
+							{{end}}
+						</video>
+						{{end}}
+					</spine>
+				</sequence>
+			</project>
+		</event>
+	</library>
+</fcpxml>`
+
+	// Parse template
+	tmpl, err := template.New("resume").Funcs(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+		"sub": func(a, b int) int { return a - b },
+		"mul": func(a, b int) int { return a * b },
+		"base": func(path string) string { return filepath.Base(strings.TrimPrefix(path, "file://")) },
+	}).Parse(tmplContent)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	// Ensure output directory exists
+	outputDir := filepath.Dir(outputFile)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	// Create output file
+	outFile, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %v", err)
+	}
+	defer outFile.Close()
+
+	// Execute template
+	if err := tmpl.Execute(outFile, data); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	return nil
+}

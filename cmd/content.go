@@ -25,6 +25,23 @@ The video or image file will be used as background media for the text animations
 	},
 }
 
+var speechResumeCmd = &cobra.Command{
+	Use:   "resume <resume-file>",
+	Short: "Generate FCPXML with multiple image/text pairs from resume file",
+	Long: `Generate FCPXML with multiple image/text pairs from resume file.
+The resume file should contain PNG filenames followed by their associated text lines.`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		outputFile, _ := cmd.Flags().GetString("output")
+		speech.HandleResumeCommandWithOutput(args, outputFile)
+		return nil
+	},
+}
+
+func init() {
+	speechResumeCmd.Flags().StringP("output", "o", "data/resume.fcpxml", "Output file")
+}
+
 var timeCmd = &cobra.Command{
 	Use:   "time <time-file>",
 	Short: "Generate FCPXML from .time format file",
@@ -38,5 +55,6 @@ var timeCmd = &cobra.Command{
 
 func init() {
 	contentCmd.AddCommand(speechCmd)
+	contentCmd.AddCommand(speechResumeCmd)
 	contentCmd.AddCommand(timeCmd)
 }
