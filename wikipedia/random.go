@@ -211,6 +211,26 @@ func HandleWikipediaRandomCommand(args []string) {
 		
 		fmt.Printf("Thumbnail saved: %s\n", finalFilename)
 		
+		// Generate speech from first paragraph using chatterbox
+		if firstParagraph != "" {
+			fmt.Println("Generating speech from first paragraph...")
+			audioFilename := filepath.Join(dataDir, fmt.Sprintf("wiki_%s.wav", filenameTitle))
+			
+			// Call chatterbox CLI to generate speech
+			chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3", 
+				"/Users/aa/os/chatterbox/dia/cli.py", 
+				firstParagraph, 
+				"--output="+audioFilename)
+			
+			chatterboxOutput, err := chatterboxCmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Warning: Could not generate speech: %v\n", err)
+				fmt.Printf("Chatterbox output: %s\n", string(chatterboxOutput))
+			} else {
+				fmt.Printf("Speech generated: %s\n", audioFilename)
+			}
+		}
+		
 	} else {
 		fmt.Fprintf(os.Stderr, "Error: Link href is empty\n")
 		page.Close()
