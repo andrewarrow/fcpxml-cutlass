@@ -431,21 +431,32 @@ func generateAndAppendFCPXML(imagePath, audioPath, name string) error {
 	// Generate UIDs and asset IDs
 	imageUID := generateUID()
 	audioUID := generateUID()
+	timestamp := int(time.Now().Unix())
+	
+	// Convert relative paths to absolute paths with file:// prefix
+	absImagePath, err := filepath.Abs(imagePath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for image: %v", err)
+	}
+	absAudioPath, err := filepath.Abs(audioPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for audio: %v", err)
+	}
 	
 	// Create template data
 	data := WikiTemplateData{
-		ImageAssetID:    "r" + strconv.Itoa(int(time.Now().Unix())),
+		ImageAssetID:    "r" + strconv.Itoa(timestamp),
 		ImageName:       name,
 		ImageUID:        imageUID,
-		ImagePath:       imagePath,
+		ImagePath:       "file://" + absImagePath,
 		ImageBookmark:   "placeholder_bookmark",
-		ImageFormatID:   "r" + strconv.Itoa(int(time.Now().Unix())+1),
+		ImageFormatID:   "r" + strconv.Itoa(timestamp+1),
 		ImageWidth:      "640",
 		ImageHeight:     "480",
-		AudioAssetID:    "r" + strconv.Itoa(int(time.Now().Unix())+2),
+		AudioAssetID:    "r" + strconv.Itoa(timestamp+2),
 		AudioName:       name,
 		AudioUID:        audioUID,
-		AudioPath:       audioPath,
+		AudioPath:       "file://" + absAudioPath,
 		AudioBookmark:   "placeholder_bookmark",
 		AudioDuration:   audioDuration,
 		IngestDate:      time.Now().Format("2006-01-02 15:04:05 -0700"),
@@ -486,10 +497,119 @@ func generateAndAppendFCPXML(imagePath, audioPath, name string) error {
 	
 	newWikiContent := wikiStr[:resourcesEnd] + result.String() + "\n" + wikiStr[resourcesEnd:]
 	
+	// Now add the video clip to the timeline
+	// Find the last video element in the spine to get the end offset
+	lastVideoEnd := findLastVideoOffset(newWikiContent)
+	
+	// Convert audio duration to 24000s format for video duration
+	videoDuration, err := convertAudioDurationToVideo(audioDuration)
+	if err != nil {
+		return fmt.Errorf("failed to convert audio duration: %v", err)
+	}
+	
+	// Create video element for timeline
+	videoElement := fmt.Sprintf(`                        <video ref="%s" offset="%s" start="86399313/24000s" duration="%s">
+                            <asset-clip ref="%s" lane="-1" offset="28799771/8000s" name="%s" duration="%s" format="r1" audioRole="dialogue"/>
+                        </video>`, 
+		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration)
+	
+	// Insert video element before </spine>
+	spineEnd := strings.Index(newWikiContent, "                    </spine>")
+	if spineEnd == -1 {
+		return fmt.Errorf("could not find </spine> tag")
+	}
+	
+	finalContent := newWikiContent[:spineEnd] + videoElement + "\n" + newWikiContent[spineEnd:]
+	
+	// Update sequence duration to include new clip
+	finalContent = updateSequenceDuration(finalContent, lastVideoEnd, videoDuration)
+	
 	// Write back to file
-	if err := os.WriteFile(wikiPath, []byte(newWikiContent), 0644); err != nil {
+	if err := os.WriteFile(wikiPath, []byte(finalContent), 0644); err != nil {
 		return fmt.Errorf("failed to write wiki.fcpxml: %v", err)
 	}
 	
 	return nil
+}
+
+func findLastVideoOffset(xmlContent string) string {
+	// Find the last video offset in the timeline
+	// Look for pattern: offset="XXXX/24000s"
+	re := regexp.MustCompile(`offset="(\d+/24000s)"`)
+	matches := re.FindAllStringSubmatch(xmlContent, -1)
+	
+	if len(matches) == 0 {
+		return "0s"
+	}
+	
+	// Get the last match
+	lastOffset := matches[len(matches)-1][1]
+	
+	// Extract numerator and add the duration to get new offset
+	parts := strings.Split(lastOffset, "/")
+	if len(parts) != 2 {
+		return "0s"
+	}
+	
+	offsetNum, _ := strconv.Atoi(parts[0])
+	
+	// Find the duration of that last video
+	re2 := regexp.MustCompile(`duration="(\d+/24000s)"`)
+	durMatches := re2.FindAllStringSubmatch(xmlContent, -1)
+	
+	if len(durMatches) > 0 {
+		lastDur := durMatches[len(durMatches)-1][1]
+		durParts := strings.Split(lastDur, "/")
+		if len(durParts) == 2 {
+			durNum, _ := strconv.Atoi(durParts[0])
+			newOffset := offsetNum + durNum
+			return fmt.Sprintf("%d/24000s", newOffset)
+		}
+	}
+	
+	return fmt.Sprintf("%d/24000s", offsetNum+100000) // fallback
+}
+
+func convertAudioDurationToVideo(audioDuration string) (string, error) {
+	// Convert from samples/44100s to frames/24000s
+	// audioDuration format: "XXXXX/44100s"
+	parts := strings.Split(strings.TrimSuffix(audioDuration, "s"), "/")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid audio duration format: %s", audioDuration)
+	}
+	
+	samples, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid samples: %v", err)
+	}
+	
+	// Convert samples at 44100Hz to frames at 24000Hz (24fps)
+	// duration_seconds = samples / 44100
+	// frames = duration_seconds * 24000
+	frames := (samples * 24000) / 44100
+	
+	// FCPXML requires frame durations to be on edit boundaries
+	// Round to nearest multiple of 1001 (for 23.976fps compatibility)
+	frames = ((frames + 500) / 1001) * 1001
+	
+	return fmt.Sprintf("%d/24000s", frames), nil
+}
+
+func updateSequenceDuration(xmlContent, lastOffset, videoDuration string) string {
+	// Extract numbers from lastOffset and videoDuration
+	offsetParts := strings.Split(strings.TrimSuffix(lastOffset, "s"), "/")
+	durationParts := strings.Split(strings.TrimSuffix(videoDuration, "s"), "/")
+	
+	if len(offsetParts) == 2 && len(durationParts) == 2 {
+		offsetNum, _ := strconv.Atoi(offsetParts[0])
+		durNum, _ := strconv.Atoi(durationParts[0])
+		newTotal := offsetNum + durNum
+		
+		// Update sequence duration
+		re := regexp.MustCompile(`<sequence format="r1" duration="(\d+/24000s)"`)
+		replacement := fmt.Sprintf(`<sequence format="r1" duration="%d/24000s"`, newTotal)
+		return re.ReplaceAllString(xmlContent, replacement)
+	}
+	
+	return xmlContent
 }
