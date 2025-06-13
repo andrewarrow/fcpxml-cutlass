@@ -556,20 +556,20 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
                                 </param>
                                 <param name="Apply Speed" key="9999/10003/13260/3296674397/4/3296674797/201/211" value="2 (Per Object)"/>
                                 <text>
-                                    <text-style ref="ts1">%s</text-style>
+                                    <text-style ref="ts1_%d">%s</text-style>
                                 </text>
                                 <text>
-                                    <text-style ref="ts2">This content is adapted from Wikipedia article above, used under the Creative Commons Attribution-ShareAlike 4.0 International License.</text-style>
+                                    <text-style ref="ts2_%d">This content is adapted from Wikipedia article above, used under the Creative Commons Attribution-ShareAlike 4.0 International License.</text-style>
                                 </text>
-                                <text-style-def id="ts1">
+                                <text-style-def id="ts1_%d">
                                     <text-style font="Helvetica Neue" fontSize="170" fontColor="1 1 1 1" bold="1" shadowColor="0 0 0 0.75" shadowOffset="5 315" lineSpacing="-19"/>
                                 </text-style-def>
-                                <text-style-def id="ts2">
+                                <text-style-def id="ts2_%d">
                                     <text-style font="Helvetica Neue" fontSize="69.56" fontFace="Medium" fontColor="1 1 1 1" shadowColor="0 0 0 0.75" shadowOffset="5 315"/>
                                 </text-style-def>
                             </title>
                         </video>`,
-		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, title)
+		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, timestamp, title, timestamp, timestamp, timestamp)
 
 	// Insert video element before </spine>
 	spineEnd := strings.Index(newWikiContent, "                    </spine>")

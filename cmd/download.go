@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cutlass/hackernews"
 	"cutlass/wikipedia"
 	"cutlass/youtube"
 
@@ -80,6 +81,16 @@ var wikipediaRandomCmd = &cobra.Command{
 	},
 }
 
+var hnCmd = &cobra.Command{
+	Use:   "hn",
+	Short: "List Hacker News article titles",
+	Long:  "Fetch and display article titles from the Hacker News homepage.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		hackernews.HandleHackerNewsCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	downloadCmd.AddCommand(youtubeCmd)
 	downloadCmd.AddCommand(youtubeBulkCmd)
@@ -87,4 +98,5 @@ func init() {
 	downloadCmd.AddCommand(wikipediaCmd)
 	downloadCmd.AddCommand(tableCmd)
 	downloadCmd.AddCommand(wikipediaRandomCmd)
+	downloadCmd.AddCommand(hnCmd)
 }
