@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"cutlass/build"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.AddCommand(build.BuildCmd)
 	rootCmd.AddCommand(mediaCmd)
 	rootCmd.AddCommand(downloadCmd)
 	rootCmd.AddCommand(parseCmd)
