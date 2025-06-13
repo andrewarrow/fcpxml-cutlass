@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"cutlass/youtube"
 	"cutlass/wikipedia"
+	"cutlass/youtube"
 
 	"github.com/spf13/cobra"
 )
@@ -73,7 +73,9 @@ var wikipediaRandomCmd = &cobra.Command{
 	Short: "Download random Wikipedia page and Google image search",
 	Long:  "Navigate to a random Wikipedia page, extract the title, perform Google image search, and save screenshot.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wikipedia.HandleWikipediaRandomCommand(args)
+		for {
+			wikipedia.HandleWikipediaRandomCommand(args)
+		}
 		return nil
 	},
 }
