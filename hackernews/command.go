@@ -65,20 +65,27 @@ func HandleHackerNewsCommand(args []string) {
 	// Create filename-safe version of title
 	filenameTitle := sanitizeFilename(article.Title)
 
+	videoURL := ""
+	tokens := strings.Split(article.Title, " ")
 	// Navigate to Google Videos search
-	searchQuery := fmt.Sprintf("https://www.google.com/search?tbm=vid&q=%s", strings.ReplaceAll(article.Title, " ", "+"))
-	fmt.Printf("Searching Google Videos for: %s\n", article.Title)
+	for {
+		searchQuery := fmt.Sprintf("https://www.google.com/search?tbm=vid&q=%s",
+			strings.Join(tokens, "+"))
+		fmt.Printf("Searching Google Videos for: %s\n", article.Title)
 
-	if err := session.NavigateAndWait(searchQuery); err != nil {
-		fmt.Fprintf(os.Stderr, "Error navigating to Google Videos: %v\n", err)
-		return
-	}
+		if err := session.NavigateAndWait(searchQuery); err != nil {
+			fmt.Fprintf(os.Stderr, "Error navigating to Google Videos: %v\n", err)
+			return
+		}
 
-	// Find and get the first video link
-	videoURL, err := getFirstVideoLink(session)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error finding video link: %v\n", err)
-		return
+		// Find and get the first video link
+		videoURL, err = getFirstVideoLink(session)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error finding video link: %v\n", err)
+			tokens = tokens[0:2]
+			continue
+		}
+		break
 	}
 
 	fmt.Printf("Found video URL: %s\n", videoURL)
@@ -190,7 +197,7 @@ func getFirstHNArticle(session *browser.BrowserSession) (*HNArticle, error) {
 
 	// Try to get article summary by looking for comment count or points
 	summary := ""
-	
+
 	return &HNArticle{
 		Title:   title,
 		URL:     url,
@@ -202,7 +209,7 @@ func getFirstHNArticle(session *browser.BrowserSession) (*HNArticle, error) {
 func getFirstVideoLink(session *browser.BrowserSession) (string, error) {
 	selectors := []string{
 		"div.g h3 a",
-		"div[data-ved] h3 a", 
+		"div[data-ved] h3 a",
 		"h3.LC20lb a",
 		"a[href*='youtube.com']",
 		"a[href*='watch']",
@@ -385,7 +392,7 @@ func generateAndAppendHNFCPXML(imagePath, audioPath, name, title string) error {
 	// Read or create hn.fcpxml
 	hnPath := "data/hn.fcpxml"
 	var hnContent []byte
-	
+
 	if _, err := os.Stat(hnPath); os.IsNotExist(err) {
 		// Create new hn.fcpxml based on wiki.fcpxml
 		wikiContent, err := os.ReadFile("data/wiki.fcpxml")
