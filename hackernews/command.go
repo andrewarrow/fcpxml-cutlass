@@ -4,7 +4,6 @@ import (
 	"cutlass/browser"
 	"cutlass/build2/api"
 	"fmt"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,9 +11,9 @@ import (
 	"strings"
 )
 
-// HandleHackerNewsStep1Command processes step 1: get articles and download thumbnails
+// HandleHackerNewsStep1Command processes step 1: get articles and take screenshots
 func HandleHackerNewsStep1Command(args []string) {
-	fmt.Println("Processing Hacker News articles - Step 1: Articles and Thumbnails...")
+	fmt.Println("Processing Hacker News articles - Step 1: Articles and Screenshots...")
 
 	// Create data directory if it doesn't exist
 	if err := browser.EnsureDataDir(); err != nil {
@@ -61,7 +60,7 @@ func HandleHackerNewsStep1Command(args []string) {
 		return
 	}
 
-	// Process each article for step 1 (articles and thumbnails only)
+	// Process each article for step 1 (articles and screenshots only)
 	for i, article := range articles {
 		processHNArticleStep1(session, article, i)
 	}
@@ -106,7 +105,7 @@ func HandleHackerNewsStep2Command(args []string) {
 	fmt.Println("Step 2 completed. All Hacker News articles processed.")
 }
 
-// processHNArticleStep1 processes a single HN article for step 1 (articles and thumbnails)
+// processHNArticleStep1 processes a single HN article for step 1 (articles and screenshots)
 func processHNArticleStep1(session *browser.BrowserSession, article *HNArticle, index int) {
 	// Create a fresh browser session for this article
 	freshSession, err := browser.NewBrowserSession()
@@ -137,72 +136,27 @@ func processHNArticleStep1(session *browser.BrowserSession, article *HNArticle, 
 	// Create filename-safe version of title with index
 	filenameTitle := fmt.Sprintf("%d_%s", index+1, sanitizeFilename(article.Title))
 
-	videoURL := ""
-	tokens := strings.Split(article.Title, " ")
-	// Navigate to Google Videos search
-	for {
-		searchQuery := fmt.Sprintf("https://www.google.com/search?tbm=vid&q=%s",
-			url.QueryEscape(strings.Join(tokens, " ")))
-		fmt.Printf("Searching Google Videos for: %s\n", article.Title)
-
-		if err := session.NavigateAndWait(searchQuery); err != nil {
-			fmt.Fprintf(os.Stderr, "Error navigating to Google Videos: %v\n", err)
-			return
-		}
-
-		// Find and get the first video link
-		var err error
-		videoURL, err = getFirstVideoLink(session)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error finding video link: %v\n", err)
-			if len(tokens) > 2 {
-				tokens = tokens[0:2]
-				continue
-			} else {
-				fmt.Printf("Skipping video download for this article\n")
-				break
-			}
-		}
-		break
-	}
-
-	if videoURL != "" {
-		fmt.Printf("Found video URL: %s\n", videoURL)
-
-		// Append video URL to youtube.txt
-		if err := appendToYouTubeList(videoURL); err != nil {
-			fmt.Printf("Warning: Could not append video URL to youtube.txt: %v\n", err)
-		} else {
-			fmt.Printf("Video URL appended to data/youtube.txt\n")
-		}
-
-		// Use yt-dlp to download thumbnail
-		fmt.Println("Using yt-dlp to download video thumbnail...")
-
-		// Create final filename
+	// Navigate to the article URL and take a screenshot
+	fmt.Printf("Navigating to article URL for screenshot: %s\n", article.URL)
+	
+	if err := session.NavigateAndWait(article.URL); err != nil {
+		fmt.Printf("Warning: Could not navigate to article URL: %v\n", err)
+	} else {
+		// Create final filename for screenshot
 		finalFilename := filepath.Join("data", fmt.Sprintf("hn_%s.png", filenameTitle))
-
-		// Run yt-dlp command
-		cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join("data", "temp_thumbnail.%(ext)s"), videoURL)
-		output, err := cmd.CombinedOutput()
+		
+		// Take screenshot of the page
+		fmt.Println("Taking screenshot of article page...")
+		screenshot, err := session.Page.Screenshot(true, nil)
 		if err != nil {
-			fmt.Printf("Warning: Could not download thumbnail: %v\n", err)
-			fmt.Printf("yt-dlp output: %s\n", string(output))
+			fmt.Printf("Warning: Could not take screenshot: %v\n", err)
 		} else {
-			fmt.Printf("yt-dlp output: %s\n", string(output))
-
-			// Find the downloaded thumbnail file and rename it
-			thumbnailFiles, err := filepath.Glob(filepath.Join("data", "temp_thumbnail.*"))
-			if err != nil || len(thumbnailFiles) == 0 {
-				fmt.Printf("Warning: Could not find downloaded thumbnail file\n")
+			// Save screenshot to file
+			err = os.WriteFile(finalFilename, screenshot, 0644)
+			if err != nil {
+				fmt.Printf("Warning: Could not save screenshot: %v\n", err)
 			} else {
-				// Rename the first thumbnail file to our desired name
-				err = os.Rename(thumbnailFiles[0], finalFilename)
-				if err != nil {
-					fmt.Printf("Warning: Could not rename thumbnail file: %v\n", err)
-				} else {
-					fmt.Printf("Thumbnail saved: %s\n", finalFilename)
-				}
+				fmt.Printf("Screenshot saved: %s\n", finalFilename)
 			}
 		}
 	}
@@ -311,63 +265,6 @@ func getAllHNArticles(session *browser.BrowserSession) ([]*HNArticle, error) {
 	return articles, nil
 }
 
-// getFirstVideoLink finds the first video link from Google search results, preferring watch URLs over channel URLs
-func getFirstVideoLink(session *browser.BrowserSession) (string, error) {
-	selectors := []string{
-		"div.g h3 a",
-		"div[data-ved] h3 a",
-		"h3.LC20lb a",
-		"a[href*='youtube.com']",
-		"a[href*='watch']",
-		"div.g a",
-	}
-
-	var allLinks []string
-	
-	// Collect all potential links first
-	for _, selector := range selectors {
-		elements, err := session.Page.Elements(selector)
-		if err != nil {
-			continue
-		}
-
-		for _, element := range elements {
-			href, err := element.Attribute("href")
-			if err != nil || href == nil || *href == "" {
-				continue
-			}
-			allLinks = append(allLinks, *href)
-		}
-	}
-
-	if len(allLinks) == 0 {
-		return "", fmt.Errorf("could not find any video links")
-	}
-
-	// First pass: look for YouTube watch URLs (actual videos)
-	for _, link := range allLinks {
-		if strings.Contains(link, "youtube.com") && strings.Contains(link, "/watch?v=") {
-			return link, nil
-		}
-	}
-
-	// Second pass: look for other YouTube watch URLs
-	for _, link := range allLinks {
-		if strings.Contains(link, "youtube.com") && strings.Contains(link, "watch") {
-			return link, nil
-		}
-	}
-
-	// Third pass: any YouTube URL except channels
-	for _, link := range allLinks {
-		if strings.Contains(link, "youtube.com") && !strings.Contains(link, "/channel/") && !strings.Contains(link, "/c/") && !strings.Contains(link, "/@") {
-			return link, nil
-		}
-	}
-
-	// Fourth pass: any link (fallback, including channels if that's all we have)
-	return allLinks[0], nil
-}
 
 // appendToHNList appends URL to hnlist.txt
 func appendToHNList(url string) error {
@@ -386,22 +283,6 @@ func appendToHNList(url string) error {
 	return nil
 }
 
-// appendToYouTubeList appends URL to youtube.txt
-func appendToYouTubeList(url string) error {
-	youtubeListPath := filepath.Join("data", "youtube.txt")
-	file, err := os.OpenFile(youtubeListPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("error opening youtube.txt: %v", err)
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(url + "\n")
-	if err != nil {
-		return fmt.Errorf("error writing to youtube.txt: %v", err)
-	}
-
-	return nil
-}
 
 // writeArticlesToFile writes articles to a text file for step 2
 func writeArticlesToFile(articles []*HNArticle) error {
