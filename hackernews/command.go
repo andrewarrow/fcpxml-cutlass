@@ -1,19 +1,15 @@
 package hackernews
 
 import (
-	"crypto/rand"
 	"cutlass/browser"
-	"encoding/hex"
+	"cutlass/build2/api"
 	"fmt"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
-	"text/template"
-	"time"
 )
 
 // HandleHackerNewsStep1Command processes step 1: get articles and download thumbnails
@@ -87,9 +83,24 @@ func HandleHackerNewsStep2Command(args []string) {
 
 	fmt.Printf("Found %d articles to process for audio generation\n", len(articles))
 
+	// Create or get project builder for hn.fcpxml
+	hnProjectFile := "data/hn.fcpxml"
+	pb, err := api.NewProjectBuilder(hnProjectFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating project builder: %v\n", err)
+		return
+	}
+
 	// Process each article for step 2 (audio generation and FCPXML)
 	for i, article := range articles {
-		processHNArticleStep2(article, i)
+		processHNArticleStep2(article, i, pb)
+	}
+
+	// Save the project
+	err = pb.Save()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error saving project: %v\n", err)
+		return
 	}
 
 	fmt.Println("Step 2 completed. All Hacker News articles processed.")
@@ -200,7 +211,7 @@ func processHNArticleStep1(session *browser.BrowserSession, article *HNArticle, 
 }
 
 // processHNArticleStep2 processes a single HN article for step 2 (audio generation)
-func processHNArticleStep2(article *HNArticle, index int) {
+func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder) {
 	fmt.Printf("Processing article %d for audio: %s\n", index+1, article.Title)
 
 	// Create filename-safe version of title with index
@@ -232,11 +243,16 @@ func processHNArticleStep2(article *HNArticle, index int) {
 	} else {
 		fmt.Printf("Speech generated: %s\n", audioFilename)
 
-		// Generate FCPXML and append to hn.fcpxml
-		if err := generateAndAppendHNFCPXML(thumbnailPath, audioFilename, filenameTitle, article.Title); err != nil {
-			fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
+		// Add video/image with audio and text to project using build2 API
+		err := pb.AddClipSafe(api.ClipConfig{
+			VideoFile: thumbnailPath,
+			AudioFile: audioFilename,
+			Text:      article.Title,
+		})
+		if err != nil {
+			fmt.Printf("Warning: Could not add clip to project: %v\n", err)
 		} else {
-			fmt.Printf("FCPXML appended to data/hn.fcpxml\n")
+			fmt.Printf("Clip added to hn.fcpxml\n")
 		}
 	}
 
@@ -295,7 +311,7 @@ func getAllHNArticles(session *browser.BrowserSession) ([]*HNArticle, error) {
 	return articles, nil
 }
 
-// getFirstVideoLink finds the first video link from Google search results
+// getFirstVideoLink finds the first video link from Google search results, preferring watch URLs over channel URLs
 func getFirstVideoLink(session *browser.BrowserSession) (string, error) {
 	selectors := []string{
 		"div.g h3 a",
@@ -306,22 +322,51 @@ func getFirstVideoLink(session *browser.BrowserSession) (string, error) {
 		"div.g a",
 	}
 
+	var allLinks []string
+	
+	// Collect all potential links first
 	for _, selector := range selectors {
 		elements, err := session.Page.Elements(selector)
 		if err != nil {
 			continue
 		}
 
-		if len(elements) > 0 {
-			href, err := elements[0].Attribute("href")
+		for _, element := range elements {
+			href, err := element.Attribute("href")
 			if err != nil || href == nil || *href == "" {
 				continue
 			}
-			return *href, nil
+			allLinks = append(allLinks, *href)
 		}
 	}
 
-	return "", fmt.Errorf("could not find any video links")
+	if len(allLinks) == 0 {
+		return "", fmt.Errorf("could not find any video links")
+	}
+
+	// First pass: look for YouTube watch URLs (actual videos)
+	for _, link := range allLinks {
+		if strings.Contains(link, "youtube.com") && strings.Contains(link, "/watch?v=") {
+			return link, nil
+		}
+	}
+
+	// Second pass: look for other YouTube watch URLs
+	for _, link := range allLinks {
+		if strings.Contains(link, "youtube.com") && strings.Contains(link, "watch") {
+			return link, nil
+		}
+	}
+
+	// Third pass: any YouTube URL except channels
+	for _, link := range allLinks {
+		if strings.Contains(link, "youtube.com") && !strings.Contains(link, "/channel/") && !strings.Contains(link, "/c/") && !strings.Contains(link, "/@") {
+			return link, nil
+		}
+	}
+
+	// Fourth pass: any link (fallback, including channels if that's all we have)
+	return allLinks[0], nil
 }
 
 // appendToHNList appends URL to hnlist.txt
@@ -422,310 +467,4 @@ func sanitizeFilename(title string) string {
 	}
 
 	return safe
-}
-
-// HNTemplateData represents data for HN FCPXML template
-type HNTemplateData struct {
-	ImageAssetID  string
-	ImageName     string
-	ImageUID      string
-	ImagePath     string
-	ImageBookmark string
-	ImageFormatID string
-	ImageWidth    string
-	ImageHeight   string
-	AudioAssetID  string
-	AudioName     string
-	AudioUID      string
-	AudioPath     string
-	AudioBookmark string
-	AudioDuration string
-	IngestDate    string
-	TitleEffectID string
-	Title         string
-}
-
-// generateUID creates a unique identifier
-func generateUID() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return strings.ToUpper(hex.EncodeToString(bytes))
-}
-
-// getAudioDuration gets audio duration using ffprobe
-func getAudioDuration(audioPath string) (string, error) {
-	cmd := exec.Command("ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", audioPath)
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	durationStr := strings.TrimSpace(string(output))
-	duration, err := strconv.ParseFloat(durationStr, 64)
-	if err != nil {
-		return "", err
-	}
-
-	samples := int64(duration * 44100)
-	return fmt.Sprintf("%d/44100s", samples), nil
-}
-
-// generateAndAppendHNFCPXML generates FCPXML for HN article
-func generateAndAppendHNFCPXML(imagePath, audioPath, name, title string) error {
-	// Get audio duration using ffprobe
-	audioDuration, err := getAudioDuration(audioPath)
-	if err != nil {
-		return fmt.Errorf("failed to get audio duration: %v", err)
-	}
-
-	// Generate UIDs and asset IDs
-	imageUID := generateUID()
-	audioUID := generateUID()
-	timestamp := int(time.Now().Unix())
-
-	// Convert relative paths to absolute paths with file:// prefix
-	absImagePath, err := filepath.Abs(imagePath)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path for image: %v", err)
-	}
-	absAudioPath, err := filepath.Abs(audioPath)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path for audio: %v", err)
-	}
-
-	// Create template data
-	data := HNTemplateData{
-		ImageAssetID:  "r" + strconv.Itoa(timestamp),
-		ImageName:     name,
-		ImageUID:      imageUID,
-		ImagePath:     "file://" + absImagePath,
-		ImageBookmark: "placeholder_bookmark",
-		ImageFormatID: "r" + strconv.Itoa(timestamp+1),
-		ImageWidth:    "640",
-		ImageHeight:   "480",
-		AudioAssetID:  "r" + strconv.Itoa(timestamp+2),
-		AudioName:     name,
-		AudioUID:      audioUID,
-		AudioPath:     "file://" + absAudioPath,
-		AudioBookmark: "placeholder_bookmark",
-		AudioDuration: audioDuration,
-		IngestDate:    time.Now().Format("2006-01-02 15:04:05 -0700"),
-		TitleEffectID: "r" + strconv.Itoa(timestamp+3),
-		Title:         title,
-	}
-
-	// Read template (reuse Wikipedia template for now)
-	templateContent, err := os.ReadFile("templates/one_wiki.fcpxml")
-	if err != nil {
-		return fmt.Errorf("failed to read template: %v", err)
-	}
-
-	// Execute template
-	tmpl, err := template.New("hn").Parse(string(templateContent))
-	if err != nil {
-		return fmt.Errorf("failed to parse template: %v", err)
-	}
-
-	var result strings.Builder
-	if err := tmpl.Execute(&result, data); err != nil {
-		return fmt.Errorf("failed to execute template: %v", err)
-	}
-
-	// Read or create hn.fcpxml
-	hnPath := "data/hn.fcpxml"
-	var hnContent []byte
-
-	if _, err := os.Stat(hnPath); os.IsNotExist(err) {
-		// Create new hn.fcpxml based on wiki.fcpxml
-		wikiContent, err := os.ReadFile("data/wiki.fcpxml")
-		if err != nil {
-			return fmt.Errorf("failed to read wiki.fcpxml template: %v", err)
-		}
-		hnContent = wikiContent
-	} else {
-		hnContent, err = os.ReadFile(hnPath)
-		if err != nil {
-			return fmt.Errorf("failed to read hn.fcpxml: %v", err)
-		}
-	}
-
-	// Follow same insertion logic as Wikipedia
-	hnStr := string(hnContent)
-	resourcesEnd := strings.Index(hnStr, "    </resources>")
-	if resourcesEnd == -1 {
-		return fmt.Errorf("could not find </resources> tag")
-	}
-
-	newHNContent := hnStr[:resourcesEnd] + result.String() + "\n" + hnStr[resourcesEnd:]
-
-	// Now add the video clip to the timeline
-	// Find the last video element in the spine to get the end offset
-	lastVideoEnd := findLastVideoOffset(newHNContent)
-
-	// Convert audio duration to 24000s format for video duration
-	videoDuration, err := convertAudioDurationToVideo(audioDuration)
-	if err != nil {
-		return fmt.Errorf("failed to convert audio duration: %v", err)
-	}
-
-	// Create video element for timeline (reuse Wikipedia logic)
-	videoElement := fmt.Sprintf(`                        <video ref="%s" offset="%s" start="86399313/24000s" duration="%s">
-                            <asset-clip ref="%s" lane="-1" offset="28799771/8000s" name="%s" duration="%s" format="r1" audioRole="dialogue"/>
-                            <title ref="%s" lane="1" offset="86399313/24000s" name="%s - Lower Third Text &amp; Subhead" start="86486400/24000s" duration="%s">
-                                <param name="Position" key="9999/10003/13260/11488/1/100/101" value="-55.875 1522.87"/>
-                                <param name="Layout Method" key="9999/10003/13260/11488/2/314" value="1 (Paragraph)"/>
-                                <param name="Left Margin" key="9999/10003/13260/11488/2/323" value="-1728"/>
-                                <param name="Right Margin" key="9999/10003/13260/11488/2/324" value="1728"/>
-                                <param name="Top Margin" key="9999/10003/13260/11488/2/325" value="-794"/>
-                                <param name="Bottom Margin" key="9999/10003/13260/11488/2/326" value="-966.1"/>
-                                <param name="Auto-Shrink" key="9999/10003/13260/11488/2/370" value="3 (To All Margins)"/>
-                                <param name="Auto-Shrink Scale" key="9999/10003/13260/11488/2/376" value="0.74"/>
-                                <param name="Opacity" key="9999/10003/13260/11488/4/13051/1000/1044" value="0"/>
-                                <param name="Animate" key="9999/10003/13260/11488/4/13051/201/203" value="3 (Line)"/>
-                                <param name="Spread" key="9999/10003/13260/11488/4/13051/201/204" value="5"/>
-                                <param name="Speed" key="9999/10003/13260/11488/4/13051/201/208" value="6 (Custom)"/>
-                                <param name="Custom Speed" key="9999/10003/13260/11488/4/13051/201/209">
-                                    <keyframeAnimation>
-                                        <keyframe time="0s" value="0"/>
-                                        <keyframe time="10s" value="1"/>
-                                    </keyframeAnimation>
-                                </param>
-                                <param name="Apply Speed" key="9999/10003/13260/11488/4/13051/201/211" value="2 (Per Object)"/>
-                                <param name="Start Offset" key="9999/10003/13260/11488/4/13051/201/235" value="34"/>
-                                <param name="Position" key="9999/10003/13260/3296674397/1/100/101" value="-61.6875 1516.64"/>
-                                <param name="Layout Method" key="9999/10003/13260/3296674397/2/314" value="1 (Paragraph)"/>
-                                <param name="Left Margin" key="9999/10003/13260/3296674397/2/323" value="-1728"/>
-                                <param name="Right Margin" key="9999/10003/13260/3296674397/2/324" value="1728"/>
-                                <param name="Top Margin" key="9999/10003/13260/3296674397/2/325" value="972"/>
-                                <param name="Bottom Margin" key="9999/10003/13260/3296674397/2/326" value="-776.6"/>
-                                <param name="Line Spacing" key="9999/10003/13260/3296674397/2/354/3296667315/404" value="-19"/>
-                                <param name="Auto-Shrink" key="9999/10003/13260/3296674397/2/370" value="3 (To All Margins)"/>
-                                <param name="Alignment" key="9999/10003/13260/3296674397/2/373" value="0 (Left) 2 (Bottom)"/>
-                                <param name="Opacity" key="9999/10003/13260/3296674397/4/3296674797/1000/1044" value="0"/>
-                                <param name="Animate" key="9999/10003/13260/3296674397/4/3296674797/201/203" value="3 (Line)"/>
-                                <param name="Spread" key="9999/10003/13260/3296674397/4/3296674797/201/204" value="5"/>
-                                <param name="Speed" key="9999/10003/13260/3296674397/4/3296674797/201/208" value="6 (Custom)"/>
-                                <param name="Custom Speed" key="9999/10003/13260/3296674397/4/3296674797/201/209">
-                                    <keyframeAnimation>
-                                        <keyframe time="-71680/153600s" value="0"/>
-                                        <keyframe time="1896960/153600s" value="1"/>
-                                    </keyframeAnimation>
-                                </param>
-                                <param name="Apply Speed" key="9999/10003/13260/3296674397/4/3296674797/201/211" value="2 (Per Object)"/>
-                                <text>
-                                    <text-style ref="ts1_%d">%s</text-style>
-                                </text>
-                                <text>
-                                    <text-style ref="ts2_%d">This content is adapted from Hacker News article above.</text-style>
-                                </text>
-                                <text-style-def id="ts1_%d">
-                                    <text-style font="Helvetica Neue" fontSize="170" fontColor="1 1 1 1" bold="1" shadowColor="0 0 0 0.75" shadowOffset="5 315" lineSpacing="-19"/>
-                                </text-style-def>
-                                <text-style-def id="ts2_%d">
-                                    <text-style font="Helvetica Neue" fontSize="69.56" fontFace="Medium" fontColor="1 1 1 1" shadowColor="0 0 0 0.75" shadowOffset="5 315"/>
-                                </text-style-def>
-                            </title>
-                        </video>`,
-		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, timestamp, title, timestamp, timestamp, timestamp)
-
-	// Insert video element before </spine>
-	spineEnd := strings.Index(newHNContent, "                    </spine>")
-	if spineEnd == -1 {
-		return fmt.Errorf("could not find </spine> tag")
-	}
-
-	finalContent := newHNContent[:spineEnd] + videoElement + "\n" + newHNContent[spineEnd:]
-
-	// Update sequence duration to include new clip
-	finalContent = updateSequenceDuration(finalContent, lastVideoEnd, videoDuration)
-
-	// Write back to file
-	if err := os.WriteFile(hnPath, []byte(finalContent), 0644); err != nil {
-		return fmt.Errorf("failed to write hn.fcpxml: %v", err)
-	}
-
-	return nil
-}
-
-// Helper functions from Wikipedia (for FCPXML timeline management)
-func findLastVideoOffset(xmlContent string) string {
-	// Find the last video offset in the timeline
-	// Look for pattern: offset="XXXX/24000s"
-	re := regexp.MustCompile(`offset="(\d+/24000s)"`)
-	matches := re.FindAllStringSubmatch(xmlContent, -1)
-
-	if len(matches) == 0 {
-		return "0s"
-	}
-
-	// Get the last match
-	lastOffset := matches[len(matches)-1][1]
-
-	// Extract numerator and add the duration to get new offset
-	parts := strings.Split(lastOffset, "/")
-	if len(parts) != 2 {
-		return "0s"
-	}
-
-	offsetNum, _ := strconv.Atoi(parts[0])
-
-	// Find the duration of that last video
-	re2 := regexp.MustCompile(`duration="(\d+/24000s)"`)
-	durMatches := re2.FindAllStringSubmatch(xmlContent, -1)
-
-	if len(durMatches) > 0 {
-		lastDur := durMatches[len(durMatches)-1][1]
-		durParts := strings.Split(lastDur, "/")
-		if len(durParts) == 2 {
-			durNum, _ := strconv.Atoi(durParts[0])
-			newOffset := offsetNum + durNum
-			return fmt.Sprintf("%d/24000s", newOffset)
-		}
-	}
-
-	return fmt.Sprintf("%d/24000s", offsetNum+100000) // fallback
-}
-
-func convertAudioDurationToVideo(audioDuration string) (string, error) {
-	// Convert from samples/44100s to frames/24000s
-	// audioDuration format: "XXXXX/44100s"
-	parts := strings.Split(strings.TrimSuffix(audioDuration, "s"), "/")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("invalid audio duration format: %s", audioDuration)
-	}
-
-	samples, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return "", fmt.Errorf("invalid samples: %v", err)
-	}
-
-	// Convert samples at 44100Hz to frames at 24000Hz (24fps)
-	// duration_seconds = samples / 44100
-	// frames = duration_seconds * 24000
-	frames := (samples * 24000) / 44100
-
-	// FCPXML requires frame durations to be on edit boundaries
-	// Round to nearest multiple of 1001 (for 23.976fps compatibility)
-	frames = ((frames + 500) / 1001) * 1001
-
-	return fmt.Sprintf("%d/24000s", frames), nil
-}
-
-func updateSequenceDuration(xmlContent, lastOffset, videoDuration string) string {
-	// Extract numbers from lastOffset and videoDuration
-	offsetParts := strings.Split(strings.TrimSuffix(lastOffset, "s"), "/")
-	durationParts := strings.Split(strings.TrimSuffix(videoDuration, "s"), "/")
-
-	if len(offsetParts) == 2 && len(durationParts) == 2 {
-		offsetNum, _ := strconv.Atoi(offsetParts[0])
-		durNum, _ := strconv.Atoi(durationParts[0])
-		newTotal := offsetNum + durNum
-
-		// Update sequence duration
-		re := regexp.MustCompile(`<sequence format="r1" duration="(\d+/24000s)"`)
-		replacement := fmt.Sprintf(`<sequence format="r1" duration="%d/24000s"`, newTotal)
-		return re.ReplaceAllString(xmlContent, replacement)
-	}
-
-	return xmlContent
 }

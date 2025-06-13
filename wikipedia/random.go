@@ -94,53 +94,15 @@ func HandleWikipediaRandomCommand(args []string) {
 	pageTitle, _ := session.Page.Eval("document.title")
 	fmt.Printf("Debug: Current page title: %v\n", pageTitle)
 
-	// Debug: Try multiple selectors to find video links
-	selectors := []string{
-		"div.g h3 a",
-		"div[data-ved] h3 a",
-		"h3.LC20lb a",
-		"a[href*='youtube.com']",
-		"a[href*='watch']",
-		"div.g a",
-	}
-
-	var firstVideoLink *rod.Element
-	for _, selector := range selectors {
-		fmt.Printf("Debug: Trying selector: %s\n", selector)
-		elements, err := session.Page.Elements(selector)
-		if err != nil {
-			fmt.Printf("Debug: Error with selector %s: %v\n", selector, err)
-			continue
-		}
-		fmt.Printf("Debug: Found %d elements with selector %s\n", len(elements), selector)
-
-		if len(elements) > 0 {
-			firstVideoLink = elements[0]
-			fmt.Printf("Debug: Using first element from selector: %s\n", selector)
-			break
-		}
-	}
-
-	if firstVideoLink == nil {
-		// Debug: Print page HTML snippet to see structure
-		bodyHTML, _ := session.Page.Eval("document.body.innerHTML.substring(0, 1000)")
-		fmt.Printf("Debug: Page HTML snippet: %v\n", bodyHTML)
-		fmt.Fprintf(os.Stderr, "Error: Could not find any video links with any selector\n")
+	// Get the video URL using improved link selection
+	videoURL, err := getFirstVideoLinkWikipedia(session)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error finding video link: %v\n", err)
 		return
 	}
 
-	// Debug: Print the actual link URL before clicking
-	linkHref, err := firstVideoLink.Attribute("href")
-	if err != nil {
-		fmt.Printf("Debug: Could not get href attribute: %v\n", err)
-	} else {
-		fmt.Printf("Debug: About to click link: %s\n", *linkHref)
-	}
-
-	// Get the video URL
-	if linkHref != nil && *linkHref != "" {
-		videoURL := *linkHref
-		fmt.Printf("Found video URL: %s\n", videoURL)
+	if videoURL != "" {
+		fmt.Printf("Selected video URL: %s\n", videoURL)
 
 		// Append video URL to youtube.txt
 		if err := appendToYouTubeList(videoURL); err != nil {
@@ -218,6 +180,74 @@ func HandleWikipediaRandomCommand(args []string) {
 		session.Close()
 		return
 	}
+}
+
+// getFirstVideoLinkWikipedia finds the first video link from Google search results, preferring watch URLs over channel URLs
+func getFirstVideoLinkWikipedia(session *browser.BrowserSession) (string, error) {
+	selectors := []string{
+		"div.g h3 a",
+		"div[data-ved] h3 a",
+		"h3.LC20lb a",
+		"a[href*='youtube.com']",
+		"a[href*='watch']",
+		"div.g a",
+	}
+
+	var allLinks []string
+	
+	// Collect all potential links first
+	for _, selector := range selectors {
+		fmt.Printf("Debug: Trying selector: %s\n", selector)
+		elements, err := session.Page.Elements(selector)
+		if err != nil {
+			fmt.Printf("Debug: Error with selector %s: %v\n", selector, err)
+			continue
+		}
+		fmt.Printf("Debug: Found %d elements with selector %s\n", len(elements), selector)
+
+		for _, element := range elements {
+			href, err := element.Attribute("href")
+			if err != nil || href == nil || *href == "" {
+				continue
+			}
+			allLinks = append(allLinks, *href)
+		}
+	}
+
+	if len(allLinks) == 0 {
+		// Debug: Print page HTML snippet to see structure
+		bodyHTML, _ := session.Page.Eval("document.body.innerHTML.substring(0, 1000)")
+		fmt.Printf("Debug: Page HTML snippet: %v\n", bodyHTML)
+		return "", fmt.Errorf("could not find any video links with any selector")
+	}
+
+	// First pass: look for YouTube watch URLs (actual videos)
+	for _, link := range allLinks {
+		if strings.Contains(link, "youtube.com") && strings.Contains(link, "/watch?v=") {
+			fmt.Printf("Debug: Found preferred watch URL: %s\n", link)
+			return link, nil
+		}
+	}
+
+	// Second pass: look for other YouTube watch URLs
+	for _, link := range allLinks {
+		if strings.Contains(link, "youtube.com") && strings.Contains(link, "watch") {
+			fmt.Printf("Debug: Found watch URL: %s\n", link)
+			return link, nil
+		}
+	}
+
+	// Third pass: any YouTube URL except channels
+	for _, link := range allLinks {
+		if strings.Contains(link, "youtube.com") && !strings.Contains(link, "/channel/") && !strings.Contains(link, "/c/") && !strings.Contains(link, "/@") {
+			fmt.Printf("Debug: Found non-channel YouTube URL: %s\n", link)
+			return link, nil
+		}
+	}
+
+	// Fourth pass: any link (fallback, including channels if that's all we have)
+	fmt.Printf("Debug: Using fallback URL: %s\n", allLinks[0])
+	return allLinks[0], nil
 }
 
 func sanitizeFilename(title string) string {
