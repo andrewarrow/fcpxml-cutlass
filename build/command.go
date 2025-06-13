@@ -429,12 +429,12 @@ func calculateTotalDuration(spineContent string) string {
 	// Find all duration values in both asset-clips and video elements
 	totalFrames := 0
 	
-	// Split by both asset-clip and video tags and look for duration attributes
-	lines := strings.Split(spineContent, "asset-clip")
-	lines = append(lines, strings.Split(spineContent, "video")...)
-	
+	// Use regex to find all duration attributes more precisely
+	// This avoids double-counting when splitting by both tags
+	lines := strings.Split(spineContent, "\n")
 	for _, line := range lines {
-		if strings.Contains(line, "duration=") {
+		// Look for asset-clip or video elements with duration
+		if (strings.Contains(line, "asset-clip") || strings.Contains(line, "<video")) && strings.Contains(line, "duration=") {
 			// Extract duration value
 			start := strings.Index(line, "duration=\"") + 10
 			if start > 9 {
