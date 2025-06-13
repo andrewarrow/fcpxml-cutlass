@@ -1,18 +1,14 @@
 package wikipedia
 
 import (
-	"crypto/rand"
 	"cutlass/browser"
-	"encoding/hex"
+	"cutlass/build2/api"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
-	"text/template"
-	"time"
 
 	"github.com/go-rod/rod"
 )
@@ -207,11 +203,12 @@ func HandleWikipediaRandomCommand(args []string) {
 			} else {
 				fmt.Printf("Speech generated: %s\n", audioFilename)
 
-				// Generate FCPXML and append to wiki.fcpxml
-				if err := generateAndAppendFCPXML(finalFilename, audioFilename, filenameTitle, title); err != nil {
+				// Generate FCPXML using build2 system
+				wikiProjectFile := "data/wiki.fcpxml"
+				if err := generateWithBuild2(finalFilename, audioFilename, title, wikiProjectFile); err != nil {
 					fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
 				} else {
-					fmt.Printf("FCPXML appended to data/wiki.fcpxml\n")
+					fmt.Printf("FCPXML updated using build2 system: %s\n", wikiProjectFile)
 				}
 			}
 		}
@@ -329,306 +326,31 @@ func appendToYouTubeList(url string) error {
 	return nil
 }
 
-type WikiTemplateData struct {
-	ImageAssetID  string
-	ImageName     string
-	ImageUID      string
-	ImagePath     string
-	ImageBookmark string
-	ImageFormatID string
-	ImageWidth    string
-	ImageHeight   string
-	AudioAssetID  string
-	AudioName     string
-	AudioUID      string
-	AudioPath     string
-	AudioBookmark string
-	AudioDuration string
-	IngestDate    string
-	TitleEffectID string
-	Title         string
-}
 
-func generateUID() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return strings.ToUpper(hex.EncodeToString(bytes))
-}
 
-func getAudioDuration(audioPath string) (string, error) {
-	cmd := exec.Command("ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", audioPath)
-	output, err := cmd.Output()
+func generateWithBuild2(imagePath, audioPath, title, projectFile string) error {
+	// Create or load project using build2 API
+	pb, err := api.NewProjectBuilder(projectFile)
 	if err != nil {
-		return "", err
+		return fmt.Errorf("failed to create project builder: %v", err)
 	}
-
-	durationStr := strings.TrimSpace(string(output))
-	duration, err := strconv.ParseFloat(durationStr, 64)
+	
+	// Add the clip with image, audio, and text overlay
+	err = pb.AddClipSafe(api.ClipConfig{
+		VideoFile: imagePath,
+		AudioFile: audioPath,
+		Text:      title,
+	})
 	if err != nil {
-		return "", err
+		return fmt.Errorf("failed to add clip to project: %v", err)
 	}
-
-	// Convert to FCPXML format (samples/rate)
-	samples := int64(duration * 44100)
-	return fmt.Sprintf("%d/44100s", samples), nil
-}
-
-func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
-	// Get audio duration using ffprobe
-	audioDuration, err := getAudioDuration(audioPath)
+	
+	// Save the project
+	err = pb.Save()
 	if err != nil {
-		return fmt.Errorf("failed to get audio duration: %v", err)
+		return fmt.Errorf("failed to save project: %v", err)
 	}
-
-	// Generate UIDs and asset IDs
-	imageUID := generateUID()
-	audioUID := generateUID()
-	timestamp := int(time.Now().Unix())
-
-	// Convert relative paths to absolute paths with file:// prefix
-	absImagePath, err := filepath.Abs(imagePath)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path for image: %v", err)
-	}
-	absAudioPath, err := filepath.Abs(audioPath)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path for audio: %v", err)
-	}
-
-	// Create template data
-	data := WikiTemplateData{
-		ImageAssetID:  "r" + strconv.Itoa(timestamp),
-		ImageName:     name,
-		ImageUID:      imageUID,
-		ImagePath:     "file://" + absImagePath,
-		ImageBookmark: "placeholder_bookmark",
-		ImageFormatID: "r" + strconv.Itoa(timestamp+1),
-		ImageWidth:    "640",
-		ImageHeight:   "480",
-		AudioAssetID:  "r" + strconv.Itoa(timestamp+2),
-		AudioName:     name,
-		AudioUID:      audioUID,
-		AudioPath:     "file://" + absAudioPath,
-		AudioBookmark: "placeholder_bookmark",
-		AudioDuration: audioDuration,
-		IngestDate:    time.Now().Format("2006-01-02 15:04:05 -0700"),
-		TitleEffectID: "r" + strconv.Itoa(timestamp+3),
-		Title:         title,
-	}
-
-	// Read template
-	templateContent, err := os.ReadFile("templates/one_wiki.fcpxml")
-	if err != nil {
-		return fmt.Errorf("failed to read template: %v", err)
-	}
-
-	// Execute template
-	tmpl, err := template.New("wiki").Parse(string(templateContent))
-	if err != nil {
-		return fmt.Errorf("failed to parse template: %v", err)
-	}
-
-	var result strings.Builder
-	if err := tmpl.Execute(&result, data); err != nil {
-		return fmt.Errorf("failed to execute template: %v", err)
-	}
-
-	// Read or create wiki.fcpxml
-	wikiPath := "data/wiki.fcpxml"
-	var wikiContent []byte
-
-	if _, err := os.Stat(wikiPath); os.IsNotExist(err) {
-		// Create new wiki.fcpxml based on two_wiki.fcpxml template
-		templateContent, err := os.ReadFile("templates/two_wiki.fcpxml")
-		if err != nil {
-			return fmt.Errorf("failed to read wiki.fcpxml template: %v", err)
-		}
-		wikiContent = templateContent
-	} else {
-		wikiContent, err = os.ReadFile(wikiPath)
-		if err != nil {
-			return fmt.Errorf("failed to read wiki.fcpxml: %v", err)
-		}
-	}
-
-	// Find insertion points
-	wikiStr := string(wikiContent)
-
-	// Insert assets before </resources>
-	resourcesEnd := strings.Index(wikiStr, "    </resources>")
-	if resourcesEnd == -1 {
-		return fmt.Errorf("could not find </resources> tag")
-	}
-
-	newWikiContent := wikiStr[:resourcesEnd] + result.String() + "\n" + wikiStr[resourcesEnd:]
-
-	// Now add the video clip to the timeline
-	// Find the last video element in the spine to get the end offset
-	lastVideoEnd := findLastVideoOffset(newWikiContent)
-
-	// Convert audio duration to 24000s format for video duration
-	videoDuration, err := convertAudioDurationToVideo(audioDuration)
-	if err != nil {
-		return fmt.Errorf("failed to convert audio duration: %v", err)
-	}
-
-	// Create video element for timeline
-	videoElement := fmt.Sprintf(`                        <video ref="%s" offset="%s" start="86399313/24000s" duration="%s">
-                            <asset-clip ref="%s" lane="-1" offset="28799771/8000s" name="%s" duration="%s" format="r1" audioRole="dialogue"/>
-                            <title ref="%s" lane="1" offset="86399313/24000s" name="%s - Lower Third Text &amp; Subhead" start="86486400/24000s" duration="%s">
-                                <param name="Position" key="9999/10003/13260/11488/1/100/101" value="-55.875 1522.87"/>
-                                <param name="Layout Method" key="9999/10003/13260/11488/2/314" value="1 (Paragraph)"/>
-                                <param name="Left Margin" key="9999/10003/13260/11488/2/323" value="-1728"/>
-                                <param name="Right Margin" key="9999/10003/13260/11488/2/324" value="1728"/>
-                                <param name="Top Margin" key="9999/10003/13260/11488/2/325" value="-794"/>
-                                <param name="Bottom Margin" key="9999/10003/13260/11488/2/326" value="-966.1"/>
-                                <param name="Auto-Shrink" key="9999/10003/13260/11488/2/370" value="3 (To All Margins)"/>
-                                <param name="Auto-Shrink Scale" key="9999/10003/13260/11488/2/376" value="0.74"/>
-                                <param name="Opacity" key="9999/10003/13260/11488/4/13051/1000/1044" value="0"/>
-                                <param name="Animate" key="9999/10003/13260/11488/4/13051/201/203" value="3 (Line)"/>
-                                <param name="Spread" key="9999/10003/13260/11488/4/13051/201/204" value="5"/>
-                                <param name="Speed" key="9999/10003/13260/11488/4/13051/201/208" value="6 (Custom)"/>
-                                <param name="Custom Speed" key="9999/10003/13260/11488/4/13051/201/209">
-                                    <keyframeAnimation>
-                                        <keyframe time="0s" value="0"/>
-                                        <keyframe time="10s" value="1"/>
-                                    </keyframeAnimation>
-                                </param>
-                                <param name="Apply Speed" key="9999/10003/13260/11488/4/13051/201/211" value="2 (Per Object)"/>
-                                <param name="Start Offset" key="9999/10003/13260/11488/4/13051/201/235" value="34"/>
-                                <param name="Position" key="9999/10003/13260/3296674397/1/100/101" value="-61.6875 1516.64"/>
-                                <param name="Layout Method" key="9999/10003/13260/3296674397/2/314" value="1 (Paragraph)"/>
-                                <param name="Left Margin" key="9999/10003/13260/3296674397/2/323" value="-1728"/>
-                                <param name="Right Margin" key="9999/10003/13260/3296674397/2/324" value="1728"/>
-                                <param name="Top Margin" key="9999/10003/13260/3296674397/2/325" value="972"/>
-                                <param name="Bottom Margin" key="9999/10003/13260/3296674397/2/326" value="-776.6"/>
-                                <param name="Line Spacing" key="9999/10003/13260/3296674397/2/354/3296667315/404" value="-19"/>
-                                <param name="Auto-Shrink" key="9999/10003/13260/3296674397/2/370" value="3 (To All Margins)"/>
-                                <param name="Alignment" key="9999/10003/13260/3296674397/2/373" value="0 (Left) 2 (Bottom)"/>
-                                <param name="Opacity" key="9999/10003/13260/3296674397/4/3296674797/1000/1044" value="0"/>
-                                <param name="Animate" key="9999/10003/13260/3296674397/4/3296674797/201/203" value="3 (Line)"/>
-                                <param name="Spread" key="9999/10003/13260/3296674397/4/3296674797/201/204" value="5"/>
-                                <param name="Speed" key="9999/10003/13260/3296674397/4/3296674797/201/208" value="6 (Custom)"/>
-                                <param name="Custom Speed" key="9999/10003/13260/3296674397/4/3296674797/201/209">
-                                    <keyframeAnimation>
-                                        <keyframe time="-71680/153600s" value="0"/>
-                                        <keyframe time="1896960/153600s" value="1"/>
-                                    </keyframeAnimation>
-                                </param>
-                                <param name="Apply Speed" key="9999/10003/13260/3296674397/4/3296674797/201/211" value="2 (Per Object)"/>
-                                <text>
-                                    <text-style ref="ts1_%d">%s</text-style>
-                                </text>
-                                <text>
-                                    <text-style ref="ts2_%d">This content is adapted from Wikipedia article above, used under the Creative Commons Attribution-ShareAlike 4.0 International License.</text-style>
-                                </text>
-                                <text-style-def id="ts1_%d">
-                                    <text-style font="Helvetica Neue" fontSize="170" fontColor="1 1 1 1" bold="1" shadowColor="0 0 0 0.75" shadowOffset="5 315" lineSpacing="-19"/>
-                                </text-style-def>
-                                <text-style-def id="ts2_%d">
-                                    <text-style font="Helvetica Neue" fontSize="69.56" fontFace="Medium" fontColor="1 1 1 1" shadowColor="0 0 0 0.75" shadowOffset="5 315"/>
-                                </text-style-def>
-                            </title>
-                        </video>`,
-		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, timestamp, title, timestamp, timestamp, timestamp)
-
-	// Insert video element before </spine>
-	spineEnd := strings.Index(newWikiContent, "                    </spine>")
-	if spineEnd == -1 {
-		return fmt.Errorf("could not find </spine> tag")
-	}
-
-	finalContent := newWikiContent[:spineEnd] + videoElement + "\n" + newWikiContent[spineEnd:]
-
-	// Update sequence duration to include new clip
-	finalContent = updateSequenceDuration(finalContent, lastVideoEnd, videoDuration)
-
-	// Write back to file
-	if err := os.WriteFile(wikiPath, []byte(finalContent), 0644); err != nil {
-		return fmt.Errorf("failed to write wiki.fcpxml: %v", err)
-	}
-
+	
 	return nil
 }
 
-func findLastVideoOffset(xmlContent string) string {
-	// Find the last video offset in the timeline
-	// Look for pattern: offset="XXXX/24000s"
-	re := regexp.MustCompile(`offset="(\d+/24000s)"`)
-	matches := re.FindAllStringSubmatch(xmlContent, -1)
-
-	if len(matches) == 0 {
-		return "0s"
-	}
-
-	// Get the last match
-	lastOffset := matches[len(matches)-1][1]
-
-	// Extract numerator and add the duration to get new offset
-	parts := strings.Split(lastOffset, "/")
-	if len(parts) != 2 {
-		return "0s"
-	}
-
-	offsetNum, _ := strconv.Atoi(parts[0])
-
-	// Find the duration of that last video
-	re2 := regexp.MustCompile(`duration="(\d+/24000s)"`)
-	durMatches := re2.FindAllStringSubmatch(xmlContent, -1)
-
-	if len(durMatches) > 0 {
-		lastDur := durMatches[len(durMatches)-1][1]
-		durParts := strings.Split(lastDur, "/")
-		if len(durParts) == 2 {
-			durNum, _ := strconv.Atoi(durParts[0])
-			newOffset := offsetNum + durNum
-			return fmt.Sprintf("%d/24000s", newOffset)
-		}
-	}
-
-	return fmt.Sprintf("%d/24000s", offsetNum+100000) // fallback
-}
-
-func convertAudioDurationToVideo(audioDuration string) (string, error) {
-	// Convert from samples/44100s to frames/24000s
-	// audioDuration format: "XXXXX/44100s"
-	parts := strings.Split(strings.TrimSuffix(audioDuration, "s"), "/")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("invalid audio duration format: %s", audioDuration)
-	}
-
-	samples, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return "", fmt.Errorf("invalid samples: %v", err)
-	}
-
-	// Convert samples at 44100Hz to frames at 24000Hz (24fps)
-	// duration_seconds = samples / 44100
-	// frames = duration_seconds * 24000
-	frames := (samples * 24000) / 44100
-
-	// FCPXML requires frame durations to be on edit boundaries
-	// Round to nearest multiple of 1001 (for 23.976fps compatibility)
-	frames = ((frames + 500) / 1001) * 1001
-
-	return fmt.Sprintf("%d/24000s", frames), nil
-}
-
-func updateSequenceDuration(xmlContent, lastOffset, videoDuration string) string {
-	// Extract numbers from lastOffset and videoDuration
-	offsetParts := strings.Split(strings.TrimSuffix(lastOffset, "s"), "/")
-	durationParts := strings.Split(strings.TrimSuffix(videoDuration, "s"), "/")
-
-	if len(offsetParts) == 2 && len(durationParts) == 2 {
-		offsetNum, _ := strconv.Atoi(offsetParts[0])
-		durNum, _ := strconv.Atoi(durationParts[0])
-		newTotal := offsetNum + durNum
-
-		// Update sequence duration
-		re := regexp.MustCompile(`<sequence format="r1" duration="(\d+/24000s)"`)
-		replacement := fmt.Sprintf(`<sequence format="r1" duration="%d/24000s"`, newTotal)
-		return re.ReplaceAllString(xmlContent, replacement)
-	}
-
-	return xmlContent
-}
