@@ -3,11 +3,13 @@ package hackernews
 import (
 	"cutlass/browser"
 	"cutlass/build2/api"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -90,9 +92,22 @@ func HandleHackerNewsStep2Command(args []string) {
 		return
 	}
 
+	// Track cumulative time for timecode generation
+	var cumulativeSeconds float64 = 0
+	var timecodeEntries []string
+
 	// Process each article for step 2 (audio generation and FCPXML)
 	for i, article := range articles {
-		processHNArticleStep2(article, i, pb)
+		duration := processHNArticleStep2(article, i, pb)
+		if duration > 0 {
+			// Format current timecode as MM:SS
+			timecode := formatTimecode(cumulativeSeconds)
+			entry := fmt.Sprintf("%s (%s)[%s]", timecode, article.Title, article.URL)
+			timecodeEntries = append(timecodeEntries, entry)
+			
+			// Add duration to cumulative time
+			cumulativeSeconds += duration
+		}
 	}
 
 	// Save the project
@@ -100,6 +115,14 @@ func HandleHackerNewsStep2Command(args []string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error saving project: %v\n", err)
 		return
+	}
+
+	// Write timecode entries to file
+	if len(timecodeEntries) > 0 {
+		err = writeTimecodesToFile(timecodeEntries)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing timecodes to file: %v\n", err)
+		}
 	}
 
 	fmt.Println("Step 2 completed. All Hacker News articles processed.")
@@ -165,7 +188,8 @@ func processHNArticleStep1(session *browser.BrowserSession, article *HNArticle, 
 }
 
 // processHNArticleStep2 processes a single HN article for step 2 (audio generation)
-func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder) {
+// Returns the duration of the generated audio file in seconds (0 if failed)
+func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder) float64 {
 	fmt.Printf("Processing article %d for audio: %s\n", index+1, article.Title)
 
 	// Create filename-safe version of title with index
@@ -175,7 +199,7 @@ func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder
 	thumbnailPath := filepath.Join("data", fmt.Sprintf("hn_%s.png", filenameTitle))
 	if _, err := os.Stat(thumbnailPath); os.IsNotExist(err) {
 		fmt.Printf("Warning: Thumbnail not found for article %d, skipping audio generation\n", index+1)
-		return
+		return 0
 	}
 
 	// Generate speech from article title using chatterbox
@@ -193,23 +217,33 @@ func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder
 	if err != nil {
 		fmt.Printf("Warning: Could not generate speech: %v\n", err)
 		fmt.Printf("Chatterbox output: %s\n", string(chatterboxOutput))
+		return 0
 	} else {
 		fmt.Printf("Speech generated: %s\n", audioFilename)
 
+		// Get audio duration
+		duration, err := getAudioDurationSeconds(audioFilename)
+		if err != nil {
+			fmt.Printf("Warning: Could not get audio duration: %v\n", err)
+			duration = 0
+		}
+
 		// Add video/image with audio and text to project using build2 API
-		err := pb.AddClipSafe(api.ClipConfig{
+		err = pb.AddClipSafe(api.ClipConfig{
 			VideoFile: thumbnailPath,
 			AudioFile: audioFilename,
 			Text:      article.Title,
 		})
 		if err != nil {
 			fmt.Printf("Warning: Could not add clip to project: %v\n", err)
+			return 0
 		} else {
 			fmt.Printf("Clip added to hn.fcpxml\n")
 		}
-	}
 
-	fmt.Printf("Completed processing article %d (Step 2)\n\n", index+1)
+		fmt.Printf("Completed processing article %d (Step 2)\n\n", index+1)
+		return duration
+	}
 }
 
 // HNArticle represents a Hacker News article
@@ -345,4 +379,60 @@ func sanitizeFilename(title string) string {
 	}
 
 	return safe
+}
+
+// getAudioDurationSeconds uses ffprobe to get audio duration in seconds
+func getAudioDurationSeconds(audioPath string) (float64, error) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", audioPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	
+	var result struct {
+		Format struct {
+			Duration string `json:"duration"`
+		} `json:"format"`
+	}
+	
+	err = json.Unmarshal(output, &result)
+	if err != nil {
+		return 0, err
+	}
+	
+	// Parse duration as float seconds
+	duration, err := strconv.ParseFloat(result.Format.Duration, 64)
+	if err != nil {
+		return 0, err
+	}
+	
+	return duration, nil
+}
+
+// formatTimecode converts seconds to MM:SS format
+func formatTimecode(seconds float64) string {
+	totalSeconds := int(seconds)
+	minutes := totalSeconds / 60
+	secs := totalSeconds % 60
+	return fmt.Sprintf("%02d:%02d", minutes, secs)
+}
+
+// writeTimecodesToFile writes timecode entries to hn_timecodes.txt
+func writeTimecodesToFile(entries []string) error {
+	timecodesPath := filepath.Join("data", "hn_timecodes.txt")
+	file, err := os.Create(timecodesPath)
+	if err != nil {
+		return fmt.Errorf("error creating timecodes file: %v", err)
+	}
+	defer file.Close()
+
+	for _, entry := range entries {
+		_, err = file.WriteString(entry + "\n")
+		if err != nil {
+			return fmt.Errorf("error writing timecode entry: %v", err)
+		}
+	}
+
+	fmt.Printf("Timecodes written to %s\n", timecodesPath)
+	return nil
 }
