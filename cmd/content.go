@@ -14,10 +14,11 @@ var contentCmd = &cobra.Command{
 }
 
 var speechCmd = &cobra.Command{
-	Use:   "speech <text-file>",
+	Use:   "speech <text-file> <video-or-image-file>",
 	Short: "Generate FCPXML with multiple text elements appearing over time",
-	Long:  "Generate FCPXML with slide animation where each line from text file appears over time.",
-	Args:  cobra.MinimumNArgs(1),
+	Long: `Generate FCPXML with slide animation where each line from text file appears over time.
+The video or image file will be used as background media for the text animations.`,
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		speech.HandleSpeechCommand(args)
 		return nil
