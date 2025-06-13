@@ -93,6 +93,13 @@ func HandleWikipediaRandomCommand(args []string) {
 		fmt.Printf("Warning: Could not get page URL: %v\n", err)
 	} else {
 		fmt.Printf("Wikipedia URL: %s\n", pageInfo.URL)
+		
+		// Append URL to wikilist.txt
+		if err := appendToWikiList(pageInfo.URL); err != nil {
+			fmt.Printf("Warning: Could not append URL to wikilist.txt: %v\n", err)
+		} else {
+			fmt.Printf("URL appended to data/wikilist.txt\n")
+		}
 	}
 
 	// Extract first paragraph
@@ -180,6 +187,13 @@ func HandleWikipediaRandomCommand(args []string) {
 	if linkHref != nil && *linkHref != "" {
 		videoURL := *linkHref
 		fmt.Printf("Found video URL: %s\n", videoURL)
+		
+		// Append video URL to youtube.txt
+		if err := appendToYouTubeList(videoURL); err != nil {
+			fmt.Printf("Warning: Could not append video URL to youtube.txt: %v\n", err)
+		} else {
+			fmt.Printf("Video URL appended to data/youtube.txt\n")
+		}
 
 		// Close the browser since we no longer need it
 		page.Close()
@@ -314,4 +328,42 @@ func extractFirstParagraph(page *rod.Page) (string, error) {
 	}
 
 	return combinedText.String(), nil
+}
+
+func appendToWikiList(url string) error {
+	wikiListPath := filepath.Join("data", "wikilist.txt")
+	
+	// Open file in append mode, create if doesn't exist
+	file, err := os.OpenFile(wikiListPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening wikilist.txt: %v", err)
+	}
+	defer file.Close()
+	
+	// Append URL with newline
+	_, err = file.WriteString(url + "\n")
+	if err != nil {
+		return fmt.Errorf("error writing to wikilist.txt: %v", err)
+	}
+	
+	return nil
+}
+
+func appendToYouTubeList(url string) error {
+	youtubeListPath := filepath.Join("data", "youtube.txt")
+	
+	// Open file in append mode, create if doesn't exist
+	file, err := os.OpenFile(youtubeListPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening youtube.txt: %v", err)
+	}
+	defer file.Close()
+	
+	// Append URL with newline
+	_, err = file.WriteString(url + "\n")
+	if err != nil {
+		return fmt.Errorf("error writing to youtube.txt: %v", err)
+	}
+	
+	return nil
 }
