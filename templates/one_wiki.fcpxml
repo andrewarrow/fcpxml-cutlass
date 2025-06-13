@@ -19,3 +19,4 @@
                 <md key="com.apple.proapps.mio.ingestDate" value="{{ .IngestDate }}"/>
             </metadata>
         </asset>
+        <effect id="{{ .TitleEffectID }}" name="Lower Third Text &amp; Subhead" uid=".../Titles.localized/Basic Text.localized/Lower Third Text &amp; Subhead.localized/Lower Third Text &amp; Subhead.moti"/>

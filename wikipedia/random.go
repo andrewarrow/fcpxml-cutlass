@@ -256,7 +256,7 @@ func HandleWikipediaRandomCommand(args []string) {
 				fmt.Printf("Speech generated: %s\n", audioFilename)
 
 				// Generate FCPXML and append to wiki.fcpxml
-				if err := generateAndAppendFCPXML(finalFilename, audioFilename, filenameTitle); err != nil {
+				if err := generateAndAppendFCPXML(finalFilename, audioFilename, filenameTitle, title); err != nil {
 					fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
 				} else {
 					fmt.Printf("FCPXML appended to data/wiki.fcpxml\n")
@@ -395,6 +395,8 @@ type WikiTemplateData struct {
 	AudioBookmark string
 	AudioDuration string
 	IngestDate    string
+	TitleEffectID string
+	Title         string
 }
 
 func generateUID() string {
@@ -421,7 +423,7 @@ func getAudioDuration(audioPath string) (string, error) {
 	return fmt.Sprintf("%d/44100s", samples), nil
 }
 
-func generateAndAppendFCPXML(imagePath, audioPath, name string) error {
+func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
 	// Get audio duration using ffprobe
 	audioDuration, err := getAudioDuration(audioPath)
 	if err != nil {
@@ -460,6 +462,8 @@ func generateAndAppendFCPXML(imagePath, audioPath, name string) error {
 		AudioBookmark: "placeholder_bookmark",
 		AudioDuration: audioDuration,
 		IngestDate:    time.Now().Format("2006-01-02 15:04:05 -0700"),
+		TitleEffectID: "r" + strconv.Itoa(timestamp+3),
+		Title:         title,
 	}
 
 	// Read template
@@ -510,8 +514,62 @@ func generateAndAppendFCPXML(imagePath, audioPath, name string) error {
 	// Create video element for timeline
 	videoElement := fmt.Sprintf(`                        <video ref="%s" offset="%s" start="86399313/24000s" duration="%s">
                             <asset-clip ref="%s" lane="-1" offset="28799771/8000s" name="%s" duration="%s" format="r1" audioRole="dialogue"/>
+                            <title ref="%s" lane="1" offset="86399313/24000s" name="%s - Lower Third Text &amp; Subhead" start="86486400/24000s" duration="%s">
+                                <param name="Position" key="9999/10003/13260/11488/1/100/101" value="-55.875 1522.87"/>
+                                <param name="Layout Method" key="9999/10003/13260/11488/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/11488/2/323" value="-1728"/>
+                                <param name="Right Margin" key="9999/10003/13260/11488/2/324" value="1728"/>
+                                <param name="Top Margin" key="9999/10003/13260/11488/2/325" value="-794"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/11488/2/326" value="-966.1"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/11488/2/370" value="3 (To All Margins)"/>
+                                <param name="Auto-Shrink Scale" key="9999/10003/13260/11488/2/376" value="0.74"/>
+                                <param name="Opacity" key="9999/10003/13260/11488/4/13051/1000/1044" value="0"/>
+                                <param name="Animate" key="9999/10003/13260/11488/4/13051/201/203" value="3 (Line)"/>
+                                <param name="Spread" key="9999/10003/13260/11488/4/13051/201/204" value="5"/>
+                                <param name="Speed" key="9999/10003/13260/11488/4/13051/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/11488/4/13051/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"/>
+                                        <keyframe time="10s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/11488/4/13051/201/211" value="2 (Per Object)"/>
+                                <param name="Start Offset" key="9999/10003/13260/11488/4/13051/201/235" value="34"/>
+                                <param name="Position" key="9999/10003/13260/3296674397/1/100/101" value="-61.6875 1516.64"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296674397/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296674397/2/323" value="-1728"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296674397/2/324" value="1728"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296674397/2/325" value="972"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296674397/2/326" value="-776.6"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296674397/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296674397/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296674397/2/373" value="0 (Left) 2 (Bottom)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296674397/4/3296674797/1000/1044" value="0"/>
+                                <param name="Animate" key="9999/10003/13260/3296674397/4/3296674797/201/203" value="3 (Line)"/>
+                                <param name="Spread" key="9999/10003/13260/3296674397/4/3296674797/201/204" value="5"/>
+                                <param name="Speed" key="9999/10003/13260/3296674397/4/3296674797/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296674397/4/3296674797/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-71680/153600s" value="0"/>
+                                        <keyframe time="1896960/153600s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296674397/4/3296674797/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1">%s</text-style>
+                                </text>
+                                <text>
+                                    <text-style ref="ts2">This content is adapted from Wikipedia article above, used under the Creative Commons Attribution-ShareAlike 4.0 International License.</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Helvetica Neue" fontSize="170" fontColor="1 1 1 1" bold="1" shadowColor="0 0 0 0.75" shadowOffset="5 315" lineSpacing="-19"/>
+                                </text-style-def>
+                                <text-style-def id="ts2">
+                                    <text-style font="Helvetica Neue" fontSize="69.56" fontFace="Medium" fontColor="1 1 1 1" shadowColor="0 0 0 0.75" shadowOffset="5 315"/>
+                                </text-style-def>
+                            </title>
                         </video>`,
-		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration)
+		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, title)
 
 	// Insert video element before </spine>
 	spineEnd := strings.Index(newWikiContent, "                    </spine>")
