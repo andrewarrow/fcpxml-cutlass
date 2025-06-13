@@ -138,16 +138,16 @@ func processHNArticleStep1(session *browser.BrowserSession, article *HNArticle, 
 
 	// Navigate to the article URL and take a screenshot
 	fmt.Printf("Navigating to article URL for screenshot: %s\n", article.URL)
-	
+
 	if err := session.NavigateAndWait(article.URL); err != nil {
 		fmt.Printf("Warning: Could not navigate to article URL: %v\n", err)
 	} else {
 		// Create final filename for screenshot
 		finalFilename := filepath.Join("data", fmt.Sprintf("hn_%s.png", filenameTitle))
-		
-		// Take screenshot of the page
+
+		// Take screenshot of the page (visible area only)
 		fmt.Println("Taking screenshot of article page...")
-		screenshot, err := session.Page.Screenshot(true, nil)
+		screenshot, err := session.Page.Screenshot(false, nil)
 		if err != nil {
 			fmt.Printf("Warning: Could not take screenshot: %v\n", err)
 		} else {
@@ -184,11 +184,10 @@ func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder
 	fmt.Println("Generating speech from article title...")
 	audioFilename := filepath.Join("data", fmt.Sprintf("hn_%s.wav", filenameTitle))
 
-	// Call chatterbox CLI to generate speech
 	chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
-		"/Users/aa/os/chatterbox/dia/cli.py",
+		"/Users/aa/os/chatterbox/chatterbox/main.py",
 		speechText,
-		"--output="+audioFilename)
+		audioFilename)
 
 	chatterboxOutput, err := chatterboxCmd.CombinedOutput()
 	if err != nil {
@@ -265,7 +264,6 @@ func getAllHNArticles(session *browser.BrowserSession) ([]*HNArticle, error) {
 	return articles, nil
 }
 
-
 // appendToHNList appends URL to hnlist.txt
 func appendToHNList(url string) error {
 	hnListPath := filepath.Join("data", "hnlist.txt")
@@ -282,7 +280,6 @@ func appendToHNList(url string) error {
 
 	return nil
 }
-
 
 // writeArticlesToFile writes articles to a text file for step 2
 func writeArticlesToFile(articles []*HNArticle) error {
