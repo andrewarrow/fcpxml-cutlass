@@ -19,9 +19,9 @@ import (
 )
 
 var BuildCmd = &cobra.Command{
-	Use:   "build [filename] [add-video] [video-file]",
-	Short: "Build a blank FCP project or add video to existing project",
-	Long:  "Create a blank Final Cut Pro project from empty.fcpxml template, or add a video to it",
+	Use:   "build [filename] [add-video] [media-file]",
+	Short: "Build a blank FCP project or add media to existing project",
+	Long:  "Create a blank Final Cut Pro project from empty.fcpxml template, or add a video/image to it",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := args[0]
@@ -31,7 +31,7 @@ var BuildCmd = &cobra.Command{
 		
 		// Check if this is an add-video command
 		if len(args) >= 3 && args[1] == "add-video" {
-			videoFile := args[2]
+			mediaFile := args[2]
 			
 			// First ensure the project exists, create if it doesn't
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -43,14 +43,14 @@ var BuildCmd = &cobra.Command{
 				fmt.Printf("Created blank project: %s\n", filename)
 			}
 			
-			// Add video to the project
-			err := addVideoToProject(filename, videoFile)
+			// Add media to the project
+			err := addVideoToProject(filename, mediaFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error adding video to project: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error adding media to project: %v\n", err)
 				os.Exit(1)
 			}
 			
-			fmt.Printf("Added video %s to project %s\n", videoFile, filename)
+			fmt.Printf("Added media %s to project %s\n", mediaFile, filename)
 		} else {
 			// Just create a blank project
 			err := createBlankProject(filename)
@@ -117,6 +117,12 @@ func createBlankProject(filename string) error {
 	return nil
 }
 
+// isPNGFile checks if the given file is a PNG image
+func isPNGFile(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	return ext == ".png"
+}
+
 func addVideoToProject(projectFile, videoFile string) error {
 	// Read the existing project file
 	content, err := ioutil.ReadFile(projectFile)
@@ -137,49 +143,112 @@ func addVideoToProject(projectFile, videoFile string) error {
 		return fmt.Errorf("failed to get absolute path: %v", err)
 	}
 	
-	// Check if video file exists
+	// Check if media file exists
 	if _, err := os.Stat(absVideoPath); os.IsNotExist(err) {
-		return fmt.Errorf("video file does not exist: %s", absVideoPath)
+		return fmt.Errorf("media file does not exist: %s", absVideoPath)
 	}
 	
 	// Create asset ID and UID
 	baseName := strings.TrimSuffix(filepath.Base(videoFile), filepath.Ext(videoFile))
 	
-	// Get video duration
-	duration, err := getVideoDuration(absVideoPath)
-	if err != nil {
+	// Get duration based on file type
+	var duration string
+	if isPNGFile(absVideoPath) {
+		// PNG files are set to 10 seconds
 		duration = "240240/24000s" // 10 seconds at 23.976fps
+	} else {
+		// Get video duration for video files
+		var err error
+		duration, err = getVideoDuration(absVideoPath)
+		if err != nil {
+			duration = "240240/24000s" // Default to 10 seconds if duration detection fails
+		}
 	}
 	
+	// Create PNG format first if needed
+	var pngFormatID string
+	if isPNGFile(absVideoPath) {
+		// Check if PNG format already exists
+		pngFormatExists := false
+		for _, format := range fcpxml.Resources.Formats {
+			if format.Name == "FFVideoFormatRateUndefined" {
+				pngFormatID = format.ID
+				pngFormatExists = true
+				break
+			}
+		}
+		
+		// Add PNG format if it doesn't exist
+		if !pngFormatExists {
+			// Generate a unique ID for the PNG format - must not conflict with any other resource IDs
+			// Count all existing resources: assets + formats + effects
+			totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects)
+			pngFormatID = fmt.Sprintf("r%d", totalResources+1)
+			pngFormat := fcp.Format{
+				ID:         pngFormatID,
+				Name:       "FFVideoFormatRateUndefined",
+				Width:      "1280",
+				Height:     "720",
+				ColorSpace: "1-13-1",
+				// No FrameDuration for still images
+			}
+			fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, pngFormat)
+		}
+	}
+
 	// Check if asset already exists in the project
 	existingAssetID := findExistingAsset(&fcpxml, absVideoPath)
 	if existingAssetID == "" {
 		// Asset doesn't exist, create it
-		assetID := fmt.Sprintf("r%d", len(fcpxml.Resources.Assets)+2) // Start from r2 since r1 is format
+		// Calculate next available ID considering all resources: assets + formats + effects
+		totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects)
+		assetID := fmt.Sprintf("r%d", totalResources+1)
 		
 		// Generate consistent UID from file path
 		assetUID := generateUID(absVideoPath)
 		
 		// Generate bookmark for the video file
 		_, _ = generateBookmark(absVideoPath) // Ignore errors, continue without bookmark
-		
+
 		// Add asset to resources
-		asset := fcp.Asset{
-			ID:            assetID,
-			Name:          baseName,
-			UID:           assetUID,
-			Start:         "0s",
-			HasVideo:      "1",
-			Format:        "r1",
-			HasAudio:      "1",
-			AudioSources:  "1",
-			AudioChannels: "2",
-			Duration:      duration,
-			MediaRep: fcp.MediaRep{
-				Kind: "original-media",
-				Sig:  assetUID, // Use same UID for sig
-				Src:  "file://" + absVideoPath,
-			},
+		var asset fcp.Asset
+		if isPNGFile(absVideoPath) {
+			// PNG/image asset - similar to Final Cut Pro's structure
+			asset = fcp.Asset{
+				ID:           assetID,
+				Name:         baseName,
+				UID:          assetUID,
+				Start:        "0s",
+				Duration:     "0s", // PNG assets use 0s duration in FCP
+				HasVideo:     "1",
+				Format:       pngFormatID, // Use the PNG format
+				VideoSources: "1",         // Required for image assets
+				MediaRep: fcp.MediaRep{
+					Kind: "original-media",
+					Sig:  assetUID, // Use same UID for sig
+					Src:  "file://" + absVideoPath,
+				},
+			}
+		} else {
+			// Video asset
+			asset = fcp.Asset{
+				ID:            assetID,
+				Name:          baseName,
+				UID:           assetUID,
+				Start:         "0s",
+				HasVideo:      "1",
+				Format:        "r1",
+				VideoSources:  "", // Empty for video assets
+				HasAudio:      "1",
+				AudioSources:  "1",
+				AudioChannels: "2",
+				Duration:      duration,
+				MediaRep: fcp.MediaRep{
+					Kind: "original-media",
+					Sig:  assetUID, // Use same UID for sig
+					Src:  "file://" + absVideoPath,
+				},
+			}
 		}
 		
 		fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
@@ -193,23 +262,38 @@ func addVideoToProject(projectFile, videoFile string) error {
 			// Calculate offset by parsing existing spine content
 			offset := calculateTimelineOffset(project.Sequences[0].Spine.Content)
 			
-			assetClip := fcp.AssetClip{
-				Ref:      existingAssetID,
-				Offset:   offset,
-				Name:     baseName,
-				Duration: duration,
-				Format:   "r1",
-				TCFormat: "NDF",
+			var clipXML []byte
+			var err error
+			
+			if isPNGFile(absVideoPath) {
+				// Use video element for PNG files (still images)
+				videoClip := fcp.Video{
+					Ref:      existingAssetID,
+					Offset:   offset,
+					Name:     baseName,
+					Start:    "0s",
+					Duration: duration,
+				}
+				clipXML, err = xml.Marshal(videoClip)
+			} else {
+				// Use asset-clip for video files
+				assetClip := fcp.AssetClip{
+					Ref:      existingAssetID,
+					Offset:   offset,
+					Name:     baseName,
+					Duration: duration,
+					Format:   "r1",
+					TCFormat: "NDF",
+				}
+				clipXML, err = xml.Marshal(assetClip)
 			}
 			
-			// Convert asset clip to XML string
-			assetClipXML, err := xml.Marshal(assetClip)
 			if err != nil {
-				return fmt.Errorf("failed to marshal asset clip: %v", err)
+				return fmt.Errorf("failed to marshal clip: %v", err)
 			}
 			
 			// Append to existing spine content
-			indentedXML := strings.ReplaceAll(string(assetClipXML), "\n", "\n                        ")
+			indentedXML := strings.ReplaceAll(string(clipXML), "\n", "\n                        ")
 			if strings.TrimSpace(project.Sequences[0].Spine.Content) == "" {
 				// First clip
 				project.Sequences[0].Spine.Content = "\n                        " + indentedXML + "\n                    "
@@ -342,12 +426,13 @@ func calculateTotalDuration(spineContent string) string {
 		return "0s"
 	}
 	
-	// Simple regex to find all duration values in asset-clips
-	// Look for pattern: duration="X/24000s"
+	// Find all duration values in both asset-clips and video elements
 	totalFrames := 0
 	
-	// Split by asset-clip tags and look for duration attributes
+	// Split by both asset-clip and video tags and look for duration attributes
 	lines := strings.Split(spineContent, "asset-clip")
+	lines = append(lines, strings.Split(spineContent, "video")...)
+	
 	for _, line := range lines {
 		if strings.Contains(line, "duration=") {
 			// Extract duration value

@@ -28,10 +28,10 @@ type Effect struct {
 type Format struct {
 	ID            string `xml:"id,attr"`
 	Name          string `xml:"name,attr"`
-	FrameDuration string `xml:"frameDuration,attr"`
-	Width         string `xml:"width,attr"`
-	Height        string `xml:"height,attr"`
-	ColorSpace    string `xml:"colorSpace,attr"`
+	FrameDuration string `xml:"frameDuration,attr,omitempty"`
+	Width         string `xml:"width,attr,omitempty"`
+	Height        string `xml:"height,attr,omitempty"`
+	ColorSpace    string `xml:"colorSpace,attr,omitempty"`
 }
 
 type Asset struct {
@@ -41,9 +41,10 @@ type Asset struct {
 	Start         string   `xml:"start,attr"`
 	HasVideo      string   `xml:"hasVideo,attr"`
 	Format        string   `xml:"format,attr"`
-	HasAudio      string   `xml:"hasAudio,attr"`
-	AudioSources  string   `xml:"audioSources,attr"`
-	AudioChannels string   `xml:"audioChannels,attr"`
+	VideoSources  string   `xml:"videoSources,attr,omitempty"`
+	HasAudio      string   `xml:"hasAudio,attr,omitempty"`
+	AudioSources  string   `xml:"audioSources,attr,omitempty"`
+	AudioChannels string   `xml:"audioChannels,attr,omitempty"`
 	Duration      string   `xml:"duration,attr"`
 	MediaRep      MediaRep `xml:"media-rep"`
 }
