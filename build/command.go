@@ -33,6 +33,9 @@ var BuildCmd = &cobra.Command{
 		if len(args) >= 3 && args[1] == "add-video" {
 			mediaFile := args[2]
 			
+			// Get the --with-text flag value
+			withText, _ := cmd.Flags().GetString("with-text")
+			
 			// First ensure the project exists, create if it doesn't
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
 				err := createBlankProject(filename)
@@ -44,13 +47,16 @@ var BuildCmd = &cobra.Command{
 			}
 			
 			// Add media to the project
-			err := addVideoToProject(filename, mediaFile)
+			err := addVideoToProject(filename, mediaFile, withText)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error adding media to project: %v\n", err)
 				os.Exit(1)
 			}
 			
 			fmt.Printf("Added media %s to project %s\n", mediaFile, filename)
+			if withText != "" {
+				fmt.Printf("Added text overlay: %s\n", withText)
+			}
 		} else {
 			// Just create a blank project
 			err := createBlankProject(filename)
@@ -62,6 +68,10 @@ var BuildCmd = &cobra.Command{
 			fmt.Printf("Created blank project: %s\n", filename)
 		}
 	},
+}
+
+func init() {
+	BuildCmd.Flags().String("with-text", "", "Add text overlay on top of the video")
 }
 
 
@@ -123,7 +133,7 @@ func isPNGFile(filePath string) bool {
 	return ext == ".png"
 }
 
-func addVideoToProject(projectFile, videoFile string) error {
+func addVideoToProject(projectFile, videoFile, withText string) error {
 	// Read the existing project file
 	content, err := ioutil.ReadFile(projectFile)
 	if err != nil {
@@ -210,7 +220,10 @@ func addVideoToProject(projectFile, videoFile string) error {
 		// Generate bookmark for the video file
 		_, _ = generateBookmark(absVideoPath) // Ignore errors, continue without bookmark
 
-		// Add asset to resources
+		// Ensure Text effect exists in resources (needed for text overlays)
+	ensureTextEffect(&fcpxml)
+	
+	// Add asset to resources
 		var asset fcp.Asset
 		if isPNGFile(absVideoPath) {
 			// PNG/image asset - similar to Final Cut Pro's structure
@@ -274,6 +287,13 @@ func addVideoToProject(projectFile, videoFile string) error {
 					Start:    "0s",
 					Duration: duration,
 				}
+				
+				// Add text overlay if requested
+				if withText != "" {
+					textTitle := createTextTitle(withText, duration, baseName)
+					videoClip.NestedTitles = []fcp.Title{textTitle}
+				}
+				
 				clipXML, err = xml.Marshal(videoClip)
 			} else {
 				// Use asset-clip for video files
@@ -285,6 +305,13 @@ func addVideoToProject(projectFile, videoFile string) error {
 					Format:   "r1",
 					TCFormat: "NDF",
 				}
+				
+				// Add text overlay if requested
+				if withText != "" {
+					textTitle := createTextTitle(withText, duration, baseName)
+					assetClip.Titles = []fcp.Title{textTitle}
+				}
+				
 				clipXML, err = xml.Marshal(assetClip)
 			}
 			
@@ -492,4 +519,75 @@ func getVideoDuration(videoPath string) (string, error) {
 	
 	// Format as rational using the sequence time base
 	return fmt.Sprintf("%d/24000s", frames*1001), nil
+}
+
+// ensureTextEffect ensures the Text effect is available in resources
+func ensureTextEffect(fcpxml *fcp.FCPXML) {
+	// Check if Text effect already exists
+	for _, effect := range fcpxml.Resources.Effects {
+		if effect.Name == "Text" {
+			return // Already exists
+		}
+	}
+	
+	// Add Text effect if it doesn't exist
+	textEffect := fcp.Effect{
+		ID:   "r6",
+		Name: "Text",
+		UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+	}
+	fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, textEffect)
+}
+
+// createTextTitle creates a Title struct for text overlay
+func createTextTitle(text, duration, baseName string) fcp.Title {
+	return fcp.Title{
+		Ref:      "r6", // Reference to Text effect
+		Lane:     "1",  // Lane 1 (above the video)
+		Offset:   "0s",
+		Name:     baseName + " - Text",
+		Duration: duration,
+		Start:    "86486400/24000s",
+		Params: []fcp.Param{
+			{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+			{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1730"},
+			{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1730"},
+			{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "960"},
+			{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-960"},
+			{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+			{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+			{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+			{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 0 (Top)"},
+			{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+			{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+			{
+				Name: "Custom Speed", 
+				Key: "9999/10003/13260/3296672360/4/3296673134/201/209",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: []fcp.Keyframe{
+						{Time: "-469658744/1000000000s", Value: "0"},
+						{Time: "12328542033/1000000000s", Value: "1"},
+					},
+				},
+			},
+			{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+		},
+		Text: &fcp.TitleText{
+			TextStyle: fcp.TextStyleRef{
+				Ref:  "ts1",
+				Text: text,
+			},
+		},
+		TextStyleDef: &fcp.TextStyleDef{
+			ID: "ts1",
+			TextStyle: fcp.TextStyle{
+				Font:        "Helvetica Neue",
+				FontSize:    "196",
+				FontColor:   "1 1 1 1",
+				Bold:        "1",
+				Alignment:   "center",
+				LineSpacing: "-19",
+			},
+		},
+	}
 }

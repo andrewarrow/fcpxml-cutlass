@@ -20,3 +20,12 @@ review reference/FCPCAFE.md
 reference/FCPXML.md
 reference/ANIMATION.md
 and FCPXMLv1_13.dtd
+
+## Build Package Mission
+The build package (build/command.go) is the foundation for ALL FCPXML generation in this repo. It provides:
+- Rock solid FCPXML generation using proper structs (not string templates)
+- Correct time calculations, R2 vs R1 handling, UID generation, and spine management
+- Template-based approach for reusable FCPXML components
+- DTD validation compliance
+
+All new FCPXML features should be built on the build package foundation. Other packages may have legacy logic that should be learned from but not duplicated.
