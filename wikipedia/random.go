@@ -344,6 +344,7 @@ type WikiTemplateData struct {
 	AudioPath     string
 	AudioBookmark string
 	AudioDuration string
+	VideoDuration string
 	IngestDate    string
 	TitleEffectID string
 	Title         string
@@ -380,6 +381,12 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
 		return fmt.Errorf("failed to get audio duration: %v", err)
 	}
 
+	// Convert audio duration to 24000s format for video duration
+	videoDuration, err := convertAudioDurationToVideo(audioDuration)
+	if err != nil {
+		return fmt.Errorf("failed to convert audio duration: %v", err)
+	}
+
 	// Generate UIDs and asset IDs
 	imageUID := generateUID()
 	audioUID := generateUID()
@@ -400,7 +407,7 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
 		ImageAssetID:  "r" + strconv.Itoa(timestamp),
 		ImageName:     name,
 		ImageUID:      imageUID,
-		ImagePath:     "file://" + absImagePath,
+		ImagePath:     absImagePath,
 		ImageBookmark: "placeholder_bookmark",
 		ImageFormatID: "r" + strconv.Itoa(timestamp+1),
 		ImageWidth:    "640",
@@ -408,9 +415,10 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
 		AudioAssetID:  "r" + strconv.Itoa(timestamp+2),
 		AudioName:     name,
 		AudioUID:      audioUID,
-		AudioPath:     "file://" + absAudioPath,
+		AudioPath:     absAudioPath,
 		AudioBookmark: "placeholder_bookmark",
 		AudioDuration: audioDuration,
+		VideoDuration: videoDuration,
 		IngestDate:    time.Now().Format("2006-01-02 15:04:05 -0700"),
 		TitleEffectID: "r" + strconv.Itoa(timestamp+3),
 		Title:         title,
@@ -466,10 +474,10 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
 	// Find the last video element in the spine to get the end offset
 	lastVideoEnd := findLastVideoOffset(newWikiContent)
 
-	// Convert audio duration to 24000s format for video duration
-	videoDuration, err := convertAudioDurationToVideo(audioDuration)
+	// Calculate title duration (video duration minus title offset)
+	titleDuration, err := subtractDuration(videoDuration, "86399313/24000s")
 	if err != nil {
-		return fmt.Errorf("failed to convert audio duration: %v", err)
+		return fmt.Errorf("failed to calculate title duration: %v", err)
 	}
 
 	// Create video element for timeline
@@ -504,7 +512,7 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
                                 <param name="Bottom Margin" key="9999/10003/13260/3296674397/2/326" value="-776.6"/>
                                 <param name="Line Spacing" key="9999/10003/13260/3296674397/2/354/3296667315/404" value="-19"/>
                                 <param name="Auto-Shrink" key="9999/10003/13260/3296674397/2/370" value="3 (To All Margins)"/>
-                                <param name="Alignment" key="9999/10003/13260/3296674397/2/373" value="0 (Left) 2 (Bottom)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296674397/2/373" value="0 (Left) 0 (Top)"/>
                                 <param name="Opacity" key="9999/10003/13260/3296674397/4/3296674797/1000/1044" value="0"/>
                                 <param name="Animate" key="9999/10003/13260/3296674397/4/3296674797/201/203" value="3 (Line)"/>
                                 <param name="Spread" key="9999/10003/13260/3296674397/4/3296674797/201/204" value="5"/>
@@ -530,7 +538,7 @@ func generateAndAppendFCPXML(imagePath, audioPath, name, title string) error {
                                 </text-style-def>
                             </title>
                         </video>`,
-		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID, name, videoDuration, data.TitleEffectID, title, videoDuration, timestamp, title, timestamp, timestamp, timestamp)
+		data.ImageAssetID, lastVideoEnd, videoDuration, data.AudioAssetID+"_audio", name, videoDuration, data.TitleEffectID, title, titleDuration, timestamp, title, timestamp, timestamp, timestamp)
 
 	// Insert video element before </spine>
 	spineEnd := strings.Index(newWikiContent, "                    </spine>")
@@ -612,6 +620,34 @@ func convertAudioDurationToVideo(audioDuration string) (string, error) {
 	frames = ((frames + 500) / 1001) * 1001
 
 	return fmt.Sprintf("%d/24000s", frames), nil
+}
+
+func subtractDuration(duration1, duration2 string) (string, error) {
+	// Both durations should be in format "XXXXX/24000s"
+	parts1 := strings.Split(strings.TrimSuffix(duration1, "s"), "/")
+	parts2 := strings.Split(strings.TrimSuffix(duration2, "s"), "/")
+	
+	if len(parts1) != 2 || len(parts2) != 2 {
+		return "", fmt.Errorf("invalid duration format: %s or %s", duration1, duration2)
+	}
+	
+	frames1, err := strconv.ParseInt(parts1[0], 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid frames in duration1: %v", err)
+	}
+	
+	frames2, err := strconv.ParseInt(parts2[0], 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("invalid frames in duration2: %v", err)
+	}
+	
+	// Subtract frames2 from frames1
+	result := frames1 - frames2
+	if result < 0 {
+		result = 0 // Don't allow negative durations
+	}
+	
+	return fmt.Sprintf("%d/24000s", result), nil
 }
 
 func updateSequenceDuration(xmlContent, lastOffset, videoDuration string) string {
