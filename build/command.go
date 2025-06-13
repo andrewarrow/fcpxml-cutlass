@@ -310,6 +310,23 @@ func addVideoToProject(projectFile, videoFile, withText string) error {
 				if withText != "" {
 					textTitle := createTextTitle(withText, duration, baseName)
 					assetClip.Titles = []fcp.Title{textTitle}
+					
+					// Add position animation when text is present (2 keyframes over 2 seconds)
+					assetClip.AdjustTransform = &fcp.AdjustTransform{
+						Params: []fcp.Param{
+							{
+								Name: "position",
+								Key:  "", // Empty key for adjust-transform params
+								Value: "", // Empty value when using keyframes
+								KeyframeAnimation: &fcp.KeyframeAnimation{
+									Keyframes: []fcp.Keyframe{
+										{Time: "0s", Value: "0 0"},
+										{Time: "48048/24000s", Value: "0 -22.1038"},
+									},
+								},
+							},
+						},
+					}
 				}
 				
 				clipXML, err = xml.Marshal(assetClip)
