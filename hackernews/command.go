@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // HandleHackerNewsStep1Command processes step 1: get articles and take screenshots
@@ -104,7 +105,7 @@ func HandleHackerNewsStep2Command(args []string) {
 			timecode := formatTimecode(cumulativeSeconds)
 			entry := fmt.Sprintf("%s (%s)[%s]", timecode, article.Title, article.URL)
 			timecodeEntries = append(timecodeEntries, entry)
-			
+
 			// Add duration to cumulative time
 			cumulativeSeconds += duration
 		}
@@ -207,6 +208,35 @@ func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder
 
 	fmt.Println("Generating speech from article title...")
 	audioFilename := filepath.Join("data", fmt.Sprintf("hn_%s.wav", filenameTitle))
+
+	// Check if audio file already exists
+	if _, err := os.Stat(audioFilename); err == nil {
+		fmt.Printf("Audio file already exists, skipping generation: %s\n", audioFilename)
+		time.Sleep(time.Second * 3)
+
+		// Still need to get duration and add to project
+		duration, err := getAudioDurationSeconds(audioFilename)
+		if err != nil {
+			fmt.Printf("Warning: Could not get audio duration: %v\n", err)
+			duration = 0
+		}
+
+		// Add video/image with audio and text to project using build2 API
+		err = pb.AddClipSafe(api.ClipConfig{
+			VideoFile: thumbnailPath,
+			AudioFile: audioFilename,
+			Text:      article.Title,
+		})
+		if err != nil {
+			fmt.Printf("Warning: Could not add clip to project: %v\n", err)
+			return 0
+		} else {
+			fmt.Printf("Clip added to hn.fcpxml\n")
+		}
+
+		fmt.Printf("Completed processing article %d (Step 2) - using existing audio\n\n", index+1)
+		return duration
+	}
 
 	chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
 		"/Users/aa/os/chatterbox/chatterbox/main.py",
@@ -388,24 +418,24 @@ func getAudioDurationSeconds(audioPath string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	var result struct {
 		Format struct {
 			Duration string `json:"duration"`
 		} `json:"format"`
 	}
-	
+
 	err = json.Unmarshal(output, &result)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// Parse duration as float seconds
 	duration, err := strconv.ParseFloat(result.Format.Duration, 64)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return duration, nil
 }
 
