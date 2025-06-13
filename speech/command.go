@@ -12,8 +12,8 @@ func HandleSpeechCommand(args []string) {
 
 	fs.StringVar(&outputFile, "o", "data/test_speech.fcpxml", "Output file")
 	fs.StringVar(&outputFile, "output", "data/test_speech.fcpxml", "Output file")
-	fs.StringVar(&videoFile, "v", "", "Video file path (required)")
-	fs.StringVar(&videoFile, "video", "", "Video file path (required)")
+	fs.StringVar(&videoFile, "v", "", "Video or image file path (required)")
+	fs.StringVar(&videoFile, "video", "", "Video or image file path (required)")
 
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
@@ -21,13 +21,13 @@ func HandleSpeechCommand(args []string) {
 
 	if fs.NArg() == 0 {
 		fmt.Fprintf(os.Stderr, "Error: text file required\n")
-		fmt.Fprintf(os.Stderr, "Usage: %s speech <text-file> -v <video-file> [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s speech <text-file> -v <video-or-image-file> [options]\n", os.Args[0])
 		os.Exit(1)
 	}
 
 	if videoFile == "" {
-		fmt.Fprintf(os.Stderr, "Error: video file required\n")
-		fmt.Fprintf(os.Stderr, "Usage: %s speech <text-file> -v <video-file> [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Error: video or image file required\n")
+		fmt.Fprintf(os.Stderr, "Usage: %s speech <text-file> -v <video-or-image-file> [options]\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -38,7 +38,7 @@ func HandleSpeechCommand(args []string) {
 	}
 
 	if _, err := os.Stat(videoFile); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Error: Video file '%s' does not exist\n", videoFile)
+		fmt.Fprintf(os.Stderr, "Error: Video or image file '%s' does not exist\n", videoFile)
 		os.Exit(1)
 	}
 
@@ -47,5 +47,5 @@ func HandleSpeechCommand(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Successfully generated '%s' from '%s' using video '%s'\n", outputFile, inputFile, videoFile)
+	fmt.Printf("Successfully generated '%s' from '%s' using media '%s'\n", outputFile, inputFile, videoFile)
 }

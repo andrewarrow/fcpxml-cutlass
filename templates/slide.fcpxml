@@ -4,13 +4,17 @@
 <fcpxml version="1.13">
     <resources>
         <format id="r1" name="FFVideoFormat720p30" frameDuration="100/3000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
-        <asset id="r2" name="Movie on 6-10-25 at 7.05 PM" uid="{{.VideoUID}}" start="0s" duration="{{.VideoDuration}}" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="44100">
+{{if .IsStillImage}}        <asset id="r2" name="Still Image" uid="{{.VideoUID}}" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">{{else}}        <asset id="r2" name="Movie on 6-10-25 at 7.05 PM" uid="{{.VideoUID}}" start="0s" duration="{{.VideoDuration}}" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="44100">{{end}}
             <media-rep kind="original-media" sig="{{.VideoUID}}" src="{{.VideoPath}}">
                 <bookmark>Ym9va5wDAAAAAAQQMAAAAIyOwVC8wIPakjoIaEBX2fpL4BKD+9d93fs4rd1aXLybdAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAGAAAAAQEAAE1vdmllcwAADgAAAAEBAABqdW45LmZjcGJ1bmRsZQAAFAAAAAEBAABBdXRvIEdlbmVyYXRlZCBDbGlwcw4AAAABAQAAT3JpZ2luYWwgTWVkaWEAACEAAAABAQAATW92aWUgb24gNi0xMC0yNSBhdCA3LjA14oCvUE0ubW92AAAAHAAAAAEGAAAQAAAAIAAAACwAAAA8AAAAVAAAAHAAAACIAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAPpSBAAAAAAACAAAAAQDAAByeBIEAAAAAAgAAAAEAwAAJXkSBAAAAAAIAAAABAMAAC15EgQAAAAACAAAAAQDAAAnRjcEAAAAABwAAAABBgAA2AAAAOgAAAD4AAAACAEAABgBAAAoAQAAOAEAAAgAAAAABAAAQcb8jf9EzJ4YAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAFAAAACAAAAAQDAAAFAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAALQAAAAAAAAABRAAAEgBAAAAAAAAEBAAAHwBAAAAAAAAQBAAAGwBAAAAAAAAVBAAAKQBAAAAAAAAVRAAALABAAAAAAAAVhAAAJwBAAAAAAAAAiAAAGgCAAAAAAAABSAAANgBAAAAAAAAECAAAOgBAAAAAAAAESAAABwCAAAAAAAAEiAAAPwBAAAAAAAAEyAAAAwCAAAAAAAAICAAAEgCAAAAAAAAMCAAAJwBAAAAAAAAAcAAALwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAMwBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
             </media-rep>
             <metadata>
                 <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
-                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
+{{if .IsStillImage}}                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-12 17:45:00 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>{{else}}                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
                 <md key="com.apple.proapps.studio.cameraISO" value="0"/>
                 <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
                 <md key="com.apple.proapps.spotlight.kMDItemCodecs">
@@ -19,18 +23,18 @@
                         <string>MPEG-4 AAC</string>
                     </array>
                 </md>
-                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-10 19:06:04 -0700"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-10 19:06:04 -0700"/>{{end}}
             </metadata>
         </asset>
-        <format id="r3" frameDuration="20/600s" width="1620" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+{{if .IsStillImage}}        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="800" colorSpace="1-13-1"/>{{else}}        <format id="r3" frameDuration="20/600s" width="1620" height="1080" colorSpace="1-1-1 (Rec. 709)"/>{{end}}
         <effect id="r4" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
     </resources>
-    <library location="file:///Users/aa/Movies/jun9.fcpbundle/">
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
         <event name="Auto Generated Clips" uid="8B5C94AD-D7EB-49C3-B19B-771633F7538C">
             <project name="slide5" uid="8AED3047-AE9C-4CF4-81D7-D09432FBB588" modDate="2025-06-10 20:12:17 -0700">
                 <sequence format="r1" duration="8934400/768000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                     <spine>
-                        <asset-clip ref="r2" offset="0s" name="Movie on 6-10-25 at 7.05 PM" duration="{{.VideoClipDuration}}" format="r3" tcFormat="NDF" audioRole="dialogue">
+{{if .IsStillImage}}                        <video ref="r2" offset="0s" name="Still Image" start="0s" duration="{{.VideoClipDuration}}">{{else}}                        <asset-clip ref="r2" offset="0s" name="Movie on 6-10-25 at 7.05 PM" duration="{{.VideoClipDuration}}" format="r3" tcFormat="NDF" audioRole="dialogue">{{end}}
                             <adjust-transform>
                                 <param name="position">
                                     <param name="X" key="1">
@@ -47,8 +51,7 @@
                                         </keyframeAnimation>
                                     </param>
                                 </param>
-                            </adjust-transform>
-{{range .TextElements}}
+                            </adjust-transform>{{range .TextElements}}
                             <title ref="r4" lane="{{.Lane}}" offset="{{.Offset}}s" name="{{.Text}} - Text" start="3600s" duration="{{.Duration}}s">
                                 <param name="Build In" key="9999/10000/2/101" value="0"/>
                                 <param name="Build Out" key="9999/10000/2/102" value="0"/>
@@ -81,7 +84,7 @@
                                 </text-style-def>
                             </title>
 {{end}}
-                        </asset-clip>
+{{if .IsStillImage}}                        </video>{{else}}                        </asset-clip>{{end}}
                     </spine>
                 </sequence>
             </project>

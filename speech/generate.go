@@ -31,9 +31,34 @@ func generateVideoUID(videoPath string) (string, error) {
 	return fmt.Sprintf("%X", hash.Sum(nil)), nil
 }
 
-// getVideoDuration gets the duration of a video file using ffprobe
-func getVideoDuration(videoPath string) (string, string, error) {
-	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_entries", "format=duration", videoPath)
+// isPNGImage checks if the file is a PNG image
+func isPNGImage(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	return ext == ".png"
+}
+
+// getMediaDuration gets the duration of a media file using ffprobe for video, or returns 20 seconds for PNG images
+func getMediaDuration(mediaPath string) (string, string, error) {
+	if isPNGImage(mediaPath) {
+		// For PNG images, use a fixed 20-second duration
+		duration := 20.0
+		
+		// Convert to FCP asset format (frames/44100s)
+		assetFrames := int64(duration * 44100)
+		assetDuration := fmt.Sprintf("%d/44100s", assetFrames)
+
+		// Convert to FCP clip format (frames/600s) aligned to frame boundaries
+		// Frame duration is 20/600s, so we need to round to multiples of 20
+		clipFrames := int64(duration * 600)
+		// Round to nearest frame boundary (multiple of 20)
+		clipFrames = (clipFrames / 20) * 20
+		clipDuration := fmt.Sprintf("%d/600s", clipFrames)
+
+		return assetDuration, clipDuration, nil
+	}
+
+	// For video files, use ffprobe
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_entries", "format=duration", mediaPath)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to run ffprobe: %v", err)
@@ -87,6 +112,7 @@ type SpeechData struct {
 	VideoClipDuration string
 	ReverseStartTime  string
 	ReverseEndTime    string
+	IsStillImage      bool
 }
 
 func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
@@ -166,16 +192,16 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 		return fmt.Errorf("failed to get absolute path for video file: %v", err)
 	}
 
-	// Generate unique UID for the video file
+	// Generate unique UID for the media file
 	videoUID, err := generateVideoUID(videoFile)
 	if err != nil {
-		return fmt.Errorf("failed to generate video UID: %v", err)
+		return fmt.Errorf("failed to generate media UID: %v", err)
 	}
 
-	// Get video duration
-	videoDuration, videoClipDuration, err := getVideoDuration(videoFile)
+	// Get media duration
+	videoDuration, videoClipDuration, err := getMediaDuration(videoFile)
 	if err != nil {
-		return fmt.Errorf("failed to get video duration: %v", err)
+		return fmt.Errorf("failed to get media duration: %v", err)
 	}
 
 	// Create the speech data
@@ -187,6 +213,7 @@ func GenerateSpeechFCPXML(inputFile, outputFile, videoFile string) error {
 		VideoClipDuration: videoClipDuration,
 		ReverseStartTime:  reverseStartTime,
 		ReverseEndTime:    reverseEndTime,
+		IsStillImage:      isPNGImage(videoFile),
 	}
 
 	// Read the template
