@@ -87,6 +87,14 @@ func HandleWikipediaRandomCommand(args []string) {
 
 	fmt.Printf("Found article: %s\n", title)
 
+	// Get current page URL
+	pageInfo, err := page.Info()
+	if err != nil {
+		fmt.Printf("Warning: Could not get page URL: %v\n", err)
+	} else {
+		fmt.Printf("Wikipedia URL: %s\n", pageInfo.URL)
+	}
+
 	// Extract first paragraph
 	firstParagraph, err := extractFirstParagraph(page)
 	if err != nil {
@@ -120,11 +128,11 @@ func HandleWikipediaRandomCommand(args []string) {
 
 	// Find and click the first video link
 	fmt.Println("Looking for first video link...")
-	
+
 	// Debug: Print page title to confirm we're on the right page
 	pageTitle, _ := page.Eval("document.title")
 	fmt.Printf("Debug: Current page title: %v\n", pageTitle)
-	
+
 	// Debug: Try multiple selectors to find video links
 	selectors := []string{
 		"div.g h3 a",
@@ -134,7 +142,7 @@ func HandleWikipediaRandomCommand(args []string) {
 		"a[href*='watch']",
 		"div.g a",
 	}
-	
+
 	var firstVideoLink *rod.Element
 	for _, selector := range selectors {
 		fmt.Printf("Debug: Trying selector: %s\n", selector)
@@ -144,14 +152,14 @@ func HandleWikipediaRandomCommand(args []string) {
 			continue
 		}
 		fmt.Printf("Debug: Found %d elements with selector %s\n", len(elements), selector)
-		
+
 		if len(elements) > 0 {
 			firstVideoLink = elements[0]
 			fmt.Printf("Debug: Using first element from selector: %s\n", selector)
 			break
 		}
 	}
-	
+
 	if firstVideoLink == nil {
 		// Debug: Print page HTML snippet to see structure
 		bodyHTML, _ := page.Eval("document.body.innerHTML.substring(0, 1000)")
@@ -168,22 +176,22 @@ func HandleWikipediaRandomCommand(args []string) {
 		fmt.Printf("Debug: About to click link: %s\n", *linkHref)
 	}
 
-	// Get the video URL 
+	// Get the video URL
 	if linkHref != nil && *linkHref != "" {
 		videoURL := *linkHref
 		fmt.Printf("Found video URL: %s\n", videoURL)
-		
+
 		// Close the browser since we no longer need it
 		page.Close()
 		browser.Close()
 		l.Cleanup()
-		
+
 		// Use yt-dlp to download thumbnail
 		fmt.Println("Using yt-dlp to download video thumbnail...")
-		
+
 		// Create final filename
 		finalFilename := filepath.Join(dataDir, fmt.Sprintf("wiki_%s.png", filenameTitle))
-		
+
 		// Run yt-dlp command
 		cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join(dataDir, "temp_thumbnail.%(ext)s"), videoURL)
 		output, err := cmd.CombinedOutput()
@@ -192,36 +200,36 @@ func HandleWikipediaRandomCommand(args []string) {
 			fmt.Fprintf(os.Stderr, "yt-dlp output: %s\n", string(output))
 			os.Exit(1)
 		}
-		
+
 		fmt.Printf("yt-dlp output: %s\n", string(output))
-		
+
 		// Find the downloaded thumbnail file and rename it
 		thumbnailFiles, err := filepath.Glob(filepath.Join(dataDir, "temp_thumbnail.*"))
 		if err != nil || len(thumbnailFiles) == 0 {
 			fmt.Fprintf(os.Stderr, "Error: Could not find downloaded thumbnail file\n")
 			os.Exit(1)
 		}
-		
+
 		// Rename the first thumbnail file to our desired name
 		err = os.Rename(thumbnailFiles[0], finalFilename)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error renaming thumbnail file: %v\n", err)
 			os.Exit(1)
 		}
-		
+
 		fmt.Printf("Thumbnail saved: %s\n", finalFilename)
-		
+
 		// Generate speech from first paragraph using chatterbox
 		if firstParagraph != "" {
 			fmt.Println("Generating speech from first paragraph...")
 			audioFilename := filepath.Join(dataDir, fmt.Sprintf("wiki_%s.wav", filenameTitle))
-			
+
 			// Call chatterbox CLI to generate speech
-			chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3", 
-				"/Users/aa/os/chatterbox/dia/cli.py", 
-				firstParagraph, 
+			chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
+				"/Users/aa/os/chatterbox/dia/cli.py",
+				firstParagraph,
 				"--output="+audioFilename)
-			
+
 			chatterboxOutput, err := chatterboxCmd.CombinedOutput()
 			if err != nil {
 				fmt.Printf("Warning: Could not generate speech: %v\n", err)
@@ -230,7 +238,7 @@ func HandleWikipediaRandomCommand(args []string) {
 				fmt.Printf("Speech generated: %s\n", audioFilename)
 			}
 		}
-		
+
 	} else {
 		fmt.Fprintf(os.Stderr, "Error: Link href is empty\n")
 		page.Close()
@@ -269,7 +277,10 @@ func extractFirstParagraph(page *rod.Page) (string, error) {
 		return "", fmt.Errorf("no paragraphs found")
 	}
 
-	// Get the first non-empty paragraph
+	// Collect text from paragraphs until we have at least 90 words
+	var combinedText strings.Builder
+	wordCount := 0
+
 	for _, p := range paragraphs {
 		text, err := p.Text()
 		if err != nil {
@@ -278,10 +289,29 @@ func extractFirstParagraph(page *rod.Page) (string, error) {
 
 		// Skip empty paragraphs or ones that are just whitespace
 		trimmed := strings.TrimSpace(text)
-		if len(trimmed) > 0 {
-			return trimmed, nil
+		if len(trimmed) == 0 {
+			continue
+		}
+
+		// Add paragraph text
+		if combinedText.Len() > 0 {
+			combinedText.WriteString(" ")
+		}
+		combinedText.WriteString(trimmed)
+
+		// Count words in this paragraph
+		words := strings.Fields(trimmed)
+		wordCount += len(words)
+
+		// If we have at least 90 words, we're done
+		if wordCount >= 9 {
+			break
 		}
 	}
 
-	return "", fmt.Errorf("no non-empty paragraphs found")
+	if combinedText.Len() == 0 {
+		return "", fmt.Errorf("no non-empty paragraphs found")
+	}
+
+	return combinedText.String(), nil
 }
