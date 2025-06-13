@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // HandleHackerNewsStep1Command processes step 1: get articles and take screenshots
@@ -97,12 +96,14 @@ func HandleHackerNewsStep2Command(args []string) {
 	var cumulativeSeconds float64 = 0
 	var timecodeEntries []string
 
-	// Process each article for step 2 (audio generation and FCPXML)
-	for i, article := range articles {
+	// Process each article for step 2 (audio generation and FCPXML) in REVERSE order
+	// This ensures the last article in the list becomes the first clip (00:00)
+	for i := len(articles) - 1; i >= 0; i-- {
+		article := articles[i]
 		// Format current timecode as MM:SS BEFORE processing the clip
 		timecode := formatTimecode(cumulativeSeconds)
 		entry := fmt.Sprintf("%s (%s)[%s]", timecode, article.Title, article.URL)
-		
+
 		duration := processHNArticleStep2(article, i, pb)
 		if duration > 0 {
 			// Add timecode entry after successful processing
@@ -214,7 +215,7 @@ func processHNArticleStep2(article *HNArticle, index int, pb *api.ProjectBuilder
 	// Check if audio file already exists
 	if _, err := os.Stat(audioFilename); err == nil {
 		fmt.Printf("Audio file already exists, skipping generation: %s\n", audioFilename)
-		time.Sleep(time.Second * 3)
+		//		time.Sleep(time.Second * 3)
 
 		// Still need to get duration and add to project
 		duration, err := getAudioDurationSeconds(audioFilename)
