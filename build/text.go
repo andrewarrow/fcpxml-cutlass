@@ -1,31 +1,37 @@
 package build
 
 import (
+	"fmt"
 	"cutlass/fcp"
 )
 
-// ensureTextEffect ensures the Text effect is available in resources
-func ensureTextEffect(fcpxml *fcp.FCPXML) {
+// ensureTextEffect ensures the Text effect is available in resources and returns its ID
+func ensureTextEffect(fcpxml *fcp.FCPXML) string {
 	// Check if Text effect already exists
 	for _, effect := range fcpxml.Resources.Effects {
 		if effect.Name == "Text" {
-			return // Already exists
+			return effect.ID // Return existing ID
 		}
 	}
 	
+	// Calculate next available ID considering all resources
+	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
+	effectID := fmt.Sprintf("r%d", totalResources+1)
+	
 	// Add Text effect if it doesn't exist
 	textEffect := fcp.Effect{
-		ID:   "r6",
+		ID:   effectID,
 		Name: "Text",
 		UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
 	}
 	fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, textEffect)
+	return effectID
 }
 
 // createTextTitle creates a Title struct for text overlay
-func createTextTitle(text, duration, baseName string) fcp.Title {
+func createTextTitle(text, duration, baseName, textEffectID string) fcp.Title {
 	return fcp.Title{
-		Ref:      "r6", // Reference to Text effect
+		Ref:      textEffectID, // Reference to Text effect
 		Lane:     "1",  // Lane 1 (above the video)
 		Offset:   "0s",
 		Name:     baseName + " - Text",

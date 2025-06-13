@@ -2,4 +2,4 @@ go build
 rm b.fcpxml
 ./cutlass build b.fcpxml
 ./cutlass build b.fcpxml add-video ./assets/cs.pitt.edu.png --with-text "hello"
-./cutlass build b.fcpxml add-video ./assets/bizrate.com.png
+./cutlass build b.fcpxml add-video ./assets/bizrate.com.png --with-sound data/wiki_tongue_tied_red_dwarf_song.wav

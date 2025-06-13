@@ -15,6 +15,7 @@ type Resources struct {
 	Assets     []Asset     `xml:"asset,omitempty"`
 	Formats    []Format    `xml:"format"`
 	Effects    []Effect    `xml:"effect,omitempty"`
+	Media      []Media     `xml:"media,omitempty"`
 }
 
 // Effect represents a Motion or standard FCP title effect referenced by <title ref="…"> elements.
@@ -45,6 +46,7 @@ type Asset struct {
 	HasAudio      string   `xml:"hasAudio,attr,omitempty"`
 	AudioSources  string   `xml:"audioSources,attr,omitempty"`
 	AudioChannels string   `xml:"audioChannels,attr,omitempty"`
+	AudioRate     string   `xml:"audioRate,attr,omitempty"`
 	Duration      string   `xml:"duration,attr"`
 	MediaRep      MediaRep `xml:"media-rep"`
 }
@@ -53,6 +55,24 @@ type MediaRep struct {
 	Kind string `xml:"kind,attr"`
 	Sig  string `xml:"sig,attr"`
 	Src  string `xml:"src,attr"`
+}
+
+type Media struct {
+	ID       string   `xml:"id,attr"`
+	Name     string   `xml:"name,attr"`
+	UID      string   `xml:"uid,attr"`
+	ModDate  string   `xml:"modDate,attr,omitempty"`
+	Sequence Sequence `xml:"sequence"`
+}
+
+type RefClip struct {
+	XMLName         xml.Name         `xml:"ref-clip"`
+	Ref             string           `xml:"ref,attr"`
+	Offset          string           `xml:"offset,attr"`
+	Name            string           `xml:"name,attr"`
+	Duration        string           `xml:"duration,attr"`
+	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
+	Titles          []Title          `xml:"title,omitempty"`
 }
 
 type Library struct {
@@ -91,6 +111,7 @@ type Spine struct {
 type AssetClip struct {
 	XMLName         xml.Name         `xml:"asset-clip"`
 	Ref             string           `xml:"ref,attr"`
+	Lane            string           `xml:"lane,attr,omitempty"`
 	Offset          string           `xml:"offset,attr"`
 	Name            string           `xml:"name,attr"`
 	Start           string           `xml:"start,attr,omitempty"`

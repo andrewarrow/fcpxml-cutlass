@@ -23,8 +23,9 @@ var BuildCmd = &cobra.Command{
 		if len(args) >= 3 && args[1] == "add-video" {
 			mediaFile := args[2]
 			
-			// Get the --with-text flag value
+			// Get the --with-text and --with-sound flag values
 			withText, _ := cmd.Flags().GetString("with-text")
+			withSound, _ := cmd.Flags().GetString("with-sound")
 			
 			// First ensure the project exists, create if it doesn't
 			if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -37,7 +38,7 @@ var BuildCmd = &cobra.Command{
 			}
 			
 			// Add media to the project
-			err := addVideoToProject(filename, mediaFile, withText)
+			err := addVideoToProject(filename, mediaFile, withText, withSound)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error adding media to project: %v\n", err)
 				os.Exit(1)
@@ -46,6 +47,9 @@ var BuildCmd = &cobra.Command{
 			fmt.Printf("Added media %s to project %s\n", mediaFile, filename)
 			if withText != "" {
 				fmt.Printf("Added text overlay: %s\n", withText)
+			}
+			if withSound != "" {
+				fmt.Printf("Added audio file: %s\n", withSound)
 			}
 		} else {
 			// Just create a blank project
@@ -62,6 +66,7 @@ var BuildCmd = &cobra.Command{
 
 func init() {
 	BuildCmd.Flags().String("with-text", "", "Add text overlay on top of the video")
+	BuildCmd.Flags().String("with-sound", "", "Add audio file (WAV) to create compound clip")
 }
 
 
