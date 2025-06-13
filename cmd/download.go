@@ -68,10 +68,21 @@ var tableCmd = &cobra.Command{
 	},
 }
 
+var wikipediaRandomCmd = &cobra.Command{
+	Use:   "wikipedia-random",
+	Short: "Download random Wikipedia page and Google image search",
+	Long:  "Navigate to a random Wikipedia page, extract the title, perform Google image search, and save screenshot.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		wikipedia.HandleWikipediaRandomCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	downloadCmd.AddCommand(youtubeCmd)
 	downloadCmd.AddCommand(youtubeBulkCmd)
 	downloadCmd.AddCommand(youtubeBulkAssembleCmd)
 	downloadCmd.AddCommand(wikipediaCmd)
 	downloadCmd.AddCommand(tableCmd)
+	downloadCmd.AddCommand(wikipediaRandomCmd)
 }
