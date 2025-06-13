@@ -1,0 +1,21 @@
+        <asset id="{{ .ImageAssetID }}" name="{{ .ImageName }}" uid="{{ .ImageUID }}" start="0s" duration="0s" hasVideo="1" format="{{ .ImageFormatID }}" videoSources="1">
+            <media-rep kind="original-media" sig="{{ .ImageUID }}" src="file://{{ .ImagePath }}">
+                <bookmark>{{ .ImageBookmark }}</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="{{ .IngestDate }}"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+        <format id="{{ .ImageFormatID }}" name="FFVideoFormatRateUndefined" width="{{ .ImageWidth }}" height="{{ .ImageHeight }}" colorSpace="1-13-1"/>
+        <asset id="{{ .AudioAssetID }}" name="{{ .AudioName }}" uid="{{ .AudioUID }}" start="0s" duration="{{ .AudioDuration }}" hasAudio="1" audioSources="1" audioChannels="1" audioRate="44100">
+            <media-rep kind="original-media" sig="{{ .AudioUID }}" src="file://{{ .AudioPath }}">
+                <bookmark>{{ .AudioBookmark }}</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.mio.ingestDate" value="{{ .IngestDate }}"/>
+            </metadata>
+        </asset>

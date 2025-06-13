@@ -1,12 +1,16 @@
 package wikipedia
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -250,6 +254,13 @@ func HandleWikipediaRandomCommand(args []string) {
 				fmt.Printf("Chatterbox output: %s\n", string(chatterboxOutput))
 			} else {
 				fmt.Printf("Speech generated: %s\n", audioFilename)
+				
+				// Generate FCPXML and append to wiki.fcpxml
+				if err := generateAndAppendFCPXML(finalFilename, audioFilename, filenameTitle); err != nil {
+					fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
+				} else {
+					fmt.Printf("FCPXML appended to data/wiki.fcpxml\n")
+				}
 			}
 		}
 
@@ -363,6 +374,121 @@ func appendToYouTubeList(url string) error {
 	_, err = file.WriteString(url + "\n")
 	if err != nil {
 		return fmt.Errorf("error writing to youtube.txt: %v", err)
+	}
+	
+	return nil
+}
+
+type WikiTemplateData struct {
+	ImageAssetID    string
+	ImageName       string
+	ImageUID        string
+	ImagePath       string
+	ImageBookmark   string
+	ImageFormatID   string
+	ImageWidth      string
+	ImageHeight     string
+	AudioAssetID    string
+	AudioName       string
+	AudioUID        string
+	AudioPath       string
+	AudioBookmark   string
+	AudioDuration   string
+	IngestDate      string
+}
+
+func generateUID() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return strings.ToUpper(hex.EncodeToString(bytes))
+}
+
+func getAudioDuration(audioPath string) (string, error) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", audioPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	
+	durationStr := strings.TrimSpace(string(output))
+	duration, err := strconv.ParseFloat(durationStr, 64)
+	if err != nil {
+		return "", err
+	}
+	
+	// Convert to FCPXML format (samples/rate)
+	samples := int64(duration * 44100)
+	return fmt.Sprintf("%d/44100s", samples), nil
+}
+
+func generateAndAppendFCPXML(imagePath, audioPath, name string) error {
+	// Get audio duration using ffprobe
+	audioDuration, err := getAudioDuration(audioPath)
+	if err != nil {
+		return fmt.Errorf("failed to get audio duration: %v", err)
+	}
+	
+	// Generate UIDs and asset IDs
+	imageUID := generateUID()
+	audioUID := generateUID()
+	
+	// Create template data
+	data := WikiTemplateData{
+		ImageAssetID:    "r" + strconv.Itoa(int(time.Now().Unix())),
+		ImageName:       name,
+		ImageUID:        imageUID,
+		ImagePath:       imagePath,
+		ImageBookmark:   "placeholder_bookmark",
+		ImageFormatID:   "r" + strconv.Itoa(int(time.Now().Unix())+1),
+		ImageWidth:      "640",
+		ImageHeight:     "480",
+		AudioAssetID:    "r" + strconv.Itoa(int(time.Now().Unix())+2),
+		AudioName:       name,
+		AudioUID:        audioUID,
+		AudioPath:       audioPath,
+		AudioBookmark:   "placeholder_bookmark",
+		AudioDuration:   audioDuration,
+		IngestDate:      time.Now().Format("2006-01-02 15:04:05 -0700"),
+	}
+	
+	// Read template
+	templateContent, err := os.ReadFile("templates/one_wiki.fcpxml")
+	if err != nil {
+		return fmt.Errorf("failed to read template: %v", err)
+	}
+	
+	// Execute template
+	tmpl, err := template.New("wiki").Parse(string(templateContent))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %v", err)
+	}
+	
+	var result strings.Builder
+	if err := tmpl.Execute(&result, data); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+	
+	// Read existing wiki.fcpxml
+	wikiPath := "data/wiki.fcpxml"
+	wikiContent, err := os.ReadFile(wikiPath)
+	if err != nil {
+		return fmt.Errorf("failed to read wiki.fcpxml: %v", err)
+	}
+	
+	// Find insertion points
+	wikiStr := string(wikiContent)
+	
+	// Insert assets before </resources>
+	resourcesEnd := strings.Index(wikiStr, "    </resources>")
+	if resourcesEnd == -1 {
+		return fmt.Errorf("could not find </resources> tag")
+	}
+	
+	newWikiContent := wikiStr[:resourcesEnd] + result.String() + "\n" + wikiStr[resourcesEnd:]
+	
+	// Write back to file
+	if err := os.WriteFile(wikiPath, []byte(newWikiContent), 0644); err != nil {
+		return fmt.Errorf("failed to write wiki.fcpxml: %v", err)
 	}
 	
 	return nil
