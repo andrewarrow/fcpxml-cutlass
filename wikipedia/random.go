@@ -86,6 +86,14 @@ func HandleWikipediaRandomCommand(args []string) {
 
 	fmt.Printf("Found article: %s\n", title)
 
+	// Extract first paragraph
+	firstParagraph, err := extractFirstParagraph(page)
+	if err != nil {
+		fmt.Printf("Warning: Could not extract first paragraph: %v\n", err)
+	} else {
+		fmt.Printf("\nFirst paragraph:\n%s\n\n", firstParagraph)
+	}
+
 	// Create filename-safe version of title
 	filenameTitle := sanitizeFilename(title)
 
@@ -143,4 +151,33 @@ func sanitizeFilename(title string) string {
 	}
 	
 	return safe
+}
+
+func extractFirstParagraph(page *rod.Page) (string, error) {
+	// Try to find the first paragraph in the Wikipedia article content
+	// Wikipedia articles typically have the first paragraph in #mw-content-text .mw-parser-output > p
+	paragraphs, err := page.Elements("#mw-content-text .mw-parser-output > p")
+	if err != nil {
+		return "", fmt.Errorf("could not find paragraphs: %v", err)
+	}
+
+	if len(paragraphs) == 0 {
+		return "", fmt.Errorf("no paragraphs found")
+	}
+
+	// Get the first non-empty paragraph
+	for _, p := range paragraphs {
+		text, err := p.Text()
+		if err != nil {
+			continue
+		}
+		
+		// Skip empty paragraphs or ones that are just whitespace
+		trimmed := strings.TrimSpace(text)
+		if len(trimmed) > 0 {
+			return trimmed, nil
+		}
+	}
+
+	return "", fmt.Errorf("no non-empty paragraphs found")
 }
