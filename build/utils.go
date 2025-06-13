@@ -11,10 +11,12 @@ import (
 )
 
 // generateUID creates a consistent UID from a file path using MD5 hash
+// Uses only the filename to ensure the same file gets the same UID regardless of directory
 func generateUID(filePath string) string {
-	// Create a hash from the file path to ensure consistent UIDs
+	// Use only the filename (not full path) to ensure consistent UIDs across different working directories
+	filename := filepath.Base(filePath)
 	hasher := md5.New()
-	hasher.Write([]byte("cutlass_video_" + filePath))
+	hasher.Write([]byte("cutlass_video_" + filename))
 	hash := hasher.Sum(nil)
 	// Convert to uppercase hex string and format as UID
 	hexStr := strings.ToUpper(hex.EncodeToString(hash))

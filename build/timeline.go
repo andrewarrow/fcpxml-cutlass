@@ -30,8 +30,8 @@ func calculateTotalDuration(spineContent string) string {
 	// This avoids double-counting when splitting by both tags
 	lines := strings.Split(spineContent, "\n")
 	for _, line := range lines {
-		// Look for asset-clip or video elements with duration
-		if (strings.Contains(line, "asset-clip") || strings.Contains(line, "<video")) && strings.Contains(line, "duration=") {
+		// Look for asset-clip, video, or ref-clip elements with duration
+		if (strings.Contains(line, "asset-clip") || strings.Contains(line, "<video") || strings.Contains(line, "ref-clip")) && strings.Contains(line, "duration=") {
 			// Extract duration value
 			start := strings.Index(line, "duration=\"") + 10
 			if start > 9 {

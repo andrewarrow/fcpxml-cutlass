@@ -1,7 +1,6 @@
 package build
 
 import (
-	"fmt"
 	"cutlass/fcp"
 )
 
@@ -15,8 +14,7 @@ func ensureTextEffect(fcpxml *fcp.FCPXML) string {
 	}
 	
 	// Calculate next available ID considering all resources
-	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
-	effectID := fmt.Sprintf("r%d", totalResources+1)
+	effectID := generateNextResourceID(fcpxml)
 	
 	// Add Text effect if it doesn't exist
 	textEffect := fcp.Effect{

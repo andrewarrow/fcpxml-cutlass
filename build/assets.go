@@ -12,6 +12,24 @@ import (
 	"cutlass/fcp"
 )
 
+// generateNextResourceID creates a unique resource ID by counting all existing resources
+// This ensures consistent ID generation across all resource types (assets, formats, effects, media)
+func generateNextResourceID(fcpxml *fcp.FCPXML) string {
+	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
+	return fmt.Sprintf("r%d", totalResources+1)
+}
+
+// generateResourceIDSequence creates multiple unique resource IDs in sequence
+// Use this when creating multiple resources in the same transaction to avoid collisions
+func generateResourceIDSequence(fcpxml *fcp.FCPXML, count int) []string {
+	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
+	ids := make([]string, count)
+	for i := 0; i < count; i++ {
+		ids[i] = fmt.Sprintf("r%d", totalResources+1+i)
+	}
+	return ids
+}
+
 // isPNGFile checks if the given file is a PNG image
 func isPNGFile(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
@@ -191,9 +209,7 @@ func ensurePNGFormat(fcpxml *fcp.FCPXML) string {
 	
 	// Add PNG format if it doesn't exist
 	// Generate a unique ID for the PNG format - must not conflict with any other resource IDs
-	// Count all existing resources: assets + formats + effects
-	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects)
-	pngFormatID := fmt.Sprintf("r%d", totalResources+1)
+	pngFormatID := generateNextResourceID(fcpxml)
 	pngFormat := fcp.Format{
 		ID:         pngFormatID,
 		Name:       "FFVideoFormatRateUndefined",
@@ -208,9 +224,8 @@ func ensurePNGFormat(fcpxml *fcp.FCPXML) string {
 
 // createAsset creates a new asset and adds it to the resources
 func createAsset(fcpxml *fcp.FCPXML, absVideoPath, baseName, duration, pngFormatID string) string {
-	// Calculate next available ID considering all resources: assets + formats + effects
-	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects)
-	assetID := fmt.Sprintf("r%d", totalResources+1)
+	// Calculate next available ID considering all resources
+	assetID := generateNextResourceID(fcpxml)
 	
 	// Generate consistent UID from file path
 	assetUID := generateUID(absVideoPath)
@@ -396,11 +411,16 @@ func addCompoundClipToSpine(fcpxml *fcp.FCPXML, videoAssetID, absVideoPath, audi
 		return fmt.Errorf("audio file does not exist: %s", absAudioPath)
 	}
 	
-	// Create audio asset
-	audioAssetID := createAudioAsset(fcpxml, absAudioPath, baseName, duration)
+	// Generate IDs for both audio asset and media in sequence to avoid collision
+	resourceIDs := generateResourceIDSequence(fcpxml, 2)
+	audioAssetID := resourceIDs[0]
+	mediaID := resourceIDs[1]
 	
-	// Create compound clip media
-	compoundClipID := createCompoundClipMedia(fcpxml, videoAssetID, audioAssetID, absVideoPath, baseName, duration, withText)
+	// Create audio asset with pre-assigned ID
+	createAudioAssetWithID(fcpxml, audioAssetID, absAudioPath, baseName, duration)
+	
+	// Create compound clip media with pre-assigned ID
+	compoundClipID := createCompoundClipMediaWithID(fcpxml, mediaID, videoAssetID, audioAssetID, absVideoPath, baseName, duration, withText)
 	
 	// Add ref-clip to the spine
 	return addRefClipToSpine(fcpxml, compoundClipID, baseName, duration, withText, textEffectID)
@@ -409,9 +429,13 @@ func addCompoundClipToSpine(fcpxml *fcp.FCPXML, videoAssetID, absVideoPath, audi
 // createAudioAsset creates an audio asset and returns its ID
 func createAudioAsset(fcpxml *fcp.FCPXML, absAudioPath, baseName, duration string) string {
 	// Calculate next available ID considering all resources
-	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
-	audioAssetID := fmt.Sprintf("r%d", totalResources+1)
-	
+	audioAssetID := generateNextResourceID(fcpxml)
+	createAudioAssetWithID(fcpxml, audioAssetID, absAudioPath, baseName, duration)
+	return audioAssetID
+}
+
+// createAudioAssetWithID creates an audio asset with a pre-assigned ID
+func createAudioAssetWithID(fcpxml *fcp.FCPXML, audioAssetID, absAudioPath, baseName, duration string) {
 	// Generate consistent UID from file path
 	audioUID := generateUID(absAudioPath)
 	
@@ -439,15 +463,17 @@ func createAudioAsset(fcpxml *fcp.FCPXML, absAudioPath, baseName, duration strin
 	}
 	
 	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, audioAsset)
-	return audioAssetID
 }
 
 // createCompoundClipMedia creates a compound clip media element and returns its ID
 func createCompoundClipMedia(fcpxml *fcp.FCPXML, videoAssetID, audioAssetID, absVideoPath, baseName, duration, withText string) string {
-	// Calculate next available ID considering all resources (add 1 more to avoid conflict with audio asset that was just created)
-	totalResources := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
-	mediaID := fmt.Sprintf("r%d", totalResources+1)
-	
+	// Calculate next available ID considering all resources
+	mediaID := generateNextResourceID(fcpxml)
+	return createCompoundClipMediaWithID(fcpxml, mediaID, videoAssetID, audioAssetID, absVideoPath, baseName, duration, withText)
+}
+
+// createCompoundClipMediaWithID creates a compound clip media element with a pre-assigned ID
+func createCompoundClipMediaWithID(fcpxml *fcp.FCPXML, mediaID, videoAssetID, audioAssetID, absVideoPath, baseName, duration, withText string) string {
 	// Generate UID for compound clip
 	mediaUID := generateUID(baseName + "_compound")
 	

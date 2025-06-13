@@ -28,6 +28,19 @@ FCPXML requires ALL IDs to be unique within the document. Common violations incl
 2. Not checking for existing IDs when adding new resources
 3. Copy-pasting code without updating ID generation
 4. Using simple counters that don't account for existing resources
+5. **CRITICAL**: Inconsistent resource counting in ID generation functions - different functions counting different numbers of resource types (e.g., some counting 3 types: assets+formats+effects, others counting 4 types: assets+formats+effects+media)
+6. Race conditions when creating multiple resources in the same transaction without using sequence generation
+
+### ID Generation Best Practices:
+- Use unified ID generation functions that count ALL resource types consistently
+- For multiple resources created in one transaction, use sequence generation to avoid collisions
+- Never assume resource counts are static during function execution
+
+### UID Consistency Requirements:
+- **CRITICAL**: Once FCP imports a media file with a specific UID, that UID is permanently associated with that file in the library
+- Attempting to import the same file with a different UID causes "cannot be imported again with a different unique identifier" errors
+- UID generation must be deterministic based on file content/name, not file path
+- Use filename-based UID generation to ensure consistency across different working directories
 
 When adding any new FCPXML elements with IDs, always ensure uniqueness across the entire document.
 
