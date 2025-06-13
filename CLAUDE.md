@@ -9,6 +9,28 @@ xmllint --dtdvalid FCPXMLv1_13.dtd output.fcpxml
 
 This validation MUST pass without errors. If it fails, the XML structure is broken and must be fixed before the changes are complete.
 
+## CRITICAL: Unique ID Requirements
+FCPXML requires ALL IDs to be unique within the document. Common violations include:
+
+### Text Style IDs
+- NEVER hardcode text-style-def IDs like "ts1"
+- Multiple text overlays MUST have unique text-style-def IDs
+- Use generateUID() or hash-based approach for uniqueness
+- Example: "tsB139D196", "tsAC597A49" (not "ts1", "ts1")
+
+### Asset and Resource IDs  
+- All asset, format, effect, and media IDs must be unique
+- Use proper ID generation functions that consider existing resources
+- Check existing IDs before assigning new ones
+
+### Common ID Collision Patterns to Avoid:
+1. Hardcoded IDs in functions that get called multiple times
+2. Not checking for existing IDs when adding new resources
+3. Copy-pasting code without updating ID generation
+4. Using simple counters that don't account for existing resources
+
+When adding any new FCPXML elements with IDs, always ensure uniqueness across the entire document.
+
 this program is a swiff army knife for generating fcpxml files. There is a complex cli menu system for asking what specific army knife you want.
 
 do not add complex logic to main.go that belongs in other packages.

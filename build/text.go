@@ -30,6 +30,9 @@ func ensureTextEffect(fcpxml *fcp.FCPXML) string {
 
 // createTextTitle creates a Title struct for text overlay
 func createTextTitle(text, duration, baseName, textEffectID string) fcp.Title {
+	// Generate unique text style ID using the text content and baseName
+	textStyleID := generateTextStyleID(text, baseName)
+	
 	return fcp.Title{
 		Ref:      textEffectID, // Reference to Text effect
 		Lane:     "1",  // Lane 1 (above the video)
@@ -63,12 +66,12 @@ func createTextTitle(text, duration, baseName, textEffectID string) fcp.Title {
 		},
 		Text: &fcp.TitleText{
 			TextStyle: fcp.TextStyleRef{
-				Ref:  "ts1",
+				Ref:  textStyleID,
 				Text: text,
 			},
 		},
 		TextStyleDef: &fcp.TextStyleDef{
-			ID: "ts1",
+			ID: textStyleID,
 			TextStyle: fcp.TextStyle{
 				Font:        "Helvetica Neue",
 				FontSize:    "196",
@@ -79,4 +82,16 @@ func createTextTitle(text, duration, baseName, textEffectID string) fcp.Title {
 			},
 		},
 	}
+}
+
+// generateTextStyleID creates a unique text style ID based on content and baseName
+// CRITICAL: This ensures text-style-def IDs are unique across the entire FCPXML document.
+// Never hardcode text style IDs like "ts1" as this causes DTD validation failures
+// when multiple text overlays are added to the same project.
+func generateTextStyleID(text, baseName string) string {
+	// Use the existing generateUID function to create a hash-based ID
+	fullText := "text_" + baseName + "_" + text
+	uid := generateUID(fullText)
+	// Return a shorter, more readable ID using the first 8 characters
+	return "ts" + uid[0:8]
 }
