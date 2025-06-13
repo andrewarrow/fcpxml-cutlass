@@ -2,6 +2,7 @@ package wikipedia
 
 import (
 	"crypto/rand"
+	"cutlass/browser"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -14,70 +15,34 @@ import (
 	"time"
 
 	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
 )
 
 func HandleWikipediaRandomCommand(args []string) {
 	fmt.Println("Fetching random Wikipedia article...")
 
 	// Create data directory if it doesn't exist
-	dataDir := "./data"
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	if err := browser.EnsureDataDir(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating data directory: %v\n", err)
 		return
 	}
 
-	// Launch browser
-	l := launcher.New().Headless(true)
-	defer l.Cleanup()
-	url, err := l.Launch()
+	// Create browser session
+	session, err := browser.NewBrowserSession()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error launching browser: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error creating browser session: %v\n", err)
 		return
 	}
-	browser := rod.New().ControlURL(url)
-	defer browser.Close()
-
-	if err := browser.Connect(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error connecting to browser: %v\n", err)
-		return
-	}
-
-	// Create page with panic recovery
-	var page *rod.Page
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Fprintf(os.Stderr, "Error creating page: %v\n", r)
-				return
-			}
-		}()
-		page = browser.MustPage()
-	}()
-
-	// Set timeout
-	page = page.Timeout(30 * time.Second)
+	defer session.Close()
 
 	// Navigate to Wikipedia random page
 	fmt.Println("Loading random Wikipedia page...")
-	err = page.Navigate("https://en.wikipedia.org/wiki/Special:Random")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error navigating to Wikipedia: %v\n", err)
+	if err := session.NavigateAndWait("https://en.wikipedia.org/wiki/Special:Random"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading Wikipedia: %v\n", err)
 		return
 	}
-
-	// Wait for page to load
-	err = page.WaitLoad()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error waiting for page load: %v\n", err)
-		return
-	}
-
-	// Wait for dynamic content
-	page.WaitRequestIdle(3*time.Second, []string{}, []string{}, nil)
 
 	// Extract title from the page
-	titleElement, err := page.Element("h1.firstHeading")
+	titleElement, err := session.Page.Element("h1.firstHeading")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error finding title element: %v\n", err)
 		return
@@ -92,7 +57,7 @@ func HandleWikipediaRandomCommand(args []string) {
 	fmt.Printf("Found article: %s\n", title)
 
 	// Get current page URL
-	pageInfo, err := page.Info()
+	pageInfo, err := session.Page.Info()
 	if err != nil {
 		fmt.Printf("Warning: Could not get page URL: %v\n", err)
 	} else {
@@ -107,7 +72,7 @@ func HandleWikipediaRandomCommand(args []string) {
 	}
 
 	// Extract first paragraph
-	firstParagraph, err := extractFirstParagraph(page)
+	firstParagraph, err := extractFirstParagraph(session.Page)
 	if err != nil {
 		fmt.Printf("Warning: Could not extract first paragraph: %v\n", err)
 	} else {
@@ -121,27 +86,16 @@ func HandleWikipediaRandomCommand(args []string) {
 	searchQuery := fmt.Sprintf("https://www.google.com/search?tbm=vid&q=%s", strings.ReplaceAll(title, " ", "+"))
 	fmt.Printf("Searching Google Videos for: %s\n", title)
 
-	err = page.Navigate(searchQuery)
-	if err != nil {
+	if err := session.NavigateAndWait(searchQuery); err != nil {
 		fmt.Fprintf(os.Stderr, "Error navigating to Google Videos: %v\n", err)
 		return
 	}
-
-	// Wait for Google Videos to load
-	err = page.WaitLoad()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error waiting for Google Videos to load: %v\n", err)
-		return
-	}
-
-	// Wait for videos to load
-	page.WaitRequestIdle(5*time.Second, []string{}, []string{}, nil)
 
 	// Find and click the first video link
 	fmt.Println("Looking for first video link...")
 
 	// Debug: Print page title to confirm we're on the right page
-	pageTitle, _ := page.Eval("document.title")
+	pageTitle, _ := session.Page.Eval("document.title")
 	fmt.Printf("Debug: Current page title: %v\n", pageTitle)
 
 	// Debug: Try multiple selectors to find video links
@@ -157,7 +111,7 @@ func HandleWikipediaRandomCommand(args []string) {
 	var firstVideoLink *rod.Element
 	for _, selector := range selectors {
 		fmt.Printf("Debug: Trying selector: %s\n", selector)
-		elements, err := page.Elements(selector)
+		elements, err := session.Page.Elements(selector)
 		if err != nil {
 			fmt.Printf("Debug: Error with selector %s: %v\n", selector, err)
 			continue
@@ -173,7 +127,7 @@ func HandleWikipediaRandomCommand(args []string) {
 
 	if firstVideoLink == nil {
 		// Debug: Print page HTML snippet to see structure
-		bodyHTML, _ := page.Eval("document.body.innerHTML.substring(0, 1000)")
+		bodyHTML, _ := session.Page.Eval("document.body.innerHTML.substring(0, 1000)")
 		fmt.Printf("Debug: Page HTML snippet: %v\n", bodyHTML)
 		fmt.Fprintf(os.Stderr, "Error: Could not find any video links with any selector\n")
 		return
@@ -200,18 +154,16 @@ func HandleWikipediaRandomCommand(args []string) {
 		}
 
 		// Close the browser since we no longer need it
-		page.Close()
-		browser.Close()
-		l.Cleanup()
+		session.Close()
 
 		// Use yt-dlp to download thumbnail
 		fmt.Println("Using yt-dlp to download video thumbnail...")
 
 		// Create final filename
-		finalFilename := filepath.Join(dataDir, fmt.Sprintf("wiki_%s.png", filenameTitle))
+		finalFilename := filepath.Join("data", fmt.Sprintf("wiki_%s.png", filenameTitle))
 
 		// Run yt-dlp command
-		cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join(dataDir, "temp_thumbnail.%(ext)s"), videoURL)
+		cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join("data", "temp_thumbnail.%(ext)s"), videoURL)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error running yt-dlp: %v\n", err)
@@ -222,7 +174,7 @@ func HandleWikipediaRandomCommand(args []string) {
 		fmt.Printf("yt-dlp output: %s\n", string(output))
 
 		// Find the downloaded thumbnail file and rename it
-		thumbnailFiles, err := filepath.Glob(filepath.Join(dataDir, "temp_thumbnail.*"))
+		thumbnailFiles, err := filepath.Glob(filepath.Join("data", "temp_thumbnail.*"))
 		if err != nil || len(thumbnailFiles) == 0 {
 			fmt.Fprintf(os.Stderr, "Error: Could not find downloaded thumbnail file\n")
 			return
@@ -240,7 +192,7 @@ func HandleWikipediaRandomCommand(args []string) {
 		// Generate speech from first paragraph using chatterbox
 		if firstParagraph != "" {
 			fmt.Println("Generating speech from first paragraph...")
-			audioFilename := filepath.Join(dataDir, fmt.Sprintf("wiki_%s.wav", filenameTitle))
+			audioFilename := filepath.Join("data", fmt.Sprintf("wiki_%s.wav", filenameTitle))
 
 			// Call chatterbox CLI to generate speech
 			chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
@@ -266,9 +218,7 @@ func HandleWikipediaRandomCommand(args []string) {
 
 	} else {
 		fmt.Fprintf(os.Stderr, "Error: Link href is empty\n")
-		page.Close()
-		browser.Close()
-		l.Cleanup()
+		session.Close()
 		return
 	}
 }
