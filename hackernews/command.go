@@ -99,14 +99,16 @@ func HandleHackerNewsStep2Command(args []string) {
 
 	// Process each article for step 2 (audio generation and FCPXML)
 	for i, article := range articles {
+		// Format current timecode as MM:SS BEFORE processing the clip
+		timecode := formatTimecode(cumulativeSeconds)
+		entry := fmt.Sprintf("%s (%s)[%s]", timecode, article.Title, article.URL)
+		
 		duration := processHNArticleStep2(article, i, pb)
 		if duration > 0 {
-			// Format current timecode as MM:SS
-			timecode := formatTimecode(cumulativeSeconds)
-			entry := fmt.Sprintf("%s (%s)[%s]", timecode, article.Title, article.URL)
+			// Add timecode entry after successful processing
 			timecodeEntries = append(timecodeEntries, entry)
 
-			// Add duration to cumulative time
+			// Add duration to cumulative time for next clip
 			cumulativeSeconds += duration
 		}
 	}
