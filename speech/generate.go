@@ -404,7 +404,7 @@ func generateResumeXML(data ResumeData, outputFile string) error {
 								</param>
 							</adjust-transform>
 							{{range $textIndex, $text := $section.TextLines}}
-							<title ref="r2" offset="{{add (mul $textIndex 1800) 1800}}/600s" duration="{{sub 12000 (add (mul $textIndex 1800) 1800)}}/600s" name="{{$text}}" lane="{{sub 0 (add $textIndex 1)}}" start="1800/600s">
+							<title ref="r2" offset="{{add (mul $textIndex 1800) 1800}}/600s" duration="{{if lt $textIndex 4}}{{sub 8 (mul $textIndex 2)}}{{else}}1{{end}}s" name="{{$text}}" lane="{{sub 0 (add $textIndex 1)}}" start="1800/600s">
 								<param name="Build In" key="9999/10000/2/101" value="0"/>
 								<param name="Build Out" key="9999/10000/2/102" value="0"/>
 								<param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 {{sub 800 (mul $textIndex 300)}}"/>
@@ -433,7 +433,7 @@ func generateResumeXML(data ResumeData, outputFile string) error {
 									<text-style ref="ts{{add $sectionIndex 10}}{{add $textIndex 1}}">{{$text}}</text-style>
 								</text>
 								<text-style-def id="ts{{add $sectionIndex 10}}{{add $textIndex 1}}">
-									<text-style font="Helvetica Neue" fontSize="48" fontFace="Bold" fontColor="1 1 1 1" alignment="center"/>
+									<text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="justified" lineSpacing="-19"/>
 								</text-style-def>
 							</title>
 							{{end}}
