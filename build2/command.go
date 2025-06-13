@@ -1,17 +1,18 @@
-package build
+package build2
 
 import (
 	"fmt"
 	"os"
 	"strings"
 
+	"cutlass/build2/api"
 	"github.com/spf13/cobra"
 )
 
 var BuildCmd = &cobra.Command{
-	Use:   "build [filename] [add-video] [media-file]",
-	Short: "Build a blank FCP project or add media to existing project",
-	Long:  "Create a blank Final Cut Pro project from empty.fcpxml template, or add a video/image to it",
+	Use:   "build2 [filename] [add-video] [media-file]",
+	Short: "Build a blank FCP project or add media to existing project (Refactored Build2)",
+	Long:  "Create a blank Final Cut Pro project from empty.fcpxml template, or add a video/image to it using the new build2 architecture",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := args[0]
@@ -27,18 +28,8 @@ var BuildCmd = &cobra.Command{
 			withText, _ := cmd.Flags().GetString("with-text")
 			withSound, _ := cmd.Flags().GetString("with-sound")
 			
-			// First ensure the project exists, create if it doesn't
-			if _, err := os.Stat(filename); os.IsNotExist(err) {
-				err := createBlankProject(filename)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error creating blank project: %v\n", err)
-					os.Exit(1)
-				}
-				fmt.Printf("Created blank project: %s\n", filename)
-			}
-			
-			// Add media to the project
-			err := addVideoToProject(filename, mediaFile, withText, withSound)
+			// Add media to the project using build2 API
+			err := api.AddVideoToProject(filename, mediaFile, withText, withSound)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error adding media to project: %v\n", err)
 				os.Exit(1)
@@ -52,8 +43,8 @@ var BuildCmd = &cobra.Command{
 				fmt.Printf("Added audio file: %s\n", withSound)
 			}
 		} else {
-			// Just create a blank project
-			err := createBlankProject(filename)
+			// Just create a blank project using build2 API
+			err := api.CreateBlankProject(filename)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error creating blank project: %v\n", err)
 				os.Exit(1)
@@ -68,5 +59,3 @@ func init() {
 	BuildCmd.Flags().String("with-text", "", "Add text overlay on top of the video")
 	BuildCmd.Flags().String("with-sound", "", "Add audio file (WAV) to create compound clip")
 }
-
-
