@@ -196,9 +196,9 @@ func HandleWikipediaRandomCommand(args []string) {
 
 			// Call chatterbox CLI to generate speech
 			chatterboxCmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python3",
-				"/Users/aa/os/chatterbox/dia/cli.py",
+				"/Users/aa/os/chatterbox/chatterbox/main.py",
 				firstParagraph,
-				"--output="+audioFilename)
+				audioFilename)
 
 			chatterboxOutput, err := chatterboxCmd.CombinedOutput()
 			if err != nil {
