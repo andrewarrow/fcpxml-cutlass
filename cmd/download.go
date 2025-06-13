@@ -81,12 +81,22 @@ var wikipediaRandomCmd = &cobra.Command{
 	},
 }
 
-var hnCmd = &cobra.Command{
-	Use:   "hn",
-	Short: "List Hacker News article titles",
-	Long:  "Fetch and display article titles from the Hacker News homepage.",
+var hnStep1Cmd = &cobra.Command{
+	Use:   "hn-step-1 [newest]",
+	Short: "Step 1: Get Hacker News articles and download thumbnails",
+	Long:  "Fetch article titles from Hacker News and download video thumbnails. Use 'newest' argument to fetch from /newest page instead of homepage.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hackernews.HandleHackerNewsCommand(args)
+		hackernews.HandleHackerNewsStep1Command(args)
+		return nil
+	},
+}
+
+var hnStep2Cmd = &cobra.Command{
+	Use:   "hn-step-2",
+	Short: "Step 2: Generate audio files for Hacker News articles",
+	Long:  "Generate audio files from article titles and create FCPXML output.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		hackernews.HandleHackerNewsStep2Command(args)
 		return nil
 	},
 }
@@ -98,5 +108,6 @@ func init() {
 	downloadCmd.AddCommand(wikipediaCmd)
 	downloadCmd.AddCommand(tableCmd)
 	downloadCmd.AddCommand(wikipediaRandomCmd)
-	downloadCmd.AddCommand(hnCmd)
+	downloadCmd.AddCommand(hnStep1Cmd)
+	downloadCmd.AddCommand(hnStep2Cmd)
 }
