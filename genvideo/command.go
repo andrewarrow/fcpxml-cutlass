@@ -299,18 +299,31 @@ func generateFCPXMLFromGenData(outputFile string, genData *GenVideoData, audioDu
 		return fmt.Errorf("failed to add main audio track: %v", err)
 	}
 
-	// Process each segment
+	// Process each segment - add frames sequentially starting after audio duration
 	allTextOverlays := make([]TextOverlay, 0)
+	
+	// Start video clips after the audio track ends
+	audioFrames, err := parseDurationToFrames(audioDuration)
+	if err != nil {
+		return fmt.Errorf("failed to parse audio duration: %v", err)
+	}
+	currentVideoOffset := fmt.Sprintf("%d/24000s", audioFrames)
+	
 	for segmentIndex, segment := range genData.Segments {
 		segmentOffset := offsets[segmentIndex]
 		segmentDuration := durations[segmentIndex]
 
-		// Add all frames in this segment as video clips
+		// Add all frames in this segment as video clips with proper positioning
 		for _, frame := range segment.Frames {
-			err = pb.AddVideoOnlySafe(frame, "", segmentDuration)
+			err = pb.AddVideoOnlySafe(frame, currentVideoOffset, segmentDuration)
 			if err != nil {
 				return fmt.Errorf("failed to add frame %s: %v", frame, err)
 			}
+			
+			// Advance offset for next video clip
+			segmentFrames, _ := parseDurationToFrames(segmentDuration)
+			currentOffsetFrames, _ := parseDurationToFrames(currentVideoOffset)
+			currentVideoOffset = fmt.Sprintf("%d/24000s", currentOffsetFrames + segmentFrames)
 		}
 
 		// Generate text overlays for this segment

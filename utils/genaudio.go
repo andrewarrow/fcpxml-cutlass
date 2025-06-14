@@ -50,7 +50,7 @@ func processSimpleTextFile(filename string) error {
 		}
 
 		// Generate initial audio filename without duration
-		tempFilename := filepath.Join(audioDir, fmt.Sprintf("s%d.wav", sentenceNum))
+		tempFilename := filepath.Join(audioDir, fmt.Sprintf("s%03d.wav", sentenceNum))
 		
 		// Check if audio file already exists (with any duration)
 		if existingFile := findExistingAudioFile(audioDir, sentenceNum); existingFile != "" {
@@ -73,7 +73,7 @@ func processSimpleTextFile(filename string) error {
 			fmt.Printf("Generated audio for sentence %d\n", sentenceNum)
 		} else {
 			// Rename file to include duration
-			finalFilename := filepath.Join(audioDir, fmt.Sprintf("s%d_%.0f.wav", sentenceNum, duration))
+			finalFilename := filepath.Join(audioDir, fmt.Sprintf("s%03d_%.0f.wav", sentenceNum, duration))
 			if err := os.Rename(tempFilename, finalFilename); err != nil {
 				fmt.Printf("Warning: Could not rename file: %v\n", err)
 				fmt.Printf("Generated audio for sentence %d\n", sentenceNum)
@@ -94,7 +94,7 @@ func processSimpleTextFile(filename string) error {
 
 func findExistingAudioFile(audioDir string, sentenceNum int) string {
 	// Look for files with pattern s{num}*.wav
-	pattern := fmt.Sprintf("s%d*.wav", sentenceNum)
+	pattern := fmt.Sprintf("s%03d*.wav", sentenceNum)
 	matches, err := filepath.Glob(filepath.Join(audioDir, pattern))
 	if err != nil || len(matches) == 0 {
 		return ""
