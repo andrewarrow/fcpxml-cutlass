@@ -27,6 +27,7 @@ type ClipConfig struct {
 	TextEffectID    string
 	BaseName        string
 	Duration        string
+	AudioDuration   string
 	Offset          string
 	Text            string
 }
@@ -53,9 +54,10 @@ func (s *SmartClipStrategy) ShouldCreateCompoundClip(video, audio string, contex
 		return false // Simple video element for video-only clips
 	}
 	
-	// For image files with audio, we need compound clips
+	// For image files with audio, use video elements with nested audio clips
+	// This matches the structure used in Info.fcpxml
 	if isImageFile(video) && audio != "" {
-		return true
+		return false
 	}
 	
 	// For video files with audio, we can use simple asset-clips in most cases
@@ -151,6 +153,7 @@ func (s *SmartClipStrategy) createVideoWithAudioLane(config ClipConfig) Timeline
 		Name:          config.BaseName,
 		Start:         "0s",
 		Duration:      config.Duration,
+		AudioDuration: config.AudioDuration,
 		HasText:       config.Text != "",
 		TextEffectID:  config.TextEffectID,
 		Text:          config.Text,
@@ -335,6 +338,7 @@ type VideoWithAudioElement struct {
 	Name          string
 	Start         string
 	Duration      string
+	AudioDuration string
 	HasText       bool
 	TextEffectID  string
 	Text          string
@@ -344,9 +348,13 @@ type VideoWithAudioElement struct {
 func (v *VideoWithAudioElement) GetXML() string {
 	xml := `<video ref="` + v.VideoRef + `" offset="` + v.Offset + `" name="` + v.Name + `" start="` + v.Start + `" duration="` + v.Duration + `">`
 	
-	// Add the audio asset-clip on lane -1 (audio lane)
+	// Add the audio asset-clip on lane -1 (audio lane) with correct audio duration
+	audioDuration := v.AudioDuration
+	if audioDuration == "" {
+		audioDuration = v.Duration // fallback to video duration if not specified
+	}
 	xml += `
-                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + v.Duration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
+                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + audioDuration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
 	
 	// Add adjust-transform before title if text is present (DTD requirement)
 	if v.HasText && v.HasAnimation {

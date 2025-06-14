@@ -19,6 +19,7 @@ type ClipConfig struct {
 	AudioFile      string
 	Text           string
 	CustomDuration string
+	AudioDuration  string
 }
 
 // TimelineBuilder provides fluent API for timeline construction
@@ -98,7 +99,18 @@ func (tb *TimelineBuilder) AddClipWithConfig(config ClipConfig) error {
 	
 	// Create audio asset if provided
 	if config.AudioFile != "" {
-		audioAssetID, err = tb.createAudioAsset(tx, config.AudioFile, baseName, duration)
+		// Use actual audio duration for the asset, not the clip duration
+		audioDuration := config.AudioDuration
+		if audioDuration == "" {
+			// Fallback: get the actual audio duration if not provided
+			audioDuration, err = utils.GetAudioDuration(config.AudioFile)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to get audio duration: %v", err)
+			}
+		}
+		
+		audioAssetID, err = tb.createAudioAsset(tx, config.AudioFile, baseName, audioDuration)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -122,14 +134,15 @@ func (tb *TimelineBuilder) AddClipWithConfig(config ClipConfig) error {
 	
 	// Create timeline element
 	clipConfig := clips.ClipConfig{
-		VideoAssetID: videoAssetID,
-		AudioAssetID: audioAssetID,
-		MediaID:      mediaID,
-		TextEffectID: textEffectID,
-		BaseName:     baseName,
-		Duration:     duration,
-		Offset:       offset,
-		Text:         config.Text,
+		VideoAssetID:  videoAssetID,
+		AudioAssetID:  audioAssetID,
+		MediaID:       mediaID,
+		TextEffectID:  textEffectID,
+		BaseName:      baseName,
+		Duration:      duration,
+		AudioDuration: config.AudioDuration,
+		Offset:        offset,
+		Text:          config.Text,
 	}
 	
 	element := tb.strategy.CreateOptimalClip(absVideoPath, config.AudioFile, config.Text, clipConfig)
@@ -158,6 +171,17 @@ func (tb *TimelineBuilder) AddVideoWithNestedAudio(videoFile, audioFile, text, c
 		AudioFile:      audioFile, // This will create nested audio
 		Text:           text,
 		CustomDuration: customDuration,
+	})
+}
+
+// AddVideoWithNestedAudioWithDuration adds a video clip with nested audio clip using specified audio duration
+func (tb *TimelineBuilder) AddVideoWithNestedAudioWithDuration(videoFile, audioFile, text, customDuration, audioDuration string) error {
+	return tb.AddClipWithConfig(ClipConfig{
+		VideoFile:      videoFile,
+		AudioFile:      audioFile, // This will create nested audio
+		Text:           text,
+		CustomDuration: customDuration,
+		AudioDuration:  audioDuration,
 	})
 }
 

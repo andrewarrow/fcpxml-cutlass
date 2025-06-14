@@ -39,7 +39,7 @@ func processVideoID(videoID string) error {
 	}
 
 	// Get all WAV files and calculate total duration with caching
-	wavFiles, audioDurations, totalDuration, err := getAudioFilesWithDurations(audioDir)
+	wavFiles, audioDurations, audioDurationsFCP, totalDuration, err := getAudioFilesWithDurations(audioDir)
 	if err != nil {
 		return fmt.Errorf("failed to get audio files: %v", err)
 	}
@@ -62,7 +62,7 @@ func processVideoID(videoID string) error {
 	fmt.Printf("Found %d image files\n", len(jpgFiles))
 
 	// Generate FCPXML using build2 API
-	err = generateFCPXML(outputFile, wavFiles, audioDurations, jpgFiles, totalDuration)
+	err = generateFCPXML(outputFile, wavFiles, audioDurations, audioDurationsFCP, jpgFiles, totalDuration)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
@@ -71,10 +71,10 @@ func processVideoID(videoID string) error {
 	return nil
 }
 
-func getAudioFilesWithDurations(audioDir string) ([]string, map[string]float64, float64, error) {
+func getAudioFilesWithDurations(audioDir string) ([]string, map[string]float64, map[string]string, float64, error) {
 	files, err := filepath.Glob(filepath.Join(audioDir, "*.wav"))
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, nil, 0, err
 	}
 
 	// Sort files naturally
@@ -83,28 +83,33 @@ func getAudioFilesWithDurations(audioDir string) ([]string, map[string]float64, 
 	// Get all durations in a single ffprobe call
 	fcpDurations, err := utils.GetBatchAudioDurations(audioDir)
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get batch durations: %v", err)
+		return nil, nil, nil, 0, fmt.Errorf("failed to get batch durations: %v", err)
 	}
 
-	// Convert FCP durations to seconds and calculate total
+	// Keep durations in both FCP and seconds format
 	audioDurations := make(map[string]float64)
+	audioDurationsFCP := make(map[string]string)
 	var totalDuration float64
 	for _, file := range files {
 		fileName := filepath.Base(file)
 		fcpDuration, exists := fcpDurations[fileName]
 		if !exists {
-			return nil, nil, 0, fmt.Errorf("duration not found for file: %s", fileName)
+			return nil, nil, nil, 0, fmt.Errorf("duration not found for file: %s", fileName)
 		}
 		
+		// Store the original FCP duration (no conversion)
+		audioDurationsFCP[file] = fcpDuration
+		
+		// Convert to seconds only for total calculation
 		duration, err := convertFCPDurationToSeconds(fcpDuration)
 		if err != nil {
-			return nil, nil, 0, fmt.Errorf("failed to convert duration for %s: %v", file, err)
+			return nil, nil, nil, 0, fmt.Errorf("failed to convert duration for %s: %v", file, err)
 		}
 		audioDurations[file] = duration
 		totalDuration += duration
 	}
 
-	return files, audioDurations, totalDuration, nil
+	return files, audioDurations, audioDurationsFCP, totalDuration, nil
 }
 
 func getImageFiles(imageDir string) ([]string, error) {
@@ -161,7 +166,7 @@ func getAudioDurationInSeconds(audioPath string) (float64, error) {
 	return convertFCPDurationToSeconds(durationStr)
 }
 
-func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[string]float64, jpgFiles []string, totalDuration float64) error {
+func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[string]float64, audioDurationsFCP map[string]string, jpgFiles []string, totalDuration float64) error {
 	// Create new project builder
 	pb, err := api.NewProjectBuilder(outputFile)
 	if err != nil {
@@ -196,8 +201,17 @@ func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[str
 			audioIndex++
 		}
 		
+		// Get actual audio duration in FCP format if audio file is provided
+		// The audio should use its FULL duration, not the video duration
+		var audioDurationFCP string
+		if audioFile != "" {
+			// Use the original FCP duration directly (no double conversion)
+			audioDurationFCP = audioDurationsFCP[audioFile]
+		}
+		
 		// Add video clip with nested audio
-		err = pb.AddVideoWithNestedAudioSafe(jpgFile, audioFile, "", imageDurationFCP)
+		// Video uses imageDurationFCP (distributed timing), audio uses its full duration
+		err = pb.AddVideoWithNestedAudioWithDurationSafe(jpgFile, audioFile, "", imageDurationFCP, audioDurationFCP)
 		if err != nil {
 			return fmt.Errorf("failed to add video clip with audio %s: %v", jpgFile, err)
 		}
