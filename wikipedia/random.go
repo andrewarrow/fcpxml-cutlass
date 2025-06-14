@@ -306,6 +306,57 @@ func sanitizeFilename(title string) string {
 	return safe
 }
 
+// extractSentences splits text into sentences using common sentence endings
+func extractSentences(text string) []string {
+	// Simple sentence detection using periods, exclamation marks, and question marks
+	// followed by space and capital letter or end of string
+	sentences := []string{}
+	
+	// Split on sentence boundaries but keep the punctuation
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return sentences
+	}
+
+	var currentSentence strings.Builder
+	
+	for i, word := range words {
+		currentSentence.WriteString(word)
+		
+		// Check if word ends with sentence-ending punctuation
+		if strings.HasSuffix(word, ".") || strings.HasSuffix(word, "!") || strings.HasSuffix(word, "?") {
+			// Look ahead to see if next word starts with capital (indicates new sentence)
+			// or if this is the last word
+			if i == len(words)-1 || (i < len(words)-1 && isCapitalized(words[i+1])) {
+				sentences = append(sentences, strings.TrimSpace(currentSentence.String()))
+				currentSentence.Reset()
+				continue
+			}
+		}
+		
+		// Add space if not the last word
+		if i < len(words)-1 {
+			currentSentence.WriteString(" ")
+		}
+	}
+	
+	// Add any remaining text as the last sentence
+	if currentSentence.Len() > 0 {
+		sentences = append(sentences, strings.TrimSpace(currentSentence.String()))
+	}
+	
+	return sentences
+}
+
+// isCapitalized checks if a word starts with a capital letter
+func isCapitalized(word string) bool {
+	if len(word) == 0 {
+		return false
+	}
+	first := rune(word[0])
+	return first >= 'A' && first <= 'Z'
+}
+
 func extractFirstParagraph(page *rod.Page) (string, error) {
 	// Try to find the first paragraph in the Wikipedia article content
 	// Wikipedia articles typically have the first paragraph in #mw-content-text .mw-parser-output > p
@@ -318,9 +369,8 @@ func extractFirstParagraph(page *rod.Page) (string, error) {
 		return "", fmt.Errorf("no paragraphs found")
 	}
 
-	// Collect text from paragraphs until we have at least 90 words
+	// Collect text from paragraphs and limit to 1-2 sentences for 3-9 seconds of audio
 	var combinedText strings.Builder
-	wordCount := 0
 
 	for _, p := range paragraphs {
 		text, err := p.Text()
@@ -340,13 +390,17 @@ func extractFirstParagraph(page *rod.Page) (string, error) {
 		}
 		combinedText.WriteString(trimmed)
 
-		// Count words in this paragraph
-		words := strings.Fields(trimmed)
-		wordCount += len(words)
-
-		// If we have at least 90 words, we're done
-		if wordCount >= 9 {
-			break
+		// Extract 1-2 sentences from the combined text
+		sentences := extractSentences(combinedText.String())
+		if len(sentences) >= 1 {
+			// Return first sentence if it's reasonable length, otherwise first 2 sentences
+			firstSentence := sentences[0]
+			if len(sentences) == 1 || len(firstSentence) >= 50 {
+				return firstSentence, nil
+			} else if len(sentences) >= 2 {
+				return firstSentence + " " + sentences[1], nil
+			}
+			return firstSentence, nil
 		}
 	}
 
@@ -354,7 +408,18 @@ func extractFirstParagraph(page *rod.Page) (string, error) {
 		return "", fmt.Errorf("no non-empty paragraphs found")
 	}
 
-	return combinedText.String(), nil
+	// Fallback: if no proper sentences found, return first 100 characters
+	text := combinedText.String()
+	if len(text) > 100 {
+		// Find last space within 100 chars to avoid breaking mid-word
+		lastSpace := strings.LastIndex(text[:100], " ")
+		if lastSpace > 0 {
+			return text[:lastSpace], nil
+		}
+		return text[:100], nil
+	}
+
+	return text, nil
 }
 
 func appendToWikiList(url string) error {
