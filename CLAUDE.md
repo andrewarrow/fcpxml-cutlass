@@ -88,11 +88,12 @@ reference/FCPXML.md
 reference/ANIMATION.md
 and FCPXMLv1_13.dtd
 
-## Build Package Mission
-The build package (build/command.go) is the foundation for ALL FCPXML generation in this repo. It provides:
-- Rock solid FCPXML generation using proper structs (not string templates)
+## CRITICAL: Build Package Mission
+The build package (build/command.go) and build2 package are the foundation for ALL FCPXML generation in this repo. They provide:
+- **MANDATORY**: Rock solid FCPXML generation using proper structs (NEVER string templates with %s placeholders)
 - Correct time calculations, R2 vs R1 handling, UID generation, and spine management
 - Template-based approach for reusable FCPXML components
 - DTD validation compliance
+- Timeline continuity without gaps between clips
 
-All new FCPXML features should be built on the build package foundation. Other packages may have legacy logic that should be learned from but not duplicated.
+**CRITICAL**: All new FCPXML features MUST be built on the build/build2 package foundation. Other packages may have legacy logic that should be learned from but NEVER duplicated. Any FCPXML generation that bypasses these packages and uses string templates is a critical violation.
