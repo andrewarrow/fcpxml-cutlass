@@ -68,6 +68,12 @@ func processWordsFile(filename string) error {
 			// Generate audio filename
 			audioFilename := filepath.Join(audioDir, fmt.Sprintf("s%d_s%d.wav", currentSection, sentenceCount))
 
+			// Check if audio file already exists
+			if _, err := os.Stat(audioFilename); err == nil {
+				fmt.Printf("Skipping section %d, sentence %d (already exists)\n", currentSection, sentenceCount)
+				continue
+			}
+
 			// Call chatterbox
 			if err := callChatterbox(sentence, audioFilename); err != nil {
 				fmt.Printf("Error generating voice for sentence %d in section %d: %v\n", sentenceCount, currentSection, err)
