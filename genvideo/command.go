@@ -142,9 +142,13 @@ func convertFCPDurationToSeconds(durationStr string) (float64, error) {
 }
 
 func convertSecondsToFCPDuration(seconds float64) string {
-	// Convert seconds to frames at 24000/1001 fps (23.976fps)
-	frames := int(seconds * 24000)
-	return fmt.Sprintf("%d/24000s", frames)
+	// Convert to frame count using the sequence time base (1001/24000s frame duration)
+	// This means 24000/1001 frames per second ≈ 23.976 fps
+	framesPerSecond := 24000.0 / 1001.0
+	frames := int(seconds * framesPerSecond)
+	
+	// Format as rational using the sequence time base
+	return fmt.Sprintf("%d/24000s", frames*1001)
 }
 
 func getAudioDurationInSeconds(audioPath string) (float64, error) {
@@ -164,12 +168,23 @@ func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[str
 		return err
 	}
 
-	// Calculate timing for image distribution
-	imageDuration := totalDuration / float64(len(jpgFiles))
-	imageDurationFCP := convertSecondsToFCPDuration(imageDuration)
+	// Calculate frame-aligned timing for image distribution
+	framesPerSecond := 24000.0 / 1001.0
+	totalFrames := int(totalDuration * framesPerSecond)
+	framesPerImage := totalFrames / len(jpgFiles)
+	remainingFrames := totalFrames % len(jpgFiles)
 	
-	// Add all images as video-only clips sequentially
-	for _, jpgFile := range jpgFiles {
+	// Add all images as video-only clips sequentially with frame-aligned durations
+	for i, jpgFile := range jpgFiles {
+		// First 'remainingFrames' images get one extra frame for perfect distribution
+		frames := framesPerImage
+		if i < remainingFrames {
+			frames++
+		}
+		
+		// Convert frames to FCP duration format
+		imageDurationFCP := fmt.Sprintf("%d/24000s", frames*1001)
+		
 		err = pb.AddVideoOnlySafe(jpgFile, "", imageDurationFCP)
 		if err != nil {
 			return fmt.Errorf("failed to add video clip %s: %v", jpgFile, err)

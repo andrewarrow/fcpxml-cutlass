@@ -44,6 +44,38 @@ FCPXML requires ALL IDs to be unique within the document. Common violations incl
 
 When adding any new FCPXML elements with IDs, always ensure uniqueness across the entire document.
 
+## CRITICAL: Frame Boundary Alignment
+FCPXML durations MUST be aligned to frame boundaries to avoid "not on an edit frame boundary" errors in Final Cut Pro.
+
+### Frame Rate and Time Base
+- FCP uses a time base of 24000/1001 ≈ 23.976 fps for frame alignment
+- Duration format: `(frames*1001)/24000s` where frames is an integer
+- NEVER use simple `seconds * 24000` calculations - this creates non-frame-aligned durations
+
+### Correct Duration Calculation:
+```go
+func convertSecondsToFCPDuration(seconds float64) string {
+    // Convert to frame count using the sequence time base (1001/24000s frame duration)
+    // This means 24000/1001 frames per second ≈ 23.976 fps
+    framesPerSecond := 24000.0 / 1001.0
+    frames := int(seconds * framesPerSecond)
+    
+    // Format as rational using the sequence time base
+    return fmt.Sprintf("%d/24000s", frames*1001)
+}
+```
+
+### Frame Boundary Violations:
+- `9026/24000s` = 0.376083s (NON-FRAME-ALIGNED) ❌
+- `9009/24000s` = 0.375375s (FRAME-ALIGNED: 9 frames) ✅
+- The difference is small but FCP strictly enforces frame boundaries
+
+### Always Use Frame-Aligned Durations:
+- Asset durations must align to frame boundaries
+- Clip durations must align to frame boundaries  
+- Offset positions should align to frame boundaries when possible
+- Use the build2/utils duration functions which implement proper frame alignment
+
 this program is a swiff army knife for generating fcpxml files. There is a complex cli menu system for asking what specific army knife you want.
 
 do not add complex logic to main.go that belongs in other packages.
