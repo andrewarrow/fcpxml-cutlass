@@ -74,13 +74,8 @@ func (s *SmartClipStrategy) CreateOptimalClip(video, audio, text string, config 
 		}
 	}
 	
-	// Clip with audio
-	if s.ShouldCreateCompoundClip(video, audio, TimelineContext{}) {
-		return s.createRefClip(config)
-	} else {
-		// Use simple video with audio on separate lane
-		return s.createVideoWithAudioLane(config)
-	}
+	// Clip with audio - prefer direct audio lanes over compound clips
+	return s.createVideoWithAudioLane(config)
 }
 
 // createVideoElement creates a video element (for PNG files)
@@ -148,9 +143,21 @@ func (s *SmartClipStrategy) createRefClip(config ClipConfig) TimelineElement {
 
 // createVideoWithAudioLane creates a video element with audio on a separate lane
 func (s *SmartClipStrategy) createVideoWithAudioLane(config ClipConfig) TimelineElement {
-	// This would create a video element with nested audio asset-clip
-	// For now, fall back to compound clip approach
-	return s.createRefClip(config)
+	// Create a video element with nested audio asset-clip
+	video := &VideoWithAudioElement{
+		VideoRef:      config.VideoAssetID,
+		AudioRef:      config.AudioAssetID,
+		Offset:        config.Offset,
+		Name:          config.BaseName,
+		Start:         "0s",
+		Duration:      config.Duration,
+		HasText:       config.Text != "",
+		TextEffectID:  config.TextEffectID,
+		Text:          config.Text,
+		HasAnimation:  config.Text != "",
+	}
+	
+	return video
 }
 
 // Concrete implementations of TimelineElement
@@ -319,6 +326,63 @@ func (r *RefClipElement) GetXML() string {
 
 func (r *RefClipElement) GetDuration() string { return r.Duration }
 func (r *RefClipElement) GetOffset() string { return r.Offset }
+
+// VideoWithAudioElement represents a video element with audio on a separate lane
+type VideoWithAudioElement struct {
+	VideoRef      string
+	AudioRef      string
+	Offset        string
+	Name          string
+	Start         string
+	Duration      string
+	HasText       bool
+	TextEffectID  string
+	Text          string
+	HasAnimation  bool
+}
+
+func (v *VideoWithAudioElement) GetXML() string {
+	xml := `<video ref="` + v.VideoRef + `" offset="` + v.Offset + `" name="` + v.Name + `" start="` + v.Start + `" duration="` + v.Duration + `">`
+	
+	// Add the audio asset-clip on lane -1 (audio lane)
+	xml += `
+                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + v.Duration + `" format="r1" tcFormat="NDF"/>`
+	
+	// Add adjust-transform before title if text is present (DTD requirement)
+	if v.HasText && v.HasAnimation {
+		xml += `
+                            <adjust-transform>
+                                <param name="position" key="" value="">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0 0"/>
+                                        <keyframe time="48048/24000s" value="0 -22.1038"/>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>`
+	}
+	
+	// Add text overlay if requested
+	if v.HasText {
+		xml += `
+                            <title ref="` + v.TextEffectID + `" lane="1" offset="0s" name="` + v.Name + ` - Text" duration="` + v.Duration + `" start="86486400/24000s">
+                                ` + s.getTextParams() + `
+                                <text>
+                                    <text-style ref="` + s.generateTextStyleID(v.Text, v.Name) + `">` + html.EscapeString(v.Text) + `</text-style>
+                                </text>
+                                <text-style-def id="` + s.generateTextStyleID(v.Text, v.Name) + `">
+                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>`
+	}
+	
+	xml += `
+                        </video>`
+	
+	return xml
+}
+
+func (v *VideoWithAudioElement) GetDuration() string { return v.Duration }
+func (v *VideoWithAudioElement) GetOffset() string { return v.Offset }
 
 // Helper functions
 

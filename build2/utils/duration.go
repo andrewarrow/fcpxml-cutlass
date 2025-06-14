@@ -42,39 +42,41 @@ func GetVideoDuration(videoPath string) (string, error) {
 	return fmt.Sprintf("%d/24000s", frames*1001), nil
 }
 
-// GetBatchAudioDurations uses a single ffprobe command to get durations for all WAV files in a directory
+// GetBatchAudioDurations uses parallel ffprobe calls to efficiently get durations for all WAV files
 func GetBatchAudioDurations(audioDir string) (map[string]string, error) {
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("cd '%s' && ffprobe -v quiet -show_entries format=duration -of csv=p=0 *.wav", audioDir))
+	// Use find + xargs to run ffprobe in parallel on all WAV files
+	bashScript := fmt.Sprintf(`
+cd '%s'
+# Get filenames and durations in parallel
+find . -name "*.wav" -print0 | xargs -0 -P 8 -I {} sh -c 'echo "{}" $(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "{}")'
+`, audioDir)
+	
+	cmd := exec.Command("bash", "-c", bashScript)
 	output, err := cmd.Output()
 	if err != nil {
-		return nil, err
-	}
-	
-	// Get list of WAV files in the same order as ffprobe output
-	cmd = exec.Command("bash", "-c", fmt.Sprintf("cd '%s' && ls *.wav", audioDir))
-	filesOutput, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	
-	// Parse the outputs
-	durations := strings.Split(strings.TrimSpace(string(output)), "\n")
-	files := strings.Split(strings.TrimSpace(string(filesOutput)), "\n")
-	
-	if len(durations) != len(files) {
-		return nil, fmt.Errorf("mismatch between number of files (%d) and durations (%d)", len(files), len(durations))
+		return nil, fmt.Errorf("parallel ffprobe failed: %v", err)
 	}
 	
 	result := make(map[string]string)
-	for i, file := range files {
-		if i >= len(durations) {
-			break
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	
+	for _, line := range lines {
+		if line == "" {
+			continue
 		}
 		
+		parts := strings.Fields(line)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("unexpected output format: %s", line)
+		}
+		
+		fileName := strings.TrimPrefix(parts[0], "./")
+		durationStr := parts[1]
+		
 		// Parse duration as float seconds
-		durationFloat, err := strconv.ParseFloat(durations[i], 64)
+		durationFloat, err := strconv.ParseFloat(durationStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse duration for %s: %v", file, err)
+			return nil, fmt.Errorf("failed to parse duration for %s: %v", fileName, err)
 		}
 		
 		// Convert to frame count using the sequence time base (1001/24000s frame duration)
@@ -84,7 +86,7 @@ func GetBatchAudioDurations(audioDir string) (map[string]string, error) {
 		
 		// Format as rational using the sequence time base
 		fcpDuration := fmt.Sprintf("%d/24000s", frames*1001)
-		result[file] = fcpDuration
+		result[fileName] = fcpDuration
 	}
 	
 	return result, nil
