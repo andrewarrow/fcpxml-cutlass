@@ -1,10 +1,10 @@
 package genvideo
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -14,55 +14,55 @@ import (
 
 func HandleGenVideoCommand(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Error: Please provide a video ID")
+		fmt.Println("Error: Please provide a .genvideo file path")
 		return
 	}
 
-	videoID := args[0]
-	if err := processVideoID(videoID); err != nil {
-		fmt.Printf("Error processing video ID: %v\n", err)
+	genvideoFile := args[0]
+	if err := processGenVideoFile(genvideoFile); err != nil {
+		fmt.Printf("Error processing .genvideo file: %v\n", err)
 	}
 }
 
-func processVideoID(videoID string) error {
-	// Define expected directories
-	audioDir := fmt.Sprintf("./data/%s_audio", videoID)
-	imageDir := fmt.Sprintf("./data/%s", videoID)
-	outputFile := fmt.Sprintf("./data/%s.fcpxml", videoID)
+// GenVideoData represents the parsed .genvideo file content
+type GenVideoData struct {
+	AudioFile string
+	Segments  []VideoSegment
+}
 
-	// Check if directories exist
-	if _, err := os.Stat(audioDir); os.IsNotExist(err) {
-		return fmt.Errorf("audio directory does not exist: %s", audioDir)
-	}
-	if _, err := os.Stat(imageDir); os.IsNotExist(err) {
-		return fmt.Errorf("image directory does not exist: %s", imageDir)
+// VideoSegment represents a segment with frames and text overlays
+type VideoSegment struct {
+	Frames []string
+	Texts  []string
+}
+
+func processGenVideoFile(genvideoFile string) error {
+	// Check if .genvideo file exists
+	if _, err := os.Stat(genvideoFile); os.IsNotExist(err) {
+		return fmt.Errorf(".genvideo file does not exist: %s", genvideoFile)
 	}
 
-	// Get all WAV files and calculate total duration with caching
-	wavFiles, audioDurations, audioDurationsFCP, totalDuration, err := getAudioFilesWithDurations(audioDir)
+	// Parse the .genvideo file
+	genData, err := parseGenVideoFile(genvideoFile)
 	if err != nil {
-		return fmt.Errorf("failed to get audio files: %v", err)
+		return fmt.Errorf("failed to parse .genvideo file: %v", err)
 	}
 
-	if len(wavFiles) == 0 {
-		return fmt.Errorf("no WAV files found in %s", audioDir)
-	}
+	// Generate output file name
+	baseName := strings.TrimSuffix(filepath.Base(genvideoFile), ".genvideo")
+	outputFile := filepath.Join(filepath.Dir(genvideoFile), baseName+".fcpxml")
 
-	// Get all JPG files
-	jpgFiles, err := getImageFiles(imageDir)
+	// Get audio duration
+	audioDuration, err := utils.GetAudioDuration(genData.AudioFile)
 	if err != nil {
-		return fmt.Errorf("failed to get image files: %v", err)
+		return fmt.Errorf("failed to get audio duration: %v", err)
 	}
 
-	if len(jpgFiles) == 0 {
-		return fmt.Errorf("no JPG files found in %s", imageDir)
-	}
-
-	fmt.Printf("Found %d audio files (total duration: %.2fs)\n", len(wavFiles), totalDuration)
-	fmt.Printf("Found %d image files\n", len(jpgFiles))
+	fmt.Printf("Audio file: %s (duration: %s)\n", genData.AudioFile, audioDuration)
+	fmt.Printf("Found %d video segments\n", len(genData.Segments))
 
 	// Generate FCPXML using build2 API
-	err = generateFCPXML(outputFile, wavFiles, audioDurations, audioDurationsFCP, jpgFiles, totalDuration)
+	err = generateFCPXMLFromGenData(outputFile, genData, audioDuration)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
@@ -71,166 +71,260 @@ func processVideoID(videoID string) error {
 	return nil
 }
 
-func getAudioFilesWithDurations(audioDir string) ([]string, map[string]float64, map[string]string, float64, error) {
-	files, err := filepath.Glob(filepath.Join(audioDir, "*.wav"))
-	if err != nil {
-		return nil, nil, nil, 0, err
-	}
-
-	// Sort files naturally
-	sort.Strings(files)
-
-	// Get all durations in a single ffprobe call
-	fcpDurations, err := utils.GetBatchAudioDurations(audioDir)
-	if err != nil {
-		return nil, nil, nil, 0, fmt.Errorf("failed to get batch durations: %v", err)
-	}
-
-	// Keep durations in both FCP and seconds format
-	audioDurations := make(map[string]float64)
-	audioDurationsFCP := make(map[string]string)
-	var totalDuration float64
-	for _, file := range files {
-		fileName := filepath.Base(file)
-		fcpDuration, exists := fcpDurations[fileName]
-		if !exists {
-			return nil, nil, nil, 0, fmt.Errorf("duration not found for file: %s", fileName)
-		}
-		
-		// Store the original FCP duration (no conversion)
-		audioDurationsFCP[file] = fcpDuration
-		
-		// Convert to seconds only for total calculation
-		duration, err := convertFCPDurationToSeconds(fcpDuration)
-		if err != nil {
-			return nil, nil, nil, 0, fmt.Errorf("failed to convert duration for %s: %v", file, err)
-		}
-		audioDurations[file] = duration
-		totalDuration += duration
-	}
-
-	return files, audioDurations, audioDurationsFCP, totalDuration, nil
-}
-
-func getImageFiles(imageDir string) ([]string, error) {
-	files, err := filepath.Glob(filepath.Join(imageDir, "*.jpg"))
+// parseGenVideoFile parses a .genvideo file and returns structured data
+func parseGenVideoFile(filename string) (*GenVideoData, error) {
+	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
-	// Sort files naturally
-	sort.Strings(files)
-	return files, nil
-}
-
-func convertFCPDurationToSeconds(durationStr string) (float64, error) {
-	// Parse the FCP duration format "frames/24000s"
-	// Example: "48048/24000s" means 48048 frames at 24000 units per second
-	parts := strings.Split(durationStr, "/")
-	if len(parts) != 2 || !strings.HasSuffix(parts[1], "s") {
-		return 0, fmt.Errorf("invalid duration format: %s", durationStr)
+	scanner := bufio.NewScanner(file)
+	genData := &GenVideoData{
+		Segments: make([]VideoSegment, 0),
 	}
 
-	frames, err := strconv.ParseFloat(parts[0], 64)
+	lineNum := 0
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		lineNum++
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// First line should be the audio file
+		if genData.AudioFile == "" {
+			if !strings.HasSuffix(strings.ToLower(line), ".wav") {
+				return nil, fmt.Errorf("line %d: first line must be a .wav file, got: %s", lineNum, line)
+			}
+			genData.AudioFile = line
+			continue
+		}
+
+		// Parse segment line: frames and text groups separated by commas
+		parts := strings.Split(line, ",")
+		segment := VideoSegment{
+			Frames: make([]string, 0),
+			Texts:  make([]string, 0),
+		}
+
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+
+			// Check if it's a quoted text string
+			if strings.HasPrefix(part, `"`) && strings.HasSuffix(part, `"`) {
+				// Remove quotes and add to texts
+				text := part[1 : len(part)-1]
+				segment.Texts = append(segment.Texts, text)
+			} else if strings.HasSuffix(strings.ToLower(part), ".jpg") || strings.HasSuffix(strings.ToLower(part), ".jpeg") || strings.HasSuffix(strings.ToLower(part), ".png") {
+				// It's an image file
+				segment.Frames = append(segment.Frames, part)
+			} else {
+				return nil, fmt.Errorf("line %d: unrecognized item '%s' - must be image file or quoted text", lineNum, part)
+			}
+		}
+
+		if len(segment.Frames) > 0 || len(segment.Texts) > 0 {
+			genData.Segments = append(genData.Segments, segment)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	if genData.AudioFile == "" {
+		return nil, fmt.Errorf("no audio file specified")
+	}
+
+	if len(genData.Segments) == 0 {
+		return nil, fmt.Errorf("no video segments found")
+	}
+
+	return genData, nil
+}
+
+// validateGenVideoData validates that all referenced files exist
+func validateGenVideoData(genData *GenVideoData) error {
+	// Check audio file exists
+	if _, err := os.Stat(genData.AudioFile); os.IsNotExist(err) {
+		return fmt.Errorf("audio file does not exist: %s", genData.AudioFile)
+	}
+
+	// Check all image files exist
+	for i, segment := range genData.Segments {
+		for j, frame := range segment.Frames {
+			if _, err := os.Stat(frame); os.IsNotExist(err) {
+				return fmt.Errorf("segment %d, frame %d: image file does not exist: %s", i+1, j+1, frame)
+			}
+		}
+	}
+
+	return nil
+}
+
+// TextOverlay represents a text overlay with positioning
+type TextOverlay struct {
+	Text        string
+	Lane        int
+	Offset      string
+	Duration    string
+	YPosition   float64
+}
+
+// generateTextOverlays creates the staggered 3-lane text overlay system
+func generateTextOverlays(texts []string, segmentOffset, segmentDuration string) []TextOverlay {
+	overlays := make([]TextOverlay, 0)
+
+	// Create 3 staggered text overlays per text group, cycling through lanes 3, 2, 1
+	for i, text := range texts {
+		lane := 3 - (i % 3) // Cycles: 3, 2, 1, 3, 2, 1, ...
+		
+		// Vertical positioning based on pattern from antiedit.fcpxml
+		yPos := -19.7744
+		if i%2 == 1 {
+			yPos = -20.3409
+		}
+
+		overlay := TextOverlay{
+			Text:      text,
+			Lane:      lane,
+			Offset:    segmentOffset,
+			Duration:  segmentDuration,
+			YPosition: yPos,
+		}
+
+		overlays = append(overlays, overlay)
+	}
+
+	return overlays
+}
+
+// calculateSegmentTimings distributes segments across the total audio duration
+func calculateSegmentTimings(totalAudioDuration string, numSegments int) ([]string, []string, error) {
+	// Parse total duration
+	totalFrames, err := parseDurationToFrames(totalAudioDuration)
 	if err != nil {
-		return 0, err
+		return nil, nil, err
 	}
 
-	timebase := strings.TrimSuffix(parts[1], "s")
-	timebaseFloat, err := strconv.ParseFloat(timebase, 64)
-	if err != nil {
-		return 0, err
+	// Calculate frames per segment
+	framesPerSegment := totalFrames / numSegments
+	remainingFrames := totalFrames % numSegments
+
+	offsets := make([]string, numSegments)
+	durations := make([]string, numSegments)
+
+	currentOffset := 0
+	for i := 0; i < numSegments; i++ {
+		// First 'remainingFrames' segments get one extra frame
+		segmentFrames := framesPerSegment
+		if i < remainingFrames {
+			segmentFrames++
+		}
+
+		offsets[i] = fmt.Sprintf("%d/24000s", currentOffset)
+		durations[i] = fmt.Sprintf("%d/24000s", segmentFrames)
+
+		currentOffset += segmentFrames
 	}
 
-	// Convert to seconds
-	return frames / timebaseFloat, nil
+	return offsets, durations, nil
 }
 
-func convertSecondsToFCPDuration(seconds float64) string {
-	// Convert to frame count using the sequence time base (1001/24000s frame duration)
-	// This means 24000/1001 frames per second ≈ 23.976 fps
-	framesPerSecond := 24000.0 / 1001.0
-	frames := int(seconds * framesPerSecond)
-	
-	// Format as rational using the sequence time base
-	return fmt.Sprintf("%d/24000s", frames*1001)
-}
-
-func getAudioDurationInSeconds(audioPath string) (float64, error) {
-	// Use the existing duration utility
-	durationStr, err := utils.GetAudioDuration(audioPath)
-	if err != nil {
-		return 0, err
+// parseDurationToFrames converts FCP duration to frame count
+func parseDurationToFrames(duration string) (int, error) {
+	if duration == "0s" {
+		return 0, nil
 	}
 
-	return convertFCPDurationToSeconds(durationStr)
+	if strings.HasSuffix(duration, "/24000s") {
+		framesStr := strings.TrimSuffix(duration, "/24000s")
+		return strconv.Atoi(framesStr)
+	}
+
+	return 0, fmt.Errorf("invalid duration format: %s", duration)
 }
 
-func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[string]float64, audioDurationsFCP map[string]string, jpgFiles []string, totalDuration float64) error {
+// generateUniqueTextStyleID creates unique text style IDs to avoid collisions
+func generateUniqueTextStyleID(text string, segmentIndex, textIndex int) string {
+	// Create a hash-based ID that's unique but deterministic
+	hash := 0
+	for _, c := range text {
+		hash = hash*31 + int(c)
+	}
+	hash += segmentIndex*1000 + textIndex*100
+	if hash < 0 {
+		hash = -hash
+	}
+
+	// Generate 8-character alphanumeric ID
+	id := "ts"
+	for i := 0; i < 6; i++ {
+		if i%2 == 0 {
+			id += string(rune('A' + (hash>>(i*4))%26))
+		} else {
+			id += string(rune('0' + (hash>>(i*4))%10))
+		}
+	}
+	return id
+}
+
+func generateFCPXMLFromGenData(outputFile string, genData *GenVideoData, audioDuration string) error {
+	// Validate all files exist
+	if err := validateGenVideoData(genData); err != nil {
+		return err
+	}
+
 	// Create new project builder
 	pb, err := api.NewProjectBuilder(outputFile)
 	if err != nil {
 		return err
 	}
 
-	// Calculate frame-aligned timing for image distribution
-	framesPerSecond := 24000.0 / 1001.0
-	totalFrames := int(totalDuration * framesPerSecond)
-	framesPerImage := totalFrames / len(jpgFiles)
-	remainingFrames := totalFrames % len(jpgFiles)
-	
-	// Distribute audio files across video elements
-	audioIndex := 0
-	var currentAudioOffset float64
-	
-	// Add all images as video clips with nested audio
-	for i, jpgFile := range jpgFiles {
-		// First 'remainingFrames' images get one extra frame for perfect distribution
-		frames := framesPerImage
-		if i < remainingFrames {
-			frames++
-		}
-		
-		// Convert frames to FCP duration format
-		imageDurationFCP := fmt.Sprintf("%d/24000s", frames*1001)
-		
-		// Determine which audio file(s) to nest in this video element
-		var audioFile string
-		if audioIndex < len(wavFiles) {
-			audioFile = wavFiles[audioIndex]
-			audioIndex++
-		}
-		
-		// Get actual audio duration in FCP format if audio file is provided
-		// The audio should use its FULL duration, not the video duration
-		var audioDurationFCP string
-		if audioFile != "" {
-			// Use the original FCP duration directly (no double conversion)
-			audioDurationFCP = audioDurationsFCP[audioFile]
-		}
-		
-		// Add video clip with nested audio
-		// Video uses imageDurationFCP (distributed timing), audio uses its full duration
-		err = pb.AddVideoWithNestedAudioWithDurationSafe(jpgFile, audioFile, "", imageDurationFCP, audioDurationFCP)
-		if err != nil {
-			return fmt.Errorf("failed to add video clip with audio %s: %v", jpgFile, err)
-		}
-		
-		// Update audio offset for next clip
-		if audioFile != "" {
-			audioDuration := audioDurations[audioFile]
-			currentAudioOffset += audioDuration
-		}
+	// Calculate segment timings
+	offsets, durations, err := calculateSegmentTimings(audioDuration, len(genData.Segments))
+	if err != nil {
+		return fmt.Errorf("failed to calculate segment timings: %v", err)
 	}
-	
-	// If there are remaining audio files, add them to the last few video elements
-	// This handles cases where there are more audio files than video files
-	for audioIndex < len(wavFiles) {
-		wavFile := wavFiles[audioIndex]
-		// For now, we'll need a different approach for extra audio files
-		// This could be handled by extending video durations or creating additional video elements
-		fmt.Printf("Warning: Extra audio file not nested: %s\n", wavFile)
-		audioIndex++
+
+	// Add the main audio track first (single audio file for entire duration)
+	err = pb.AddAudioOnlySafe(genData.AudioFile, "0s")
+	if err != nil {
+		return fmt.Errorf("failed to add main audio track: %v", err)
+	}
+
+	// Process each segment
+	allTextOverlays := make([]TextOverlay, 0)
+	for segmentIndex, segment := range genData.Segments {
+		segmentOffset := offsets[segmentIndex]
+		segmentDuration := durations[segmentIndex]
+
+		// Add all frames in this segment as video clips
+		for _, frame := range segment.Frames {
+			err = pb.AddVideoOnlySafe(frame, "", segmentDuration)
+			if err != nil {
+				return fmt.Errorf("failed to add frame %s: %v", frame, err)
+			}
+		}
+
+		// Generate text overlays for this segment
+		textOverlays := generateTextOverlays(segment.Texts, segmentOffset, segmentDuration)
+		allTextOverlays = append(allTextOverlays, textOverlays...)
+	}
+
+	// TODO: Add text overlays - this will require extending the build2 API
+	// For now, we'll add a note about text overlays
+	if len(allTextOverlays) > 0 {
+		fmt.Printf("Note: Generated %d text overlays (not yet implemented in build2 API)\n", len(allTextOverlays))
+		for i, overlay := range allTextOverlays {
+			fmt.Printf("  Text %d: '%s' on lane %d at %s\n", i+1, overlay.Text, overlay.Lane, overlay.Offset)
+		}
 	}
 
 	// Save the project

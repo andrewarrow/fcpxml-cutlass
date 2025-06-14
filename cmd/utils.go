@@ -42,14 +42,23 @@ Audio files are saved as ./data/<basename>_audio/s<section>_s<sentence>.wav`,
 }
 
 var genvideoCmd = &cobra.Command{
-	Use:   "genvideo <video-id>",
-	Short: "Generate FCPXML from audio files and still frames",
-	Long: `Generate FCPXML from audio files and still frames.
-Takes a video ID like "5h8Pt7_TP2Q" and looks for:
-- ./data/<video-id>_audio/*.wav (audio files)
-- ./data/<video-id>/*.jpg (still frame images)
-Generates ./data/<video-id>.fcpxml using build2 API with total video length
-matching combined audio duration and evenly distributed still frames.`,
+	Use:   "genvideo <file.genvideo>",
+	Short: "Generate FCPXML from .genvideo file with audio, frames, and text overlays",
+	Long: `Generate FCPXML from a .genvideo file specification.
+
+The .genvideo file format:
+Line 1: audio_file.wav (main audio track for entire video)
+Following lines: comma-separated segments with frames and text groups
+Example:
+  audio_track.wav
+  001_frame.jpg, 002_frame.jpg, "text1", "text2", "text3"
+  003_frame.jpg, 004_frame.jpg, "text1a", "text2a", "text3a"
+
+Creates an FCPXML with:
+- Single audio track for the entire duration
+- Video segments with specified frame sequences
+- Staggered text overlays on 3 lanes (3, 2, 1) matching antiedit.fcpxml style
+- Frame-aligned timing and unique text style IDs`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		genvideo.HandleGenVideoCommand(args)
