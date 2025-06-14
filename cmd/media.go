@@ -26,11 +26,20 @@ var videoCmd = &cobra.Command{
 	RunE:  runVideoCommand,
 }
 
+var keyframesCmd = &cobra.Command{
+	Use:   "keyframes <video-id>",
+	Short: "Extract keyframes from video file",
+	Long:  "Extract all keyframes from a video file as JPEG images using ffmpeg.",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runKeyframesCommand,
+}
+
 var segmentMode bool
 var outputFile string
 
 func init() {
 	mediaCmd.AddCommand(videoCmd)
+	mediaCmd.AddCommand(keyframesCmd)
 	
 	videoCmd.Flags().BoolVarP(&segmentMode, "segments", "s", false, "Break into logical clips with title cards")
 	videoCmd.Flags().StringVarP(&outputFile, "output", "o", "test.fcpxml", "Output file")
@@ -71,5 +80,16 @@ func runVideoCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Successfully converted '%s' to '%s'\n", inputFile, outputFile)
+	return nil
+}
+
+func runKeyframesCommand(cmd *cobra.Command, args []string) error {
+	videoID := args[0]
+	
+	if err := vtt.ExtractKeyframes(videoID); err != nil {
+		return fmt.Errorf("error extracting keyframes: %v", err)
+	}
+	
+	fmt.Printf("Successfully extracted keyframes for video ID: %s\n", videoID)
 	return nil
 }
