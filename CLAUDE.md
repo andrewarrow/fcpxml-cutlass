@@ -52,23 +52,42 @@ FCPXML durations MUST be aligned to frame boundaries to avoid "not on an edit fr
 - Duration format: `(frames*1001)/24000s` where frames is an integer
 - NEVER use simple `seconds * 24000` calculations - this creates non-frame-aligned durations
 
-### Correct Duration Calculation:
+### Frame Boundary Violations:
+- `21600000/24000s` = 900.0s (NON-FRAME-ALIGNED) ❌ - causes "not on an edit frame boundary" error
+- `21599578/24000s` = 899.982s (FRAME-ALIGNED: 21578 frames) ✅
+- The difference is small but FCP strictly enforces frame boundaries
+
+### Correct Duration Conversion from Seconds:
 ```go
-func convertSecondsToFCPDuration(seconds float64) string {
+func ConvertSecondsToFCPDuration(seconds float64) string {
     // Convert to frame count using the sequence time base (1001/24000s frame duration)
     // This means 24000/1001 frames per second ≈ 23.976 fps
     framesPerSecond := 24000.0 / 1001.0
-    frames := int(seconds * framesPerSecond)
+    exactFrames := seconds * framesPerSecond
+    
+    // Choose the frame count that gives the closest duration to the target
+    floorFrames := int(math.Floor(exactFrames))
+    ceilFrames := int(math.Ceil(exactFrames))
+    
+    floorDuration := float64(floorFrames) / framesPerSecond
+    ceilDuration := float64(ceilFrames) / framesPerSecond
+    
+    var frames int
+    if math.Abs(seconds-floorDuration) <= math.Abs(seconds-ceilDuration) {
+        frames = floorFrames
+    } else {
+        frames = ceilFrames
+    }
     
     // Format as rational using the sequence time base
     return fmt.Sprintf("%d/24000s", frames*1001)
 }
 ```
 
-### Frame Boundary Violations:
-- `9026/24000s` = 0.376083s (NON-FRAME-ALIGNED) ❌
-- `9009/24000s` = 0.375375s (FRAME-ALIGNED: 9 frames) ✅
-- The difference is small but FCP strictly enforces frame boundaries
+### Exact Time Limitations:
+- Due to FCP's 23.976fps timebase, exact round-second durations are often impossible
+- For 900 seconds: closest frame-aligned durations are 899.982s (21578 frames) or 900.024s (21579 frames)
+- The algorithm chooses the frame count that produces the duration closest to the target
 
 ### Always Use Frame-Aligned Durations:
 - Asset durations must align to frame boundaries

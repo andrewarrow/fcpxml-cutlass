@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -131,8 +132,22 @@ func ConvertSecondsToFCPDuration(seconds float64) string {
 	// Convert to frame count using the sequence time base (1001/24000s frame duration)
 	// This means 24000/1001 frames per second ≈ 23.976 fps
 	framesPerSecond := 24000.0 / 1001.0
-	frames := int(seconds * framesPerSecond)
+	exactFrames := seconds * framesPerSecond
 	
-	// Format as rational using the sequence time base
+	// Choose the frame count that gives the closest duration to the target
+	floorFrames := int(math.Floor(exactFrames))
+	ceilFrames := int(math.Ceil(exactFrames))
+	
+	floorDuration := float64(floorFrames) / framesPerSecond
+	ceilDuration := float64(ceilFrames) / framesPerSecond
+	
+	var frames int
+	if math.Abs(seconds-floorDuration) <= math.Abs(seconds-ceilDuration) {
+		frames = floorFrames
+	} else {
+		frames = ceilFrames
+	}
+	
+	// Format as rational using the sequence time base for frame boundary alignment
 	return fmt.Sprintf("%d/24000s", frames*1001)
 }
