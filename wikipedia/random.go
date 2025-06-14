@@ -200,7 +200,11 @@ func HandleWikipediaRandomCommand(args []string) {
 					var newEntry string
 					if session.Page != nil {
 						pageInfo, _ := session.Page.Info()
-						newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, pageInfo.URL)
+						if pageInfo != nil {
+							newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, pageInfo.URL)
+						} else {
+							newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, "https://en.wikipedia.org/wiki/Special:Random")
+						}
 					} else {
 						newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, "https://en.wikipedia.org/wiki/Special:Random")
 					}
