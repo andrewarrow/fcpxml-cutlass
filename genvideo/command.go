@@ -80,13 +80,25 @@ func getAudioFilesWithDurations(audioDir string) ([]string, map[string]float64, 
 	// Sort files naturally
 	sort.Strings(files)
 
-	// Calculate total duration and cache individual durations
+	// Get all durations in a single ffprobe call
+	fcpDurations, err := utils.GetBatchAudioDurations(audioDir)
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("failed to get batch durations: %v", err)
+	}
+
+	// Convert FCP durations to seconds and calculate total
 	audioDurations := make(map[string]float64)
 	var totalDuration float64
 	for _, file := range files {
-		duration, err := getAudioDurationInSeconds(file)
+		fileName := filepath.Base(file)
+		fcpDuration, exists := fcpDurations[fileName]
+		if !exists {
+			return nil, nil, 0, fmt.Errorf("duration not found for file: %s", fileName)
+		}
+		
+		duration, err := convertFCPDurationToSeconds(fcpDuration)
 		if err != nil {
-			return nil, nil, 0, fmt.Errorf("failed to get duration for %s: %v", file, err)
+			return nil, nil, 0, fmt.Errorf("failed to convert duration for %s: %v", file, err)
 		}
 		audioDurations[file] = duration
 		totalDuration += duration
@@ -106,13 +118,7 @@ func getImageFiles(imageDir string) ([]string, error) {
 	return files, nil
 }
 
-func getAudioDurationInSeconds(audioPath string) (float64, error) {
-	// Use the existing duration utility
-	durationStr, err := utils.GetAudioDuration(audioPath)
-	if err != nil {
-		return 0, err
-	}
-
+func convertFCPDurationToSeconds(durationStr string) (float64, error) {
 	// Parse the FCP duration format "frames/24000s"
 	// Example: "48048/24000s" means 48048 frames at 24000 units per second
 	parts := strings.Split(durationStr, "/")
@@ -133,6 +139,16 @@ func getAudioDurationInSeconds(audioPath string) (float64, error) {
 
 	// Convert to seconds
 	return frames / timebaseFloat, nil
+}
+
+func getAudioDurationInSeconds(audioPath string) (float64, error) {
+	// Use the existing duration utility
+	durationStr, err := utils.GetAudioDuration(audioPath)
+	if err != nil {
+		return 0, err
+	}
+
+	return convertFCPDurationToSeconds(durationStr)
 }
 
 func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[string]float64, jpgFiles []string, totalDuration float64) error {
