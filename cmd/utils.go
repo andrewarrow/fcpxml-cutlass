@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"cutlass/genvoices"
+	"cutlass/genvideo"
 	"cutlass/resume"
 
 	"github.com/spf13/cobra"
@@ -40,7 +41,24 @@ Audio files are saved as ./data/<basename>_audio/s<section>_s<sentence>.wav`,
 	},
 }
 
+var genvideoCmd = &cobra.Command{
+	Use:   "genvideo <video-id>",
+	Short: "Generate FCPXML from audio files and still frames",
+	Long: `Generate FCPXML from audio files and still frames.
+Takes a video ID like "5h8Pt7_TP2Q" and looks for:
+- ./data/<video-id>_audio/*.wav (audio files)
+- ./data/<video-id>/*.jpg (still frame images)
+Generates ./data/<video-id>.fcpxml using build2 API with total video length
+matching combined audio duration and evenly distributed still frames.`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		genvideo.HandleGenVideoCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(resumeCmd)
 	utilsCmd.AddCommand(genvoicesCmd)
+	utilsCmd.AddCommand(genvideoCmd)
 }
