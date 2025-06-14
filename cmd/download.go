@@ -74,9 +74,8 @@ var wikipediaRandomCmd = &cobra.Command{
 	Short: "Download random Wikipedia page and Google image search",
 	Long:  "Navigate to a random Wikipedia page, extract the title, perform Google image search, and save screenshot.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		for {
-			wikipedia.HandleWikipediaRandomCommand(args)
-		}
+		max, _ := cmd.Flags().GetInt("max")
+		wikipedia.HandleWikipediaRandomCommand(args, max)
 		return nil
 	},
 }
@@ -110,4 +109,7 @@ func init() {
 	downloadCmd.AddCommand(wikipediaRandomCmd)
 	downloadCmd.AddCommand(hnStep1Cmd)
 	downloadCmd.AddCommand(hnStep2Cmd)
+	
+	// Add flags
+	wikipediaRandomCmd.Flags().IntP("max", "m", 10, "Maximum number of articles to process")
 }

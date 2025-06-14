@@ -9,18 +9,76 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-rod/rod"
 )
 
-func HandleWikipediaRandomCommand(args []string) {
-	fmt.Println("Fetching random Wikipedia article...")
+type WikiFile struct {
+	Name     string
+	ModTime  time.Time
+	BaseName string
+}
+
+func getExistingWikiFiles() ([]WikiFile, error) {
+	var files []WikiFile
+	
+	// Get all wiki_*.wav files
+	wavFiles, err := filepath.Glob("data/wiki_*.wav")
+	if err != nil {
+		return nil, err
+	}
+	
+	for _, file := range wavFiles {
+		info, err := os.Stat(file)
+		if err != nil {
+			continue
+		}
+		
+		// Extract base name (remove wiki_ prefix and .wav suffix)
+		baseName := filepath.Base(file)
+		baseName = strings.TrimPrefix(baseName, "wiki_")
+		baseName = strings.TrimSuffix(baseName, ".wav")
+		
+		files = append(files, WikiFile{
+			Name:     file,
+			ModTime:  info.ModTime(),
+			BaseName: baseName,
+		})
+	}
+	
+	// Sort by modification time
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ModTime.Before(files[j].ModTime)
+	})
+	
+	return files, nil
+}
+
+func HandleWikipediaRandomCommand(args []string, max int) {
+	fmt.Printf("Fetching random Wikipedia articles (max: %d)...\n", max)
 
 	// Create data directory if it doesn't exist
 	if err := browser.EnsureDataDir(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating data directory: %v\n", err)
+		return
+	}
+	
+	// Count existing files
+	existingFiles, err := getExistingWikiFiles()
+	if err != nil {
+		fmt.Printf("Warning: Could not count existing files: %v\n", err)
+		existingFiles = []WikiFile{}
+	}
+	
+	currentCount := len(existingFiles)
+	fmt.Printf("Found %d existing wiki files\n", currentCount)
+	
+	if currentCount >= max {
+		fmt.Printf("Already have %d files (max: %d). Nothing to do.\n", currentCount, max)
 		return
 	}
 
@@ -41,25 +99,39 @@ func HandleWikipediaRandomCommand(args []string) {
 		return
 	}
 	defer session.Close()
+	
+	// Process articles until we reach max
+	for currentCount < max {
+		fmt.Printf("\n=== Processing article %d of %d ===\n", currentCount+1, max)
+		
+		if err := processOneArticle(session, &existingEntries, &cumulativeSeconds); err != nil {
+			fmt.Printf("Error processing article: %v\n", err)
+			continue
+		}
+		
+		currentCount++
+	}
+	
+	fmt.Printf("\nCompleted processing %d articles!\n", max)
+}
+
+func processOneArticle(session *browser.BrowserSession, existingEntries *[]string, cumulativeSeconds *float64) error {
 
 	// Navigate to Wikipedia random page
 	fmt.Println("Loading random Wikipedia page...")
 	if err := session.NavigateAndWait("https://en.wikipedia.org/wiki/Special:Random"); err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading Wikipedia: %v\n", err)
-		return
+		return fmt.Errorf("error loading Wikipedia: %v", err)
 	}
 
 	// Extract title from the page
 	titleElement, err := session.Page.Element("h1.firstHeading")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error finding title element: %v\n", err)
-		return
+		return fmt.Errorf("error finding title element: %v", err)
 	}
 
 	title, err := titleElement.Text()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error extracting title: %v\n", err)
-		return
+		return fmt.Errorf("error extracting title: %v", err)
 	}
 
 	fmt.Printf("Found article: %s\n", title)
@@ -95,8 +167,7 @@ func HandleWikipediaRandomCommand(args []string) {
 	fmt.Printf("Searching Google Videos for: %s\n", title)
 
 	if err := session.NavigateAndWait(searchQuery); err != nil {
-		fmt.Fprintf(os.Stderr, "Error navigating to Google Videos: %v\n", err)
-		return
+		return fmt.Errorf("error navigating to Google Videos: %v", err)
 	}
 
 	// Find and click the first video link
@@ -109,8 +180,7 @@ func HandleWikipediaRandomCommand(args []string) {
 	// Get the video URL using improved link selection
 	videoURL, err := getFirstVideoLinkWikipedia(session)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error finding video link: %v\n", err)
-		return
+		return fmt.Errorf("error finding video link: %v", err)
 	}
 
 	if videoURL != "" {
@@ -123,8 +193,7 @@ func HandleWikipediaRandomCommand(args []string) {
 			fmt.Printf("Video URL appended to data/youtube.txt\n")
 		}
 
-		// Close the browser since we no longer need it
-		session.Close()
+		// Don't close the session here - it will be reused for the next article
 
 		// Use yt-dlp to download thumbnail
 		fmt.Println("Using yt-dlp to download video thumbnail...")
@@ -136,9 +205,7 @@ func HandleWikipediaRandomCommand(args []string) {
 		cmd := exec.Command("yt-dlp", "--write-thumbnail", "--skip-download", "-o", filepath.Join("data", "temp_thumbnail.%(ext)s"), videoURL)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error running yt-dlp: %v\n", err)
-			fmt.Fprintf(os.Stderr, "yt-dlp output: %s\n", string(output))
-			return
+			return fmt.Errorf("error running yt-dlp: %v, output: %s", err, string(output))
 		}
 
 		fmt.Printf("yt-dlp output: %s\n", string(output))
@@ -146,21 +213,19 @@ func HandleWikipediaRandomCommand(args []string) {
 		// Find the downloaded thumbnail file and rename it
 		thumbnailFiles, err := filepath.Glob(filepath.Join("data", "temp_thumbnail.*"))
 		if err != nil || len(thumbnailFiles) == 0 {
-			fmt.Fprintf(os.Stderr, "Error: Could not find downloaded thumbnail file\n")
-			return
+			return fmt.Errorf("could not find downloaded thumbnail file")
 		}
 
 		// Rename the first thumbnail file to our desired name
 		err = os.Rename(thumbnailFiles[0], finalFilename)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error renaming thumbnail file: %v\n", err)
-			return
+			return fmt.Errorf("error renaming thumbnail file: %v", err)
 		}
 
 		fmt.Printf("Thumbnail saved: %s\n", finalFilename)
 
 		// Record timecode BEFORE processing (start time of this clip)
-		currentTimecode := formatTimecode(cumulativeSeconds)
+		currentTimecode := formatTimecode(*cumulativeSeconds)
 		fmt.Printf("Current article will start at: %s\n", currentTimecode)
 
 		// Generate speech from first paragraph using chatterbox
@@ -213,27 +278,27 @@ func HandleWikipediaRandomCommand(args []string) {
 					videoID := extractVideoID(videoURL)
 					youtubeEntry := fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID))
 					
-					existingEntries = append(existingEntries, newEntry)
-					existingEntries = append(existingEntries, youtubeEntry)
+					*existingEntries = append(*existingEntries, newEntry)
+					*existingEntries = append(*existingEntries, youtubeEntry)
 
 					// Update cumulative time for next clip
-					cumulativeSeconds += duration
+					*cumulativeSeconds += duration
 
 					// Write updated timecodes to file
-					if err := writeWikiTimecodesToFile(existingEntries); err != nil {
+					if err := writeWikiTimecodesToFile(*existingEntries); err != nil {
 						fmt.Printf("Warning: Could not write timecodes: %v\n", err)
 					}
 
-					fmt.Printf("Next article will start at: %s\n", formatTimecode(cumulativeSeconds))
+					fmt.Printf("Next article will start at: %s\n", formatTimecode(*cumulativeSeconds))
 				}
 			}
 		}
 
 	} else {
-		fmt.Fprintf(os.Stderr, "Error: Link href is empty\n")
-		session.Close()
-		return
+		return fmt.Errorf("link href is empty")
 	}
+	
+	return nil
 }
 
 // getFirstVideoLinkWikipedia finds the first video link from Google search results, preferring watch URLs over channel URLs
