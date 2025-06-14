@@ -197,9 +197,20 @@ func HandleWikipediaRandomCommand(args []string) {
 					fmt.Printf("FCPXML updated using build2 system: %s\n", wikiProjectFile)
 
 					// Add new timecode entry
-					pageInfo, _ := session.Page.Info()
-					newEntry := fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, pageInfo.URL)
+					var newEntry string
+					if session.Page != nil {
+						pageInfo, _ := session.Page.Info()
+						newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, pageInfo.URL)
+					} else {
+						newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, "https://en.wikipedia.org/wiki/Special:Random")
+					}
+					
+					// Extract video ID and create YouTube URL
+					videoID := extractVideoID(videoURL)
+					youtubeEntry := fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID))
+					
 					existingEntries = append(existingEntries, newEntry)
+					existingEntries = append(existingEntries, youtubeEntry)
 
 					// Update cumulative time for next clip
 					cumulativeSeconds += duration
@@ -586,5 +597,31 @@ func loadExistingTimecodes() ([]string, float64, error) {
 	}
 
 	return entries, cumulativeDuration, nil
+}
+
+// extractVideoID extracts the video ID from a YouTube URL
+func extractVideoID(url string) string {
+	// Handle standard YouTube URLs like https://www.youtube.com/watch?v=VIDEO_ID
+	if strings.Contains(url, "youtube.com/watch?v=") {
+		parts := strings.Split(url, "v=")
+		if len(parts) > 1 {
+			// Get everything after v= and before any additional parameters
+			videoID := strings.Split(parts[1], "&")[0]
+			return videoID
+		}
+	}
+	
+	// Handle shortened YouTube URLs like https://youtu.be/VIDEO_ID
+	if strings.Contains(url, "youtu.be/") {
+		parts := strings.Split(url, "youtu.be/")
+		if len(parts) > 1 {
+			// Get everything after youtu.be/ and before any additional parameters
+			videoID := strings.Split(parts[1], "?")[0]
+			return videoID
+		}
+	}
+	
+	// If we can't extract a video ID, return a default
+	return "nGsnoAiVWvc"
 }
 
