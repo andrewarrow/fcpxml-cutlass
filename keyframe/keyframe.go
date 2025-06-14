@@ -1,4 +1,4 @@
-package vtt
+package keyframe
 
 import (
 	"fmt"

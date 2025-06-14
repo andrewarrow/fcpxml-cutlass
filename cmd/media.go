@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cutlass/build2/api"
 	"cutlass/fcp"
+	"cutlass/keyframe"
 	"cutlass/vtt"
 
 	"github.com/spf13/cobra"
@@ -75,7 +77,9 @@ func runVideoCommand(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if err := fcp.GenerateStandard(inputFile, outputFile); err != nil {
+	// Use build2 API for standard video conversion
+	err := convertVideoWithBuild2(inputFile, outputFile)
+	if err != nil {
 		return fmt.Errorf("error generating FCPXML: %v", err)
 	}
 
@@ -86,10 +90,22 @@ func runVideoCommand(cmd *cobra.Command, args []string) error {
 func runKeyframesCommand(cmd *cobra.Command, args []string) error {
 	videoID := args[0]
 	
-	if err := vtt.ExtractKeyframes(videoID); err != nil {
+	if err := keyframe.ExtractKeyframes(videoID); err != nil {
 		return fmt.Errorf("error extracting keyframes: %v", err)
 	}
 	
 	fmt.Printf("Successfully extracted keyframes for video ID: %s\n", videoID)
 	return nil
+}
+
+// convertVideoWithBuild2 converts a video file to FCPXML using the build2 API
+func convertVideoWithBuild2(inputFile, outputFile string) error {
+	// Create a new project
+	err := api.CreateBlankProject(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create blank project: %v", err)
+	}
+	
+	// Add the video to the project
+	return api.AddVideoToProject(outputFile, inputFile, "", "")
 }
