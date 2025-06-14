@@ -150,15 +150,18 @@ func processOneArticle(session *browser.BrowserSession, existingEntries *[]strin
 
 	fmt.Printf("Found article: %s\n", title)
 
-	// Get current page URL
+	// Get current page URL and store it for later use
+	var wikipediaURL string
 	pageInfo, err := session.Page.Info()
 	if err != nil {
 		fmt.Printf("Warning: Could not get page URL: %v\n", err)
+		wikipediaURL = "https://en.wikipedia.org/wiki/Special:Random"
 	} else {
-		fmt.Printf("Wikipedia URL: %s\n", pageInfo.URL)
+		wikipediaURL = pageInfo.URL
+		fmt.Printf("Wikipedia URL: %s\n", wikipediaURL)
 
 		// Append URL to wikilist.txt
-		if err := appendToWikiList(pageInfo.URL); err != nil {
+		if err := appendToWikiList(wikipediaURL); err != nil {
 			fmt.Printf("Warning: Could not append URL to wikilist.txt: %v\n", err)
 		} else {
 			fmt.Printf("URL appended to data/wikilist.txt\n")
@@ -275,18 +278,8 @@ func processOneArticle(session *browser.BrowserSession, existingEntries *[]strin
 				} else {
 					fmt.Printf("FCPXML updated using build2 system: %s\n", wikiProjectFile)
 
-					// Add new timecode entry
-					var newEntry string
-					if session.Page != nil {
-						pageInfo, _ := session.Page.Info()
-						if pageInfo != nil {
-							newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, pageInfo.URL)
-						} else {
-							newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, "https://en.wikipedia.org/wiki/Special:Random")
-						}
-					} else {
-						newEntry = fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, "https://en.wikipedia.org/wiki/Special:Random")
-					}
+					// Add new timecode entry using the stored Wikipedia URL
+					newEntry := fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, wikipediaURL)
 					
 					// Extract video ID and create YouTube URL
 					videoID := extractVideoID(videoURL)
