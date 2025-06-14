@@ -38,18 +38,19 @@ func processWordsFile(filename string) error {
 	inSentences := false
 
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := scanner.Text()
 
 		// Skip empty lines and comments
-		if line == "" || strings.HasPrefix(line, "#") {
+		if strings.TrimSpace(line) == "" || strings.HasPrefix(strings.TrimSpace(line), "#") {
 			continue
 		}
 
 		// Check for section headers
-		if strings.HasPrefix(line, "## Section") {
+		if strings.HasPrefix(strings.TrimSpace(line), "## Section") {
 			currentSection++
 			sentenceCount = 0
 			inSentences = false
+			fmt.Printf("Found section %d\n", currentSection)
 			continue
 		}
 
@@ -63,21 +64,21 @@ func processWordsFile(filename string) error {
 		if inSentences && strings.HasPrefix(line, "  - ") {
 			sentenceCount++
 			sentence := strings.TrimPrefix(line, "  - ")
-			
+
 			// Generate audio filename
 			audioFilename := filepath.Join(audioDir, fmt.Sprintf("s%d_s%d.wav", currentSection, sentenceCount))
-			
+
 			// Call chatterbox
 			if err := callChatterbox(sentence, audioFilename); err != nil {
 				fmt.Printf("Error generating voice for sentence %d in section %d: %v\n", sentenceCount, currentSection, err)
 				continue
 			}
-			
+
 			fmt.Printf("Generated voice for section %d, sentence %d\n", currentSection, sentenceCount)
 		}
 
 		// Reset inSentences if we encounter a non-sentence line that doesn't start with spaces
-		if inSentences && !strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "- Sentences:") {
+		if inSentences && !strings.HasPrefix(line, "  ") && !strings.Contains(line, "- Sentences:") {
 			inSentences = false
 		}
 	}
