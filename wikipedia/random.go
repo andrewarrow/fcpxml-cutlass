@@ -3,11 +3,13 @@ package wikipedia
 import (
 	"cutlass/browser"
 	"cutlass/build2/api"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-rod/rod"
@@ -21,6 +23,16 @@ func HandleWikipediaRandomCommand(args []string) {
 		fmt.Fprintf(os.Stderr, "Error creating data directory: %v\n", err)
 		return
 	}
+
+	// Load existing timecodes and cumulative time
+	existingEntries, cumulativeSeconds, err := loadExistingTimecodes()
+	if err != nil {
+		fmt.Printf("Warning: Could not load existing timecodes: %v\n", err)
+		existingEntries = []string{}
+		cumulativeSeconds = 0
+	}
+	
+	fmt.Printf("Starting at cumulative time: %s\n", formatTimecode(cumulativeSeconds))
 
 	// Create browser session
 	session, err := browser.NewBrowserSession()
@@ -147,6 +159,10 @@ func HandleWikipediaRandomCommand(args []string) {
 
 		fmt.Printf("Thumbnail saved: %s\n", finalFilename)
 
+		// Record timecode BEFORE processing (start time of this clip)
+		currentTimecode := formatTimecode(cumulativeSeconds)
+		fmt.Printf("Current article will start at: %s\n", currentTimecode)
+
 		// Generate speech from first paragraph using chatterbox
 		if firstParagraph != "" {
 			fmt.Println("Generating speech from first paragraph...")
@@ -165,12 +181,35 @@ func HandleWikipediaRandomCommand(args []string) {
 			} else {
 				fmt.Printf("Speech generated: %s\n", audioFilename)
 
+				// Get audio duration for timecode tracking
+				duration, err := getAudioDurationSeconds(audioFilename)
+				if err != nil {
+					fmt.Printf("Warning: Could not get audio duration: %v\n", err)
+					duration = 10.0 // Default duration if cannot get actual duration
+				}
+				fmt.Printf("Audio duration: %.2f seconds\n", duration)
+
 				// Generate FCPXML using build2 system
 				wikiProjectFile := "data/wiki.fcpxml"
 				if err := generateWithBuild2(finalFilename, audioFilename, title, wikiProjectFile); err != nil {
 					fmt.Printf("Warning: Could not generate FCPXML: %v\n", err)
 				} else {
 					fmt.Printf("FCPXML updated using build2 system: %s\n", wikiProjectFile)
+
+					// Add new timecode entry
+					pageInfo, _ := session.Page.Info()
+					newEntry := fmt.Sprintf("%s (%s)[%s]", currentTimecode, title, pageInfo.URL)
+					existingEntries = append(existingEntries, newEntry)
+
+					// Update cumulative time for next clip
+					cumulativeSeconds += duration
+
+					// Write updated timecodes to file
+					if err := writeWikiTimecodesToFile(existingEntries); err != nil {
+						fmt.Printf("Warning: Could not write timecodes: %v\n", err)
+					}
+
+					fmt.Printf("Next article will start at: %s\n", formatTimecode(cumulativeSeconds))
 				}
 			}
 		}
@@ -382,5 +421,105 @@ func generateWithBuild2(imagePath, audioPath, title, projectFile string) error {
 	}
 	
 	return nil
+}
+
+// getAudioDurationSeconds gets the duration of an audio file using ffprobe
+func getAudioDurationSeconds(audioPath string) (float64, error) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", audioPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+
+	var result struct {
+		Format struct {
+			Duration string `json:"duration"`
+		} `json:"format"`
+	}
+
+	err = json.Unmarshal(output, &result)
+	if err != nil {
+		return 0, err
+	}
+
+	// Parse duration as float seconds
+	duration, err := strconv.ParseFloat(result.Format.Duration, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return duration, nil
+}
+
+// formatTimecode converts seconds to MM:SS format
+func formatTimecode(seconds float64) string {
+	totalSeconds := int(seconds)
+	minutes := totalSeconds / 60
+	secs := totalSeconds % 60
+	return fmt.Sprintf("%02d:%02d", minutes, secs)
+}
+
+// writeWikiTimecodesToFile writes timecode entries to wiki_timecodes.txt
+func writeWikiTimecodesToFile(entries []string) error {
+	timecodesPath := filepath.Join("data", "wiki_timecodes.txt")
+	file, err := os.Create(timecodesPath)
+	if err != nil {
+		return fmt.Errorf("error creating wiki timecodes file: %v", err)
+	}
+	defer file.Close()
+
+	for _, entry := range entries {
+		_, err = file.WriteString(entry + "\n")
+		if err != nil {
+			return fmt.Errorf("error writing timecode entry: %v", err)
+		}
+	}
+
+	fmt.Printf("Timecodes written to %s\n", timecodesPath)
+	return nil
+}
+
+// loadExistingTimecodes loads existing timecode entries and calculates cumulative duration
+func loadExistingTimecodes() ([]string, float64, error) {
+	timecodesPath := filepath.Join("data", "wiki_timecodes.txt")
+	
+	// Check if file exists
+	if _, err := os.Stat(timecodesPath); os.IsNotExist(err) {
+		return []string{}, 0, nil
+	}
+
+	file, err := os.Open(timecodesPath)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error opening existing timecodes file: %v", err)
+	}
+	defer file.Close()
+
+	var entries []string
+	var cumulativeDuration float64
+
+	// Read existing entries
+	buf := make([]byte, 1024*1024) // 1MB buffer
+	n, _ := file.Read(buf)
+	content := string(buf[:n])
+	
+	lines := strings.Split(strings.TrimSpace(content), "\n")
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			entries = append(entries, line)
+		}
+	}
+
+	// Calculate cumulative duration by examining all existing wiki audio files
+	audioFiles, err := filepath.Glob(filepath.Join("data", "wiki_*.wav"))
+	if err == nil {
+		for _, audioFile := range audioFiles {
+			duration, err := getAudioDurationSeconds(audioFile)
+			if err == nil {
+				cumulativeDuration += duration
+			}
+		}
+	}
+
+	return entries, cumulativeDuration, nil
 }
 
