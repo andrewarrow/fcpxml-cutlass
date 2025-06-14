@@ -24,12 +24,13 @@ var BuildCmd = &cobra.Command{
 		if len(args) >= 3 && args[1] == "add-video" {
 			mediaFile := args[2]
 			
-			// Get the --with-text and --with-sound flag values
+			// Get the --with-text, --with-sound, and --with-duration flag values
 			withText, _ := cmd.Flags().GetString("with-text")
 			withSound, _ := cmd.Flags().GetString("with-sound")
+			withDuration, _ := cmd.Flags().GetString("with-duration")
 			
 			// Add media to the project using build2 API
-			err := api.AddVideoToProject(filename, mediaFile, withText, withSound)
+			err := api.AddVideoToProjectWithDuration(filename, mediaFile, withText, withSound, withDuration)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error adding media to project: %v\n", err)
 				os.Exit(1)
@@ -58,4 +59,5 @@ var BuildCmd = &cobra.Command{
 func init() {
 	BuildCmd.Flags().String("with-text", "", "Add text overlay on top of the video")
 	BuildCmd.Flags().String("with-sound", "", "Add audio file (WAV) to create compound clip")
+	BuildCmd.Flags().String("with-duration", "", "Set custom duration in seconds (e.g., 900)")
 }

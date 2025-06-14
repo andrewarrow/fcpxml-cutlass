@@ -125,3 +125,14 @@ func GetAudioDuration(audioPath string) (string, error) {
 	// Format as rational using the sequence time base
 	return fmt.Sprintf("%d/24000s", frames*1001), nil
 }
+
+// ConvertSecondsToFCPDuration converts seconds to FCPXML duration format with proper frame alignment
+func ConvertSecondsToFCPDuration(seconds float64) string {
+	// Convert to frame count using the sequence time base (1001/24000s frame duration)
+	// This means 24000/1001 frames per second ≈ 23.976 fps
+	framesPerSecond := 24000.0 / 1001.0
+	frames := int(seconds * framesPerSecond)
+	
+	// Format as rational using the sequence time base
+	return fmt.Sprintf("%d/24000s", frames*1001)
+}

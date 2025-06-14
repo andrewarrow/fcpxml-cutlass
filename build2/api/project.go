@@ -196,6 +196,21 @@ func AddVideoToProject(projectFile, videoFile, withText, withSound string) error
 	}).Save()
 }
 
+// AddVideoToProjectWithDuration adds a video to an existing project with custom duration
+func AddVideoToProjectWithDuration(projectFile, videoFile, withText, withSound, withDuration string) error {
+	pb, err := NewProjectBuilder(projectFile)
+	if err != nil {
+		return err
+	}
+	
+	return pb.AddClip(ClipConfig{
+		VideoFile:      videoFile,
+		AudioFile:      withSound,
+		Text:           withText,
+		CustomDuration: withDuration,
+	}).Save()
+}
+
 // AddClipSafe adds a clip and returns error immediately (non-fluent API)
 func (pb *ProjectBuilder) AddClipSafe(config ClipConfig) error {
 	return pb.builder.AddClipWithConfig(timeline.ClipConfig{

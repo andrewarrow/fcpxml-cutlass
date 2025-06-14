@@ -80,7 +80,13 @@ func (tb *TimelineBuilder) AddClipWithConfig(config ClipConfig) error {
 	// Calculate duration - use custom duration if provided
 	var duration string
 	if config.CustomDuration != "" {
-		duration = config.CustomDuration
+		// Convert seconds to FCP duration format if it's a numeric value
+		if durationFloat, err := strconv.ParseFloat(config.CustomDuration, 64); err == nil {
+			duration = utils.ConvertSecondsToFCPDuration(durationFloat)
+		} else {
+			// Assume it's already in FCP format
+			duration = config.CustomDuration
+		}
 	} else {
 		duration, err = tb.calculateDuration(absVideoPath, config.AudioFile)
 		if err != nil {
