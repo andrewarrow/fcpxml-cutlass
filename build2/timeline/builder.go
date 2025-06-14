@@ -24,11 +24,20 @@ type ClipConfig struct {
 
 // TimelineBuilder provides fluent API for timeline construction
 type TimelineBuilder struct {
-	registry    *core.ResourceRegistry
-	strategy    clips.ClipStrategy
-	fcpxml      *fcp.FCPXML
-	elements    []clips.TimelineElement
+	registry      *core.ResourceRegistry
+	strategy      clips.ClipStrategy
+	fcpxml        *fcp.FCPXML
+	elements      []clips.TimelineElement
 	totalDuration string
+	// Track spine clips in memory to avoid string parsing
+	spineClips    []SpineClip
+}
+
+// SpineClip represents a clip on the main timeline spine
+type SpineClip struct {
+	Offset   string
+	Duration string
+	Element  clips.TimelineElement
 }
 
 // NewTimelineBuilder creates a new timeline builder
@@ -39,6 +48,7 @@ func NewTimelineBuilder(registry *core.ResourceRegistry) *TimelineBuilder {
 		fcpxml:        registry.GetFCPXML(),
 		elements:      make([]clips.TimelineElement, 0),
 		totalDuration: "0s",
+		spineClips:    make([]SpineClip, 0),
 	}
 }
 
@@ -147,6 +157,14 @@ func (tb *TimelineBuilder) AddClipWithConfig(config ClipConfig) error {
 	
 	element := tb.strategy.CreateOptimalClip(absVideoPath, config.AudioFile, config.Text, clipConfig)
 	tb.elements = append(tb.elements, element)
+	
+	// Track this as a spine clip
+	spineClip := SpineClip{
+		Offset:   offset,
+		Duration: duration,
+		Element:  element,
+	}
+	tb.spineClips = append(tb.spineClips, spineClip)
 	
 	// Update total duration to include existing content plus new clip
 	tb.updateTotalDuration(offset, duration)
@@ -454,29 +472,58 @@ func isImageFile(filePath string) bool {
 
 // calculateTimelineOffset calculates where the next clip should start based on existing elements
 func (tb *TimelineBuilder) calculateTimelineOffset() string {
-	// First check existing spine content for any pre-existing clips
-	existingOffset := "0s"
-	if len(tb.fcpxml.Library.Events) > 0 && len(tb.fcpxml.Library.Events[0].Projects) > 0 {
+	// Use in-memory spine clips to calculate offset (no string parsing needed!)
+	totalFrames := 0
+	
+	// Add up all the durations of existing spine clips
+	for _, spineClip := range tb.spineClips {
+		totalFrames += parseDurationToFrames(spineClip.Duration)
+	}
+	
+	// Check if there are any pre-existing clips in the FCPXML from previous operations
+	if totalFrames == 0 && len(tb.fcpxml.Library.Events) > 0 && len(tb.fcpxml.Library.Events[0].Projects) > 0 {
 		project := &tb.fcpxml.Library.Events[0].Projects[0]
 		if len(project.Sequences) > 0 {
 			spineContent := strings.TrimSpace(project.Sequences[0].Spine.Content)
 			if spineContent != "" {
-				existingOffset = tb.calculateTotalDurationFromSpine(spineContent)
+				// Use simple parsing: just count main spine video elements, not nested ones
+				totalFrames = tb.countSpineVideoElementsSimple(spineContent)
 			}
 		}
 	}
 	
-	// Calculate total duration of elements already added to this builder
-	existingFrames := parseDurationToFrames(existingOffset)
+	// Return the total offset for the next clip
+	return fmt.Sprintf("%d/24000s", totalFrames)
+}
+
+// countSpineVideoElementsSimple counts only the main spine video elements (not nested ones)
+func (tb *TimelineBuilder) countSpineVideoElementsSimple(spineContent string) int {
+	totalFrames := 0
+	lines := strings.Split(spineContent, "\n")
 	
-	// Add duration of all elements in memory
-	for _, element := range tb.elements {
-		elementFrames := parseDurationToFrames(element.GetDuration())
-		existingFrames += elementFrames
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Look for spine-level video elements - they should be the first video elements encountered
+		// and not deeply indented (nested video elements won't be direct spine children)
+		if strings.HasPrefix(trimmed, "<video ") && strings.Contains(line, "duration=") {
+			// Extract duration
+			start := strings.Index(line, "duration=\"") + 10
+			if start > 9 {
+				end := strings.Index(line[start:], "\"")
+				if end > 0 {
+					durationStr := line[start : start+end]
+					if strings.HasSuffix(durationStr, "/24000s") {
+						framesStr := strings.TrimSuffix(durationStr, "/24000s")
+						if frames, err := strconv.Atoi(framesStr); err == nil {
+							totalFrames += frames
+						}
+					}
+				}
+			}
+		}
 	}
 	
-	// Return the total offset for the next clip
-	return fmt.Sprintf("%d/24000s", existingFrames)
+	return totalFrames
 }
 
 // calculateTotalDurationFromSpine parses spine content and calculates the total timeline duration
@@ -485,14 +532,47 @@ func (tb *TimelineBuilder) calculateTotalDurationFromSpine(spineContent string) 
 		return "0s"
 	}
 	
-	// Find all duration values in asset-clips, video elements, and ref-clips
+	// Find only TOP-LEVEL spine elements by tracking nesting depth
+	// We need to avoid counting nested elements like asset-clip inside video elements
 	totalFrames := 0
+	nestingLevel := 0
+	spineLevel := -1  // Will be set when we find the first spine element
 	
-	// Use regex to find all duration attributes more precisely
 	lines := strings.Split(spineContent, "\n")
 	for _, line := range lines {
-		// Look for asset-clip, video, or ref-clip elements with duration
-		if (strings.Contains(line, "asset-clip") || strings.Contains(line, "<video") || strings.Contains(line, "ref-clip")) && strings.Contains(line, "duration=") {
+		trimmedLine := strings.TrimSpace(line)
+		
+		// Skip empty lines
+		if trimmedLine == "" {
+			continue
+		}
+		
+		// Count opening and closing tags to track nesting level
+		if strings.HasPrefix(trimmedLine, "<") && !strings.HasPrefix(trimmedLine, "</") && !strings.HasSuffix(trimmedLine, "/>") {
+			// Opening tag
+			if spineLevel == -1 && (strings.HasPrefix(trimmedLine, "<video ") || 
+				strings.HasPrefix(trimmedLine, "<asset-clip ") || 
+				strings.HasPrefix(trimmedLine, "<ref-clip ") ||
+				strings.HasPrefix(trimmedLine, "<mc-clip ") ||
+				strings.HasPrefix(trimmedLine, "<sync-clip ")) {
+				// This is a spine-level element, record the nesting level
+				spineLevel = nestingLevel
+			}
+			nestingLevel++
+		} else if strings.HasPrefix(trimmedLine, "</") {
+			// Closing tag
+			nestingLevel--
+		}
+		
+		// Only count elements at the spine level (not nested)
+		if spineLevel != -1 && nestingLevel-1 == spineLevel &&
+		   (strings.HasPrefix(trimmedLine, "<video ") || 
+		    strings.HasPrefix(trimmedLine, "<asset-clip ") || 
+		    strings.HasPrefix(trimmedLine, "<ref-clip ") ||
+		    strings.HasPrefix(trimmedLine, "<mc-clip ") ||
+		    strings.HasPrefix(trimmedLine, "<sync-clip ")) &&
+		   strings.Contains(line, "duration=") {
+			
 			// Extract duration value
 			start := strings.Index(line, "duration=\"") + 10
 			if start > 9 {

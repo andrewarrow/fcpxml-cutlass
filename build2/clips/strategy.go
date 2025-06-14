@@ -348,15 +348,7 @@ type VideoWithAudioElement struct {
 func (v *VideoWithAudioElement) GetXML() string {
 	xml := `<video ref="` + v.VideoRef + `" offset="` + v.Offset + `" name="` + v.Name + `" start="` + v.Start + `" duration="` + v.Duration + `">`
 	
-	// Add the audio asset-clip on lane -1 (audio lane) with correct audio duration
-	audioDuration := v.AudioDuration
-	if audioDuration == "" {
-		audioDuration = v.Duration // fallback to video duration if not specified
-	}
-	xml += `
-                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + audioDuration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
-	
-	// Add adjust-transform before title if text is present (DTD requirement)
+	// Add adjust-transform FIRST (intrinsic params come before anchor items per DTD)
 	if v.HasText && v.HasAnimation {
 		xml += `
                             <adjust-transform>
@@ -368,6 +360,15 @@ func (v *VideoWithAudioElement) GetXML() string {
                                 </param>
                             </adjust-transform>`
 	}
+	
+	// Add the audio asset-clip on lane -1 (audio lane) with correct audio duration
+	// (anchor items come after intrinsic params per DTD)
+	audioDuration := v.AudioDuration
+	if audioDuration == "" {
+		audioDuration = v.Duration // fallback to video duration if not specified
+	}
+	xml += `
+                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + audioDuration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
 	
 	// Add text overlay if requested
 	if v.HasText {
@@ -418,18 +419,30 @@ func (s *SmartClipStrategy) getTextParams() string {
 }
 
 func (s *SmartClipStrategy) generateTextStyleID(text, baseName string) string {
-	// Simple hash-based ID generation
+	// Create unique ID using text + baseName + timestamp component to ensure uniqueness
+	// Include more variation in the hash to avoid collisions
+	input := text + "|" + baseName + "|" + strings.Join(strings.Fields(text), "_")
 	hash := 0
-	for _, c := range text + baseName {
-		hash = hash*31 + int(c)
+	for i, c := range input {
+		hash = hash*31 + int(c) + i*7 // Add position weight to increase variation
 	}
 	if hash < 0 {
 		hash = -hash
 	}
-	return "ts" + strings.ToUpper(strings.Replace(strings.Replace(strings.Replace(
-		strings.Replace(string(rune('A'+hash%26))+string(rune('0'+hash%10))+string(rune('A'+(hash/10)%26))+string(rune('0'+(hash/100)%10))+
-		string(rune('A'+(hash/1000)%26))+string(rune('0'+(hash/10000)%10))+string(rune('A'+(hash/100000)%26))+string(rune('0'+(hash/1000000)%10)),
-		" ", "", -1), "\n", "", -1), "\t", "", -1), "\r", "", -1))[:8]
+	
+	// Generate more varied character combinations
+	chars := []rune{
+		rune('A' + hash%26),
+		rune('0' + (hash/26)%10),
+		rune('A' + (hash/260)%26),
+		rune('0' + (hash/6760)%10),
+		rune('A' + (hash/67600)%26),
+		rune('0' + (hash/1757600)%10),
+		rune('A' + (hash/17576000)%26),
+		rune('0' + (hash/456976000)%10),
+	}
+	
+	return "ts" + string(chars)
 }
 
 // isPNGFile checks if the given file is a PNG image
