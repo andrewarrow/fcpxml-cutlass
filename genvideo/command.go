@@ -38,8 +38,8 @@ func processVideoID(videoID string) error {
 		return fmt.Errorf("image directory does not exist: %s", imageDir)
 	}
 
-	// Get all WAV files and calculate total duration
-	wavFiles, totalDuration, err := getAudioFiles(audioDir)
+	// Get all WAV files and calculate total duration with caching
+	wavFiles, audioDurations, totalDuration, err := getAudioFilesWithDurations(audioDir)
 	if err != nil {
 		return fmt.Errorf("failed to get audio files: %v", err)
 	}
@@ -62,7 +62,7 @@ func processVideoID(videoID string) error {
 	fmt.Printf("Found %d image files\n", len(jpgFiles))
 
 	// Generate FCPXML using build2 API
-	err = generateFCPXML(outputFile, wavFiles, jpgFiles, totalDuration)
+	err = generateFCPXML(outputFile, wavFiles, audioDurations, jpgFiles, totalDuration)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
@@ -71,26 +71,28 @@ func processVideoID(videoID string) error {
 	return nil
 }
 
-func getAudioFiles(audioDir string) ([]string, float64, error) {
+func getAudioFilesWithDurations(audioDir string) ([]string, map[string]float64, float64, error) {
 	files, err := filepath.Glob(filepath.Join(audioDir, "*.wav"))
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 
 	// Sort files naturally
 	sort.Strings(files)
 
-	// Calculate total duration
+	// Calculate total duration and cache individual durations
+	audioDurations := make(map[string]float64)
 	var totalDuration float64
 	for _, file := range files {
 		duration, err := getAudioDurationInSeconds(file)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to get duration for %s: %v", file, err)
+			return nil, nil, 0, fmt.Errorf("failed to get duration for %s: %v", file, err)
 		}
+		audioDurations[file] = duration
 		totalDuration += duration
 	}
 
-	return files, totalDuration, nil
+	return files, audioDurations, totalDuration, nil
 }
 
 func getImageFiles(imageDir string) ([]string, error) {
@@ -133,7 +135,7 @@ func getAudioDurationInSeconds(audioPath string) (float64, error) {
 	return frames / timebaseFloat, nil
 }
 
-func generateFCPXML(outputFile string, wavFiles, jpgFiles []string, totalDuration float64) error {
+func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[string]float64, jpgFiles []string, totalDuration float64) error {
 	// Create new project builder
 	pb, err := api.NewProjectBuilder(outputFile)
 	if err != nil {
@@ -149,11 +151,8 @@ func generateFCPXML(outputFile string, wavFiles, jpgFiles []string, totalDuratio
 
 	// Add each audio file with corresponding images
 	for _, wavFile := range wavFiles {
-		// Get duration of this audio file
-		audioDuration, err := getAudioDurationInSeconds(wavFile)
-		if err != nil {
-			return fmt.Errorf("failed to get audio duration: %v", err)
-		}
+		// Get duration from cache
+		audioDuration := audioDurations[wavFile]
 
 		// Calculate how many images should be used for this audio segment
 		imagesForThisSegment := int((audioDuration / totalDuration) * float64(len(jpgFiles)))
