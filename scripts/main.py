@@ -62,7 +62,7 @@ def verify_channel_access(youtube, channel_id):
         print(f"Error verifying channel access: {e}")
         return False
 
-def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None):
+def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None, not_made_for_kids=False):
     """Upload a video to YouTube."""
     if not os.path.exists(video_file):
         print(f"Error: Video file '{video_file}' not found.")
@@ -81,7 +81,8 @@ def upload_video(youtube, video_file, title, description, channel_id=None, tags=
             'categoryId': category_id
         },
         'status': {
-            'privacyStatus': privacy_status
+            'privacyStatus': privacy_status,
+            'madeForKids': not not_made_for_kids
         }
     }
     
@@ -171,10 +172,11 @@ def main():
     parser.add_argument('--title', required=True, help='Video title')
     parser.add_argument('--description', default='', help='Path to file containing video description')
     parser.add_argument('--tags', help='Comma-separated list of tags')
-    parser.add_argument('--category', default='22', help='YouTube category ID (default: 22 for People & Blogs)')
+    parser.add_argument('--category', default='26', help='YouTube category ID (default: 22 for People & Blogs)')
     parser.add_argument('--privacy', choices=['private', 'public', 'unlisted'], default='private', help='Privacy status')
     parser.add_argument('--channel-id', help='YouTube channel ID to upload to (required if you have multiple channels)')
     parser.add_argument('--thumbnail', help='Path to PNG thumbnail image file')
+    parser.add_argument('--not-made-for-kids', action='store_true', help='Mark video as not made for kids')
     
     args = parser.parse_args()
     
@@ -205,7 +207,8 @@ def main():
             tags=tags,
             category_id=args.category,
             privacy_status=args.privacy,
-            thumbnail_path=args.thumbnail
+            thumbnail_path=args.thumbnail,
+            not_made_for_kids=args.not_made_for_kids
         )
         
         if video_id:
