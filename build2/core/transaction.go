@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"cutlass/fcp"
 )
@@ -67,10 +68,12 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 	}
 	
 	// Set file-type specific properties
-	if isPNGFile(absPath) {
-		asset.Duration = "0s" // PNG assets use 0s duration in FCP
+	if isImageFile(absPath) {
+		// Image files (PNG, JPG, JPEG) should NOT have audio properties
 		asset.VideoSources = "1" // Required for image assets
+		// Note: Duration is set by caller, not hardcoded to "0s"
 	} else {
+		// Video files have audio properties
 		asset.HasAudio = "1"
 		asset.AudioSources = "1"
 		asset.AudioChannels = "2"
@@ -194,4 +197,10 @@ func (tx *ResourceTransaction) Rollback() {
 func isPNGFile(filePath string) bool {
 	ext := filepath.Ext(filePath)
 	return ext == ".png" || ext == ".PNG"
+}
+
+// isImageFile checks if the given file is an image (PNG, JPG, JPEG)
+func isImageFile(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	return ext == ".png" || ext == ".jpg" || ext == ".jpeg"
 }

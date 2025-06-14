@@ -151,6 +151,16 @@ func (tb *TimelineBuilder) AddVideoOnly(videoFile, text, customDuration string) 
 	})
 }
 
+// AddVideoWithNestedAudio adds a video clip with nested audio clip inside (Info.fcpxml approach)
+func (tb *TimelineBuilder) AddVideoWithNestedAudio(videoFile, audioFile, text, customDuration string) error {
+	return tb.AddClipWithConfig(ClipConfig{
+		VideoFile:      videoFile,
+		AudioFile:      audioFile, // This will create nested audio
+		Text:           text,
+		CustomDuration: customDuration,
+	})
+}
+
 // AddAudioOnly adds an audio-only clip to the timeline on lane -1 (for separate audio track approach)
 func (tb *TimelineBuilder) AddAudioOnly(audioFile string, offset string) error {
 	// Get absolute path for audio file

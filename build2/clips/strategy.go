@@ -346,7 +346,7 @@ func (v *VideoWithAudioElement) GetXML() string {
 	
 	// Add the audio asset-clip on lane -1 (audio lane)
 	xml += `
-                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + v.Duration + `" format="r1" tcFormat="NDF"/>`
+                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + v.Duration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
 	
 	// Add adjust-transform before title if text is present (DTD requirement)
 	if v.HasText && v.HasAnimation {

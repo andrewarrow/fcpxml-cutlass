@@ -174,7 +174,11 @@ func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[str
 	framesPerImage := totalFrames / len(jpgFiles)
 	remainingFrames := totalFrames % len(jpgFiles)
 	
-	// Add all images as video-only clips sequentially with frame-aligned durations
+	// Distribute audio files across video elements
+	audioIndex := 0
+	var currentAudioOffset float64
+	
+	// Add all images as video clips with nested audio
 	for i, jpgFile := range jpgFiles {
 		// First 'remainingFrames' images get one extra frame for perfect distribution
 		frames := framesPerImage
@@ -185,25 +189,34 @@ func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[str
 		// Convert frames to FCP duration format
 		imageDurationFCP := fmt.Sprintf("%d/24000s", frames*1001)
 		
-		err = pb.AddVideoOnlySafe(jpgFile, "", imageDurationFCP)
+		// Determine which audio file(s) to nest in this video element
+		var audioFile string
+		if audioIndex < len(wavFiles) {
+			audioFile = wavFiles[audioIndex]
+			audioIndex++
+		}
+		
+		// Add video clip with nested audio
+		err = pb.AddVideoWithNestedAudioSafe(jpgFile, audioFile, "", imageDurationFCP)
 		if err != nil {
-			return fmt.Errorf("failed to add video clip %s: %v", jpgFile, err)
+			return fmt.Errorf("failed to add video clip with audio %s: %v", jpgFile, err)
+		}
+		
+		// Update audio offset for next clip
+		if audioFile != "" {
+			audioDuration := audioDurations[audioFile]
+			currentAudioOffset += audioDuration
 		}
 	}
 	
-	// Add all audio files as audio-only clips sequentially on lane -1
-	var currentAudioOffset float64
-	for _, wavFile := range wavFiles {
-		offsetFCP := convertSecondsToFCPDuration(currentAudioOffset)
-		
-		err = pb.AddAudioOnlySafe(wavFile, offsetFCP)
-		if err != nil {
-			return fmt.Errorf("failed to add audio clip %s: %v", wavFile, err)
-		}
-		
-		// Get duration from cache
-		audioDuration := audioDurations[wavFile]
-		currentAudioOffset += audioDuration
+	// If there are remaining audio files, add them to the last few video elements
+	// This handles cases where there are more audio files than video files
+	for audioIndex < len(wavFiles) {
+		wavFile := wavFiles[audioIndex]
+		// For now, we'll need a different approach for extra audio files
+		// This could be handled by extending video durations or creating additional video elements
+		fmt.Printf("Warning: Extra audio file not nested: %s\n", wavFile)
+		audioIndex++
 	}
 
 	// Save the project

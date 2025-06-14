@@ -215,3 +215,8 @@ func (pb *ProjectBuilder) AddVideoOnlySafe(videoFile, text, customDuration strin
 func (pb *ProjectBuilder) AddAudioOnlySafe(audioFile, offset string) error {
 	return pb.builder.AddAudioOnly(audioFile, offset)
 }
+
+// AddVideoWithNestedAudioSafe adds a video clip with nested audio clip inside
+func (pb *ProjectBuilder) AddVideoWithNestedAudioSafe(videoFile, audioFile, text, customDuration string) error {
+	return pb.builder.AddVideoWithNestedAudio(videoFile, audioFile, text, customDuration)
+}
