@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cutlass/genvoices"
 	"cutlass/resume"
 
 	"github.com/spf13/cobra"
@@ -25,6 +26,21 @@ Saves screenshots to ./assets/ as domain.png`,
 	},
 }
 
+var genvoicesCmd = &cobra.Command{
+	Use:   "genvoices <file>",
+	Short: "Generate voice files from sentences in a words file",
+	Long: `Generate voice files from sentences in a words file.
+Processes .words files looking for '- Sentences:' sections and generates
+audio files for each sentence using chatterbox Python script.
+Audio files are saved as ./data/<basename>_audio/s<section>_s<sentence>.wav`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		genvoices.HandleGenVoicesCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(resumeCmd)
+	utilsCmd.AddCommand(genvoicesCmd)
 }
