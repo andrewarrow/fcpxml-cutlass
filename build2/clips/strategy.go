@@ -430,6 +430,21 @@ func isPNGFile(filePath string) bool {
 	return ext == ".png"
 }
 
+// AudioOnlyElement represents an audio-only clip on lane -1
+type AudioOnlyElement struct {
+	AudioRef string
+	Offset   string
+	Name     string
+	Duration string
+}
+
+func (a *AudioOnlyElement) GetXML() string {
+	return `<asset-clip ref="` + a.AudioRef + `" lane="-1" offset="` + a.Offset + `" name="` + a.Name + `" duration="` + a.Duration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
+}
+
+func (a *AudioOnlyElement) GetDuration() string { return a.Duration }
+func (a *AudioOnlyElement) GetOffset() string { return a.Offset }
+
 // isImageFile checks if the given file is an image (PNG or JPG)
 func isImageFile(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))

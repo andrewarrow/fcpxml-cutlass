@@ -13,6 +13,14 @@ import (
 	"cutlass/fcp"
 )
 
+// ClipConfig represents clip configuration (to avoid circular import)
+type ClipConfig struct {
+	VideoFile      string
+	AudioFile      string
+	Text           string
+	CustomDuration string
+}
+
 // TimelineBuilder provides fluent API for timeline construction
 type TimelineBuilder struct {
 	registry    *core.ResourceRegistry
@@ -35,8 +43,17 @@ func NewTimelineBuilder(registry *core.ResourceRegistry) *TimelineBuilder {
 
 // AddClip adds a clip to the timeline
 func (tb *TimelineBuilder) AddClip(videoFile, audioFile, text string) error {
+	return tb.AddClipWithConfig(ClipConfig{
+		VideoFile: videoFile,
+		AudioFile: audioFile,
+		Text:      text,
+	})
+}
+
+// AddClipWithConfig adds a clip to the timeline using a ClipConfig
+func (tb *TimelineBuilder) AddClipWithConfig(config ClipConfig) error {
 	// Get absolute path for video file
-	absVideoPath, err := filepath.Abs(videoFile)
+	absVideoPath, err := filepath.Abs(config.VideoFile)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path: %v", err)
 	}
@@ -47,12 +64,17 @@ func (tb *TimelineBuilder) AddClip(videoFile, audioFile, text string) error {
 	}
 	
 	// Get base name
-	baseName := strings.TrimSuffix(filepath.Base(videoFile), filepath.Ext(videoFile))
+	baseName := strings.TrimSuffix(filepath.Base(config.VideoFile), filepath.Ext(config.VideoFile))
 	
-	// Calculate duration
-	duration, err := tb.calculateDuration(absVideoPath, audioFile)
-	if err != nil {
-		return fmt.Errorf("failed to calculate duration: %v", err)
+	// Calculate duration - use custom duration if provided
+	var duration string
+	if config.CustomDuration != "" {
+		duration = config.CustomDuration
+	} else {
+		duration, err = tb.calculateDuration(absVideoPath, config.AudioFile)
+		if err != nil {
+			return fmt.Errorf("failed to calculate duration: %v", err)
+		}
 	}
 	
 	// Calculate offset by parsing existing timeline content
@@ -75,15 +97,15 @@ func (tb *TimelineBuilder) AddClip(videoFile, audioFile, text string) error {
 	var audioAssetID, mediaID string
 	
 	// Create audio asset if provided
-	if audioFile != "" {
-		audioAssetID, err = tb.createAudioAsset(tx, audioFile, baseName, duration)
+	if config.AudioFile != "" {
+		audioAssetID, err = tb.createAudioAsset(tx, config.AudioFile, baseName, duration)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 		
 		// Create compound clip media if needed
-		if tb.strategy.ShouldCreateCompoundClip(absVideoPath, audioFile, clips.TimelineContext{}) {
+		if tb.strategy.ShouldCreateCompoundClip(absVideoPath, config.AudioFile, clips.TimelineContext{}) {
 			mediaID, err = tb.createCompoundClipMedia(tx, baseName, duration, videoAssetID, audioAssetID)
 			if err != nil {
 				tx.Rollback()
@@ -107,13 +129,75 @@ func (tb *TimelineBuilder) AddClip(videoFile, audioFile, text string) error {
 		BaseName:     baseName,
 		Duration:     duration,
 		Offset:       offset,
-		Text:         text,
+		Text:         config.Text,
 	}
 	
-	element := tb.strategy.CreateOptimalClip(absVideoPath, audioFile, text, clipConfig)
+	element := tb.strategy.CreateOptimalClip(absVideoPath, config.AudioFile, config.Text, clipConfig)
 	tb.elements = append(tb.elements, element)
 	
 	// Update total duration to include existing content plus new clip
+	tb.updateTotalDuration(offset, duration)
+	
+	return nil
+}
+
+// AddVideoOnly adds a video-only clip to the timeline (for separate video track approach)
+func (tb *TimelineBuilder) AddVideoOnly(videoFile, text, customDuration string) error {
+	return tb.AddClipWithConfig(ClipConfig{
+		VideoFile:      videoFile,
+		AudioFile:      "", // No audio
+		Text:           text,
+		CustomDuration: customDuration,
+	})
+}
+
+// AddAudioOnly adds an audio-only clip to the timeline on lane -1 (for separate audio track approach)
+func (tb *TimelineBuilder) AddAudioOnly(audioFile string, offset string) error {
+	// Get absolute path for audio file
+	absAudioPath, err := filepath.Abs(audioFile)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute audio path: %v", err)
+	}
+	
+	// Check if audio file exists
+	if _, err := os.Stat(absAudioPath); os.IsNotExist(err) {
+		return fmt.Errorf("audio file does not exist: %s", absAudioPath)
+	}
+	
+	// Get base name and audio duration
+	baseName := strings.TrimSuffix(filepath.Base(audioFile), filepath.Ext(audioFile))
+	duration, err := utils.GetAudioDuration(audioFile)
+	if err != nil {
+		return fmt.Errorf("failed to get audio duration: %v", err)
+	}
+	
+	// Create transaction for atomic resource creation
+	tx := core.NewTransaction(tb.registry)
+	
+	// Create audio asset
+	audioAssetID, err := tb.createAudioAsset(tx, audioFile, baseName, duration)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	
+	// Commit resources
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	
+	// Create audio-only timeline element
+	audioElement := &clips.AudioOnlyElement{
+		AudioRef: audioAssetID,
+		Offset:   offset,
+		Name:     baseName,
+		Duration: duration,
+	}
+	
+	tb.elements = append(tb.elements, audioElement)
+	
+	// Update total duration
 	tb.updateTotalDuration(offset, duration)
 	
 	return nil
@@ -334,25 +418,31 @@ func isImageFile(filePath string) bool {
 
 // getVideoDuration and getAudioDuration are imported from utils package
 
-// calculateTimelineOffset parses existing spine content and calculates where the next clip should start
+// calculateTimelineOffset calculates where the next clip should start based on existing elements
 func (tb *TimelineBuilder) calculateTimelineOffset() string {
-	if len(tb.fcpxml.Library.Events) == 0 || len(tb.fcpxml.Library.Events[0].Projects) == 0 {
-		return "0s"
+	// First check existing spine content for any pre-existing clips
+	existingOffset := "0s"
+	if len(tb.fcpxml.Library.Events) > 0 && len(tb.fcpxml.Library.Events[0].Projects) > 0 {
+		project := &tb.fcpxml.Library.Events[0].Projects[0]
+		if len(project.Sequences) > 0 {
+			spineContent := strings.TrimSpace(project.Sequences[0].Spine.Content)
+			if spineContent != "" {
+				existingOffset = tb.calculateTotalDurationFromSpine(spineContent)
+			}
+		}
 	}
 	
-	project := &tb.fcpxml.Library.Events[0].Projects[0]
-	if len(project.Sequences) == 0 {
-		return "0s"
+	// Calculate total duration of elements already added to this builder
+	existingFrames := parseDurationToFrames(existingOffset)
+	
+	// Add duration of all elements in memory
+	for _, element := range tb.elements {
+		elementFrames := parseDurationToFrames(element.GetDuration())
+		existingFrames += elementFrames
 	}
 	
-	spineContent := strings.TrimSpace(project.Sequences[0].Spine.Content)
-	if spineContent == "" {
-		return "0s"
-	}
-	
-	// Parse existing spine content to find the total timeline length
-	totalDuration := tb.calculateTotalDurationFromSpine(spineContent)
-	return totalDuration
+	// Return the total offset for the next clip
+	return fmt.Sprintf("%d/24000s", existingFrames)
 }
 
 // calculateTotalDurationFromSpine parses spine content and calculates the total timeline duration

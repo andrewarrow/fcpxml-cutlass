@@ -141,6 +141,12 @@ func convertFCPDurationToSeconds(durationStr string) (float64, error) {
 	return frames / timebaseFloat, nil
 }
 
+func convertSecondsToFCPDuration(seconds float64) string {
+	// Convert seconds to frames at 24000/1001 fps (23.976fps)
+	frames := int(seconds * 24000)
+	return fmt.Sprintf("%d/24000s", frames)
+}
+
 func getAudioDurationInSeconds(audioPath string) (float64, error) {
 	// Use the existing duration utility
 	durationStr, err := utils.GetAudioDuration(audioPath)
@@ -160,72 +166,29 @@ func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[str
 
 	// Calculate timing for image distribution
 	imageDuration := totalDuration / float64(len(jpgFiles))
+	imageDurationFCP := convertSecondsToFCPDuration(imageDuration)
 	
-	// Track current time position
-	var currentTime float64
-	imageIndex := 0
-
-	// Add each audio file with corresponding images
-	for _, wavFile := range wavFiles {
-		// Get duration from cache
-		audioDuration := audioDurations[wavFile]
-
-		// Calculate how many images should be used for this audio segment
-		imagesForThisSegment := int((audioDuration / totalDuration) * float64(len(jpgFiles)))
-		if imagesForThisSegment < 1 {
-			imagesForThisSegment = 1
-		}
-
-		// Make sure we don't exceed available images
-		if imageIndex+imagesForThisSegment > len(jpgFiles) {
-			imagesForThisSegment = len(jpgFiles) - imageIndex
-		}
-
-		// Add clips for this audio segment
-		for i := 0; i < imagesForThisSegment && imageIndex < len(jpgFiles); i++ {
-			jpgFile := jpgFiles[imageIndex]
-			
-			// For the first clip in each segment, include the audio
-			// For subsequent clips in the same segment, no audio (just image)
-			if i == 0 {
-				// First clip with audio
-				err = pb.AddClipSafe(api.ClipConfig{
-					VideoFile: jpgFile,
-					AudioFile: wavFile,
-					Text:      "",
-				})
-			} else {
-				// Subsequent clips without audio (image only)
-				err = pb.AddClipSafe(api.ClipConfig{
-					VideoFile: jpgFile,
-					AudioFile: "", // No audio for subsequent clips
-					Text:      "",
-				})
-			}
-			
-			if err != nil {
-				return fmt.Errorf("failed to add clip: %v", err)
-			}
-
-			imageIndex++
-			currentTime += imageDuration
+	// Add all images as video-only clips sequentially
+	for _, jpgFile := range jpgFiles {
+		err = pb.AddVideoOnlySafe(jpgFile, "", imageDurationFCP)
+		if err != nil {
+			return fmt.Errorf("failed to add video clip %s: %v", jpgFile, err)
 		}
 	}
-
-	// If there are remaining images, add them without audio
-	for imageIndex < len(jpgFiles) {
-		jpgFile := jpgFiles[imageIndex]
+	
+	// Add all audio files as audio-only clips sequentially on lane -1
+	var currentAudioOffset float64
+	for _, wavFile := range wavFiles {
+		offsetFCP := convertSecondsToFCPDuration(currentAudioOffset)
 		
-		err = pb.AddClipSafe(api.ClipConfig{
-			VideoFile: jpgFile,
-			AudioFile: "",
-			Text:      "",
-		})
+		err = pb.AddAudioOnlySafe(wavFile, offsetFCP)
 		if err != nil {
-			return fmt.Errorf("failed to add remaining clip: %v", err)
+			return fmt.Errorf("failed to add audio clip %s: %v", wavFile, err)
 		}
 		
-		imageIndex++
+		// Get duration from cache
+		audioDuration := audioDurations[wavFile]
+		currentAudioOffset += audioDuration
 	}
 
 	// Save the project

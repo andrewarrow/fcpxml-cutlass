@@ -103,7 +103,12 @@ func (pb *ProjectBuilder) createBlankProject() error {
 
 // AddClip adds a clip to the timeline using the fluent API
 func (pb *ProjectBuilder) AddClip(config ClipConfig) *ProjectBuilder {
-	err := pb.builder.AddClip(config.VideoFile, config.AudioFile, config.Text)
+	err := pb.builder.AddClipWithConfig(timeline.ClipConfig{
+		VideoFile:      config.VideoFile,
+		AudioFile:      config.AudioFile,
+		Text:           config.Text,
+		CustomDuration: config.CustomDuration,
+	})
 	if err != nil {
 		// Store error for later retrieval
 		pb.lastError = err
@@ -114,9 +119,10 @@ func (pb *ProjectBuilder) AddClip(config ClipConfig) *ProjectBuilder {
 
 // ClipConfig contains configuration for adding a clip
 type ClipConfig struct {
-	VideoFile string
-	AudioFile string
-	Text      string
+	VideoFile      string
+	AudioFile      string
+	Text           string
+	CustomDuration string // Optional: if provided, overrides automatic duration calculation
 }
 
 // getLastError returns the last error encountered
@@ -192,5 +198,20 @@ func AddVideoToProject(projectFile, videoFile, withText, withSound string) error
 
 // AddClipSafe adds a clip and returns error immediately (non-fluent API)
 func (pb *ProjectBuilder) AddClipSafe(config ClipConfig) error {
-	return pb.builder.AddClip(config.VideoFile, config.AudioFile, config.Text)
+	return pb.builder.AddClipWithConfig(timeline.ClipConfig{
+		VideoFile:      config.VideoFile,
+		AudioFile:      config.AudioFile,
+		Text:           config.Text,
+		CustomDuration: config.CustomDuration,
+	})
+}
+
+// AddVideoOnlySafe adds a video-only clip (for separate track approach)
+func (pb *ProjectBuilder) AddVideoOnlySafe(videoFile, text, customDuration string) error {
+	return pb.builder.AddVideoOnly(videoFile, text, customDuration)
+}
+
+// AddAudioOnlySafe adds an audio-only clip on lane -1 (for separate track approach)
+func (pb *ProjectBuilder) AddAudioOnlySafe(audioFile, offset string) error {
+	return pb.builder.AddAudioOnly(audioFile, offset)
 }
