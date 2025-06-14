@@ -169,18 +169,24 @@ func generateFCPXML(outputFile string, wavFiles []string, audioDurations map[str
 		for i := 0; i < imagesForThisSegment && imageIndex < len(jpgFiles); i++ {
 			jpgFile := jpgFiles[imageIndex]
 			
-			// Add clip with current image and audio
 			// For the first clip in each segment, include the audio
-			var audioFile string
+			// For subsequent clips in the same segment, no audio (just image)
 			if i == 0 {
-				audioFile = wavFile
+				// First clip with audio
+				err = pb.AddClipSafe(api.ClipConfig{
+					VideoFile: jpgFile,
+					AudioFile: wavFile,
+					Text:      "",
+				})
+			} else {
+				// Subsequent clips without audio (image only)
+				err = pb.AddClipSafe(api.ClipConfig{
+					VideoFile: jpgFile,
+					AudioFile: "", // No audio for subsequent clips
+					Text:      "",
+				})
 			}
-
-			err = pb.AddClipSafe(api.ClipConfig{
-				VideoFile: jpgFile,
-				AudioFile: audioFile,
-				Text:      "",
-			})
+			
 			if err != nil {
 				return fmt.Errorf("failed to add clip: %v", err)
 			}

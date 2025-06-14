@@ -179,8 +179,8 @@ func (tb *TimelineBuilder) calculateDuration(videoPath, audioPath string) (strin
 	if audioPath != "" {
 		// Use audio duration if audio is provided
 		return utils.GetAudioDuration(audioPath)
-	} else if isPNGFile(videoPath) {
-		// PNG files default to 10 seconds
+	} else if isImageFile(videoPath) {
+		// Image files default to 10 seconds
 		return "240240/24000s", nil // 10 seconds at 23.976fps
 	} else {
 		// Get video duration
@@ -325,6 +325,11 @@ func parseDurationToFrames(duration string) int {
 func isPNGFile(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
 	return ext == ".png"
+}
+
+func isImageFile(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	return ext == ".png" || ext == ".jpg" || ext == ".jpeg"
 }
 
 // getVideoDuration and getAudioDuration are imported from utils package

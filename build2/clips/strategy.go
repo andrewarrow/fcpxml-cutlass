@@ -53,8 +53,8 @@ func (s *SmartClipStrategy) ShouldCreateCompoundClip(video, audio string, contex
 		return false // Simple video element for video-only clips
 	}
 	
-	// For PNG files with audio, we need compound clips
-	if isPNGFile(video) && audio != "" {
+	// For image files with audio, we need compound clips
+	if isImageFile(video) && audio != "" {
 		return true
 	}
 	
@@ -67,7 +67,7 @@ func (s *SmartClipStrategy) ShouldCreateCompoundClip(video, audio string, contex
 func (s *SmartClipStrategy) CreateOptimalClip(video, audio, text string, config ClipConfig) TimelineElement {
 	if audio == "" {
 		// Video-only clip
-		if isPNGFile(video) {
+		if isImageFile(video) {
 			return s.createVideoElement(config)
 		} else {
 			return s.createAssetClip(config)
@@ -364,4 +364,10 @@ func (s *SmartClipStrategy) generateTextStyleID(text, baseName string) string {
 func isPNGFile(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
 	return ext == ".png"
+}
+
+// isImageFile checks if the given file is an image (PNG or JPG)
+func isImageFile(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	return ext == ".png" || ext == ".jpg" || ext == ".jpeg"
 }
