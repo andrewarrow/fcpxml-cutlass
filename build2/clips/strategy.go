@@ -1,6 +1,7 @@
 package clips
 
 import (
+	"html"
 	"path/filepath"
 	"strings"
 )
@@ -190,7 +191,7 @@ func (v *VideoElement) GetXML() string {
                             <title ref="` + v.TextEffectID + `" lane="1" offset="0s" name="` + v.Name + ` - Text" duration="` + v.Duration + `" start="86486400/24000s">
                                 ` + s.getTextParams() + `
                                 <text>
-                                    <text-style ref="` + s.generateTextStyleID(v.Text, v.Name) + `">` + v.Text + `</text-style>
+                                    <text-style ref="` + s.generateTextStyleID(v.Text, v.Name) + `">` + html.EscapeString(v.Text) + `</text-style>
                                 </text>
                                 <text-style-def id="` + s.generateTextStyleID(v.Text, v.Name) + `">
                                     <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
@@ -246,7 +247,7 @@ func (a *AssetClipElement) GetXML() string {
                             <title ref="` + a.TextEffectID + `" lane="1" offset="0s" name="` + a.Name + ` - Text" duration="` + a.Duration + `" start="86486400/24000s">
                                 ` + s.getTextParams() + `
                                 <text>
-                                    <text-style ref="` + s.generateTextStyleID(a.Text, a.Name) + `">` + a.Text + `</text-style>
+                                    <text-style ref="` + s.generateTextStyleID(a.Text, a.Name) + `">` + html.EscapeString(a.Text) + `</text-style>
                                 </text>
                                 <text-style-def id="` + s.generateTextStyleID(a.Text, a.Name) + `">
                                     <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
@@ -300,7 +301,7 @@ func (r *RefClipElement) GetXML() string {
                             <title ref="` + r.TextEffectID + `" lane="1" offset="0s" name="` + r.Name + ` - Text" duration="` + r.Duration + `" start="86486400/24000s">
                                 ` + s.getTextParams() + `
                                 <text>
-                                    <text-style ref="` + s.generateTextStyleID(r.Text, r.Name) + `">` + r.Text + `</text-style>
+                                    <text-style ref="` + s.generateTextStyleID(r.Text, r.Name) + `">` + html.EscapeString(r.Text) + `</text-style>
                                 </text>
                                 <text-style-def id="` + s.generateTextStyleID(r.Text, r.Name) + `">
                                     <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>

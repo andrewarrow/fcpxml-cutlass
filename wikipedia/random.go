@@ -111,66 +111,32 @@ func HandleWikipediaRandomCommand(args []string, max int) {
 	attempts := 0
 	successfulArticles := 0
 	maxAttempts := max * 3 // Allow up to 3x attempts to handle failures
-	var session *browser.BrowserSession
-	sessionsCreated := 0
 	
 	for successfulArticles < (max - currentCount) && attempts < maxAttempts {
 		attempts++
 		fmt.Printf("\n=== Attempting article %d (success %d/%d, attempt %d/%d) ===\n", 
 			currentCount+successfulArticles+1, successfulArticles, max-currentCount, attempts, maxAttempts)
 		
-		// Create new browser session every 10 articles or if session is nil
-		if session == nil || (successfulArticles > 0 && successfulArticles%10 == 0) {
-			if session != nil {
-				fmt.Println("Closing old browser session...")
-				session.Close()
-			}
-			fmt.Println("Creating new browser session...")
-			var err error
-			session, err = browser.NewBrowserSession()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error creating browser session: %v\n", err)
-				continue
-			}
-			sessionsCreated++
-			fmt.Printf("Created browser session #%d\n", sessionsCreated)
+		// Create fresh browser session for every single article attempt
+		fmt.Println("Creating fresh browser session...")
+		session, err := browser.NewBrowserSession()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating browser session: %v\n", err)
+			continue
 		}
 		
-		// Retry with exponential backoff on failures
-		retryCount := 0
-		maxRetries := 3
-		
-		for retryCount <= maxRetries {
-			if err := processOneArticle(session, &existingEntries, &cumulativeSeconds); err != nil {
-				retryCount++
-				fmt.Printf("Error processing article (attempt %d/%d): %v\n", retryCount, maxRetries+1, err)
-				
-				if retryCount <= maxRetries {
-					// Exponential backoff: 2s, 4s, 8s
-					backoffTime := time.Duration(2<<(retryCount-1)) * time.Second
-					fmt.Printf("Waiting %v before retry...\n", backoffTime)
-					time.Sleep(backoffTime)
-					continue
-				} else {
-					fmt.Printf("Max retries exceeded. Moving to next article...\n")
-					break
-				}
-			} else {
-				// Success - break out of retry loop
-				break
-			}
+		// Process the article with the fresh session
+		if err := processOneArticle(session, &existingEntries, &cumulativeSeconds); err != nil {
+			fmt.Printf("Error processing article: %v\n", err)
+			fmt.Printf("Closing session and retrying with next random article...\n")
+			session.Close()
+			continue
 		}
 		
-		// Only count as success if we didn't exhaust retries
-		if retryCount <= maxRetries {
-			successfulArticles++
-			fmt.Printf("Successfully processed article %d of %d\n", currentCount+successfulArticles, max)
-		}
-	}
-	
-	// Clean up final session
-	if session != nil {
+		// Success - close session and count it
 		session.Close()
+		successfulArticles++
+		fmt.Printf("Successfully processed article %d of %d\n", currentCount+successfulArticles, max)
 	}
 	
 	if attempts >= maxAttempts {
