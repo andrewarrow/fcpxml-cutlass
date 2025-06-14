@@ -90,6 +90,20 @@ func HandleWikipediaRandomCommand(args []string, max int) {
 		cumulativeSeconds = 0
 	}
 	
+	// If no timecodes file exists, calculate cumulative time from existing ordered files
+	if cumulativeSeconds == 0 && len(existingFiles) > 0 {
+		fmt.Printf("No timecodes file found, calculating cumulative time from %d existing files...\n", len(existingFiles))
+		for _, file := range existingFiles {
+			duration, err := getAudioDurationSeconds(file.Name)
+			if err == nil {
+				cumulativeSeconds += duration
+				fmt.Printf("Added %s: %.2f seconds (total: %.2f)\n", file.BaseName, duration, cumulativeSeconds)
+			} else {
+				fmt.Printf("Warning: Could not get duration for %s: %v\n", file.Name, err)
+			}
+		}
+	}
+	
 	fmt.Printf("Starting at cumulative time: %s\n", formatTimecode(cumulativeSeconds))
 
 	// Create browser session
