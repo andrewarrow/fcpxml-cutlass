@@ -115,15 +115,27 @@ func HandleWikipediaRandomCommand(args []string, max int) {
 	defer session.Close()
 	
 	// Process articles until we reach max
-	for currentCount < max {
-		fmt.Printf("\n=== Processing article %d of %d ===\n", currentCount+1, max)
+	attempts := 0
+	successfulArticles := 0
+	maxAttempts := max * 3 // Allow up to 3x attempts to handle failures
+	
+	for successfulArticles < (max - currentCount) && attempts < maxAttempts {
+		attempts++
+		fmt.Printf("\n=== Attempting article %d (success %d/%d, attempt %d/%d) ===\n", 
+			currentCount+successfulArticles+1, successfulArticles, max-currentCount, attempts, maxAttempts)
 		
 		if err := processOneArticle(session, &existingEntries, &cumulativeSeconds); err != nil {
 			fmt.Printf("Error processing article: %v\n", err)
+			fmt.Printf("Retrying with next random article...\n")
 			continue
 		}
 		
-		currentCount++
+		successfulArticles++
+		fmt.Printf("Successfully processed article %d of %d\n", currentCount+successfulArticles, max)
+	}
+	
+	if attempts >= maxAttempts {
+		fmt.Printf("Warning: Reached maximum attempts (%d). Successfully processed %d out of %d target articles.\n", maxAttempts, successfulArticles, max-currentCount)
 	}
 	
 	fmt.Printf("\nCompleted processing %d articles!\n", max)
