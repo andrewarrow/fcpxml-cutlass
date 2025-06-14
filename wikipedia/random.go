@@ -5,6 +5,7 @@ import (
 	"cutlass/build2/api"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -106,32 +107,70 @@ func HandleWikipediaRandomCommand(args []string, max int) {
 	
 	fmt.Printf("Starting at cumulative time: %s\n", formatTimecode(cumulativeSeconds))
 
-	// Create browser session
-	session, err := browser.NewBrowserSession()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating browser session: %v\n", err)
-		return
-	}
-	defer session.Close()
-	
 	// Process articles until we reach max
 	attempts := 0
 	successfulArticles := 0
 	maxAttempts := max * 3 // Allow up to 3x attempts to handle failures
+	var session *browser.BrowserSession
+	sessionsCreated := 0
 	
 	for successfulArticles < (max - currentCount) && attempts < maxAttempts {
 		attempts++
 		fmt.Printf("\n=== Attempting article %d (success %d/%d, attempt %d/%d) ===\n", 
 			currentCount+successfulArticles+1, successfulArticles, max-currentCount, attempts, maxAttempts)
 		
-		if err := processOneArticle(session, &existingEntries, &cumulativeSeconds); err != nil {
-			fmt.Printf("Error processing article: %v\n", err)
-			fmt.Printf("Retrying with next random article...\n")
-			continue
+		// Create new browser session every 10 articles or if session is nil
+		if session == nil || (successfulArticles > 0 && successfulArticles%10 == 0) {
+			if session != nil {
+				fmt.Println("Closing old browser session...")
+				session.Close()
+			}
+			fmt.Println("Creating new browser session...")
+			var err error
+			session, err = browser.NewBrowserSession()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error creating browser session: %v\n", err)
+				continue
+			}
+			sessionsCreated++
+			fmt.Printf("Created browser session #%d\n", sessionsCreated)
 		}
 		
-		successfulArticles++
-		fmt.Printf("Successfully processed article %d of %d\n", currentCount+successfulArticles, max)
+		// Retry with exponential backoff on failures
+		retryCount := 0
+		maxRetries := 3
+		
+		for retryCount <= maxRetries {
+			if err := processOneArticle(session, &existingEntries, &cumulativeSeconds); err != nil {
+				retryCount++
+				fmt.Printf("Error processing article (attempt %d/%d): %v\n", retryCount, maxRetries+1, err)
+				
+				if retryCount <= maxRetries {
+					// Exponential backoff: 2s, 4s, 8s
+					backoffTime := time.Duration(2<<(retryCount-1)) * time.Second
+					fmt.Printf("Waiting %v before retry...\n", backoffTime)
+					time.Sleep(backoffTime)
+					continue
+				} else {
+					fmt.Printf("Max retries exceeded. Moving to next article...\n")
+					break
+				}
+			} else {
+				// Success - break out of retry loop
+				break
+			}
+		}
+		
+		// Only count as success if we didn't exhaust retries
+		if retryCount <= maxRetries {
+			successfulArticles++
+			fmt.Printf("Successfully processed article %d of %d\n", currentCount+successfulArticles, max)
+		}
+	}
+	
+	// Clean up final session
+	if session != nil {
+		session.Close()
 	}
 	
 	if attempts >= maxAttempts {
@@ -139,6 +178,13 @@ func HandleWikipediaRandomCommand(args []string, max int) {
 	}
 	
 	fmt.Printf("\nCompleted processing %d articles!\n", max)
+}
+
+// randomDelay adds a random delay between 2-5 seconds to mimic human behavior
+func randomDelay() {
+	delay := time.Duration(2+rand.Intn(4)) * time.Second
+	fmt.Printf("Waiting %.0f seconds before next navigation...\n", delay.Seconds())
+	time.Sleep(delay)
 }
 
 func processOneArticle(session *browser.BrowserSession, existingEntries *[]string, cumulativeSeconds *float64) error {
@@ -191,11 +237,15 @@ func processOneArticle(session *browser.BrowserSession, existingEntries *[]strin
 	// Create filename-safe version of title
 	filenameTitle := sanitizeFilename(title)
 
+	// Add delay before Google search to avoid triggering anti-bot measures
+	randomDelay()
+	
 	// Navigate to Google Videos search
 	searchQuery := fmt.Sprintf("https://www.google.com/search?tbm=vid&q=%s", strings.ReplaceAll(title, " ", "+"))
 	fmt.Printf("Searching Google Videos for: %s\n", title)
 
-	if err := session.NavigateAndWait(searchQuery); err != nil {
+	// Use extended timeout for Google searches due to anti-bot measures
+	if err := session.NavigateAndWaitWithTimeout(searchQuery, 90*time.Second); err != nil {
 		return fmt.Errorf("error navigating to Google Videos: %v", err)
 	}
 

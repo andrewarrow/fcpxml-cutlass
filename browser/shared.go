@@ -3,6 +3,7 @@ package browser
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -50,7 +51,7 @@ func NewBrowserSession() (*BrowserSession, error) {
 	}
 
 	// Set timeout
-	page = page.Timeout(30 * time.Second)
+	page = page.Timeout(60 * time.Second)
 
 	return &BrowserSession{
 		Launcher: l,
@@ -74,18 +75,30 @@ func (bs *BrowserSession) Close() {
 
 // NavigateAndWait navigates to a URL and waits for it to load
 func (bs *BrowserSession) NavigateAndWait(url string) error {
-	err := bs.Page.Navigate(url)
+	return bs.NavigateAndWaitWithTimeout(url, 60*time.Second)
+}
+
+// NavigateAndWaitWithTimeout navigates to a URL with a custom timeout
+func (bs *BrowserSession) NavigateAndWaitWithTimeout(url string, timeout time.Duration) error {
+	// Set page timeout for this navigation
+	page := bs.Page.Timeout(timeout)
+	
+	err := page.Navigate(url)
 	if err != nil {
 		return fmt.Errorf("error navigating to %s: %v", url, err)
 	}
 
-	err = bs.Page.WaitLoad()
+	err = page.WaitLoad()
 	if err != nil {
 		return fmt.Errorf("error waiting for page load: %v", err)
 	}
 
-	// Wait for dynamic content
-	bs.Page.WaitRequestIdle(3*time.Second, []string{}, []string{}, nil)
+	// Wait for dynamic content - use shorter timeout for Google pages
+	waitTime := 1 * time.Second
+	if strings.Contains(url, "google.com") {
+		waitTime = 500 * time.Millisecond // Even shorter for Google to avoid bot detection
+	}
+	page.WaitRequestIdle(waitTime, []string{}, []string{}, nil)
 
 	return nil
 }
