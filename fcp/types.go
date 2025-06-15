@@ -319,8 +319,8 @@ type GeneratorClip struct {
 
 type Param struct {
 	Name               string              `xml:"name,attr"`
-	Key                string              `xml:"key,attr"`
-	Value              string              `xml:"value,attr"`
+	Key                string              `xml:"key,attr,omitempty"`
+	Value              string              `xml:"value,attr,omitempty"`
 	KeyframeAnimation  *KeyframeAnimation  `xml:"keyframeAnimation,omitempty"`
 	NestedParams       []Param             `xml:"param,omitempty"`
 }
@@ -332,6 +332,7 @@ type KeyframeAnimation struct {
 type Keyframe struct {
 	Time  string `xml:"time,attr"`
 	Value string `xml:"value,attr"`
+	Curve string `xml:"curve,attr,omitempty"`
 }
 
 type TitleText struct {

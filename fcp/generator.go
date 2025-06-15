@@ -491,6 +491,23 @@ func isImageFile(filePath string) bool {
 // ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
 // ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
 func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
+	return AddImageWithSlide(fcpxml, imagePath, durationSeconds, false)
+}
+
+// AddImageWithSlide adds an image asset with optional slide animation to the FCPXML structure.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets, sequence.Spine.Videos
+// - Atomic ID reservation prevents race conditions and ID collisions
+// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
+// - Maintains UID consistency → generateUID() function for deterministic UIDs
+// - Image-specific properties → VideoSources="1", NO audio properties (HasAudio, AudioSources, AudioChannels)
+// - Keyframe animations → Uses AdjustTransform with KeyframeAnimation structs
+//
+// ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
+func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64, withSlide bool) error {
 	// Validate that this is actually an image file
 	if !isImageFile(imagePath) {
 		return fmt.Errorf("file is not a supported image format (PNG, JPG, JPEG): %s", imagePath)
@@ -558,8 +575,8 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	// Add asset-clip to spine
-	return addImageAssetClipToSpine(fcpxml, asset, durationSeconds)
+	// Add asset-clip to spine with optional slide animation
+	return addImageAssetClipToSpineWithSlide(fcpxml, asset, durationSeconds, withSlide)
 }
 
 // addImageAssetClipToSpine adds an image Video element to the sequence spine
@@ -567,6 +584,15 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 // Analysis of working samples/png.fcpxml shows images use <video> in spine
 // This prevents addAssetClip:toObject:parentFormatID crashes in FCP
 func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) error {
+	return addImageAssetClipToSpineWithSlide(fcpxml, asset, durationSeconds, false)
+}
+
+// addImageAssetClipToSpineWithSlide adds an image Video element to the sequence spine with optional slide animation
+// 🚨 CRITICAL FIX: Images use Video elements, NOT AssetClip elements
+// Analysis of working samples/png.fcpxml shows images use <video> in spine
+// This prevents addAssetClip:toObject:parentFormatID crashes in FCP
+// Keyframe animations match samples/slide.fcpxml pattern for sliding motion
+func addImageAssetClipToSpineWithSlide(fcpxml *FCPXML, asset *Asset, durationSeconds float64, withSlide bool) error {
 	// Add Video element to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
@@ -588,6 +614,11 @@ func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds floa
 			Start:    "86399313/24000s", // Standard FCP start offset for images
 			Duration: clipDuration,
 			// Note: No Format attribute on Video elements (different from AssetClip)
+		}
+
+		// Add slide animation if requested
+		if withSlide {
+			video.AdjustTransform = createSlideAnimation(currentTimelineDuration, durationSeconds)
 		}
 
 		// Add Video element to spine using structs
@@ -698,5 +729,81 @@ func addDurations(duration1, duration2 string) string {
 	frames2 := parseFCPDuration(duration2)
 	totalFrames := frames1 + frames2
 	return fmt.Sprintf("%d/24000s", totalFrames)
+}
+
+// createSlideAnimation creates keyframe animation for sliding an image from left to right
+// Based on samples/slide.fcpxml pattern with keyframes for position parameter
+// Slides from position "0 0" to "51.3109 0" over 1 second (from start to 1 second into the clip)
+func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *AdjustTransform {
+	// Calculate keyframe times based on video start time (like samples/slide.fcpxml)
+	// The sample uses video start time as base: start="86399313/24000s"
+	// We'll use the standard FCP start time for images
+	videoStartFrames := 86399313 // Standard FCP start time for image assets
+	
+	// Calculate keyframe times:
+	// - Start keyframe: at the video start time 
+	// - End keyframe: 1 second later (24024 frames = exactly 1 second in 1001/24000s timebase)
+	oneSecondFrames := 24024 // This is exactly 1 second in 1001/24000s timebase
+	
+	startTime := fmt.Sprintf("%d/24000s", videoStartFrames)
+	endTime := fmt.Sprintf("%d/24000s", videoStartFrames + oneSecondFrames)
+	
+	// Create AdjustTransform with keyframe animation matching samples/slide.fcpxml
+	// The sample shows position animation from "0 0" to "51.3109 0"
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "anchor",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  endTime,
+							Value: "0 0",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+			{
+				Name: "position", 
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  startTime,
+							Value: "0 0",
+						},
+						{
+							Time:  endTime,
+							Value: "51.3109 0",
+						},
+					},
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  endTime,
+							Value: "0",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  endTime,
+							Value: "1 1",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 

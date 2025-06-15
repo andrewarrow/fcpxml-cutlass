@@ -134,6 +134,9 @@ Otherwise, a new FCPXML file is created.`,
 			return
 		}
 		
+		// Get slide animation flag
+		withSlide, _ := cmd.Flags().GetBool("with-slide")
+		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
@@ -167,7 +170,7 @@ Otherwise, a new FCPXML file is created.`,
 		}
 		
 		// Add image to the structure
-		err = fcp.AddImage(fcpxml, imageFile, duration)
+		err = fcp.AddImageWithSlide(fcpxml, imageFile, duration, withSlide)
 		if err != nil {
 			fmt.Printf("Error adding image: %v\n", err)
 			return
@@ -200,6 +203,7 @@ func init() {
 	addImageCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
 	addImageCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addImageCmd.Flags().StringP("duration", "d", "9", "Duration in seconds (default 9)")
+	addImageCmd.Flags().Bool("with-slide", false, "Add keyframe animation to slide the image from left to right over 1 second")
 	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
