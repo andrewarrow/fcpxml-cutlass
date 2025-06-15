@@ -1,6 +1,7 @@
 package timeline
 
 import (
+	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -274,47 +275,125 @@ func (tb *TimelineBuilder) Build() error {
 		return fmt.Errorf("no sequence found in project")
 	}
 	
-	// Get existing spine content
-	existingContent := strings.TrimSpace(project.Sequences[0].Spine.Content)
-	
-	// Build new spine content from all new elements
-	var newElementsContent strings.Builder
-	
-	for _, element := range tb.elements {
-		if newElementsContent.Len() > 0 {
-			newElementsContent.WriteString("\n                        ")
-		}
-		
-		// Indent the XML properly
-		xml := element.GetXML()
-		indentedXML := strings.ReplaceAll(xml, "\n", "\n                        ")
-		newElementsContent.WriteString(indentedXML)
-	}
-	
-	// Combine existing and new content
-	var finalContent strings.Builder
-	
-	if existingContent != "" {
-		finalContent.WriteString("\n                        ")
-		finalContent.WriteString(existingContent)
-		
-		if newElementsContent.Len() > 0 {
-			finalContent.WriteString("\n                        ")
-			finalContent.WriteString(newElementsContent.String())
-		}
-		
-		finalContent.WriteString("\n                    ")
-	} else if newElementsContent.Len() > 0 {
-		finalContent.WriteString("\n                        ")
-		finalContent.WriteString(newElementsContent.String())
-		finalContent.WriteString("\n                    ")
+	// Build spine content using proper XML marshaling
+	spineContent, err := tb.buildSpineContentUsingStructs()
+	if err != nil {
+		return fmt.Errorf("failed to build spine content: %v", err)
 	}
 	
 	// Update sequence content and duration
-	project.Sequences[0].Spine.Content = finalContent.String()
+	project.Sequences[0].Spine.Content = spineContent
 	project.Sequences[0].Duration = tb.totalDuration
 	
 	return nil
+}
+
+// buildSpineContentUsingStructs builds spine content using proper XML marshaling
+func (tb *TimelineBuilder) buildSpineContentUsingStructs() (string, error) {
+	project := &tb.fcpxml.Library.Events[0].Projects[0]
+	existingContent := strings.TrimSpace(project.Sequences[0].Spine.Content)
+	
+	// Create a temporary spine struct to hold all elements
+	tempSpine := struct {
+		XMLName    xml.Name        `xml:"spine"`
+		Videos     []fcp.Video     `xml:"video"`
+		AssetClips []fcp.AssetClip `xml:"asset-clip"`
+		RefClips   []fcp.RefClip   `xml:"ref-clip"`
+		Gaps       []fcp.Gap       `xml:"gap"`
+		Titles     []fcp.Title     `xml:"title"`
+	}{}
+	
+	// Parse existing spine content if it exists
+	if existingContent != "" {
+		wrappedContent := "<spine>" + existingContent + "</spine>"
+		err := xml.Unmarshal([]byte(wrappedContent), &tempSpine)
+		if err != nil {
+			// If parsing fails, start with empty spine (don't crash)
+			tempSpine = struct {
+				XMLName    xml.Name        `xml:"spine"`
+				Videos     []fcp.Video     `xml:"video"`
+				AssetClips []fcp.AssetClip `xml:"asset-clip"`
+				RefClips   []fcp.RefClip   `xml:"ref-clip"`
+				Gaps       []fcp.Gap       `xml:"gap"`
+				Titles     []fcp.Title     `xml:"title"`
+			}{}
+		}
+	}
+	
+	// Add new elements by converting from our custom types to fcp types
+	for _, element := range tb.elements {
+		elementXML := element.GetXML()
+		
+		// Parse each element into the appropriate fcp type
+		if strings.Contains(elementXML, "<video ") {
+			var video fcp.Video
+			if err := xml.Unmarshal([]byte(elementXML), &video); err == nil {
+				tempSpine.Videos = append(tempSpine.Videos, video)
+			}
+		} else if strings.Contains(elementXML, "<asset-clip ") {
+			var assetClip fcp.AssetClip
+			if err := xml.Unmarshal([]byte(elementXML), &assetClip); err == nil {
+				tempSpine.AssetClips = append(tempSpine.AssetClips, assetClip)
+			}
+		} else if strings.Contains(elementXML, "<ref-clip ") {
+			var refClip fcp.RefClip
+			if err := xml.Unmarshal([]byte(elementXML), &refClip); err == nil {
+				tempSpine.RefClips = append(tempSpine.RefClips, refClip)
+			}
+		}
+	}
+	
+	// Marshal the entire spine with proper formatting
+	// Use empty prefix and let the parent FCPXML handle indentation
+	spineXML, err := xml.MarshalIndent(tempSpine, "", "    ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal spine: %v", err)
+	}
+	
+	// Extract just the inner content (remove the <spine> wrapper)
+	spineStr := string(spineXML)
+	
+	// Remove the spine tags and return just the inner content
+	start := strings.Index(spineStr, ">") + 1
+	end := strings.LastIndex(spineStr, "</spine>")
+	
+	if start > 0 && end > start {
+		innerContent := spineStr[start:end]
+		
+		// Add proper indentation for spine content within the sequence
+		// Note: These indentation constants match the FCPXML structural hierarchy
+		const (
+			spineElementIndent = "                        " // 6 levels deep: fcpxml > library > event > project > sequence > spine > element
+			spineCloseIndent   = "                    "     // 5 levels deep: fcpxml > library > event > project > sequence > spine (closing)
+		)
+		
+		if strings.TrimSpace(innerContent) != "" {
+			// Remove leading and trailing whitespace, then apply proper indentation
+			trimmedContent := strings.TrimSpace(innerContent)
+			
+			// Split into lines and re-indent properly
+			lines := strings.Split(trimmedContent, "\n")
+			indentedLines := make([]string, 0, len(lines)+2)
+			
+			// Add starting newline
+			indentedLines = append(indentedLines, "")
+			
+			for _, line := range lines {
+				trimmedLine := strings.TrimSpace(line)
+				if trimmedLine != "" {
+					// Indent each element line appropriately for spine content
+					indentedLines = append(indentedLines, spineElementIndent+trimmedLine)
+				}
+			}
+			
+			// Add ending indentation
+			indentedLines = append(indentedLines, spineCloseIndent)
+			
+			return strings.Join(indentedLines, "\n"), nil
+		}
+	}
+	
+	return "", nil
 }
 
 // Helper methods
@@ -504,104 +583,70 @@ func (tb *TimelineBuilder) calculateTimelineOffset() string {
 	return fmt.Sprintf("%d/24000s", totalFrames)
 }
 
-// countSpineVideoElementsSimple counts only the main spine video elements (not nested ones)
+// countSpineVideoElementsSimple counts frames from spine elements using proper XML parsing
 func (tb *TimelineBuilder) countSpineVideoElementsSimple(spineContent string) int {
-	totalFrames := 0
-	lines := strings.Split(spineContent, "\n")
-	
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		// Look for spine-level video elements - they should be the first video elements encountered
-		// and not deeply indented (nested video elements won't be direct spine children)
-		if strings.HasPrefix(trimmed, "<video ") && strings.Contains(line, "duration=") {
-			// Extract duration
-			start := strings.Index(line, "duration=\"") + 10
-			if start > 9 {
-				end := strings.Index(line[start:], "\"")
-				if end > 0 {
-					durationStr := line[start : start+end]
-					if strings.HasSuffix(durationStr, "/24000s") {
-						framesStr := strings.TrimSuffix(durationStr, "/24000s")
-						if frames, err := strconv.Atoi(framesStr); err == nil {
-							totalFrames += frames
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	return totalFrames
+	return tb.parseSpineContentForDuration(spineContent)
 }
 
-// calculateTotalDurationFromSpine parses spine content and calculates the total timeline duration
+// calculateTotalDurationFromSpine parses spine content and calculates the total timeline duration using proper XML parsing
 func (tb *TimelineBuilder) calculateTotalDurationFromSpine(spineContent string) string {
-	if strings.TrimSpace(spineContent) == "" {
-		return "0s"
-	}
-	
-	// Find only TOP-LEVEL spine elements by tracking nesting depth
-	// We need to avoid counting nested elements like asset-clip inside video elements
-	totalFrames := 0
-	nestingLevel := 0
-	spineLevel := -1  // Will be set when we find the first spine element
-	
-	lines := strings.Split(spineContent, "\n")
-	for _, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-		
-		// Skip empty lines
-		if trimmedLine == "" {
-			continue
-		}
-		
-		// Count opening and closing tags to track nesting level
-		if strings.HasPrefix(trimmedLine, "<") && !strings.HasPrefix(trimmedLine, "</") && !strings.HasSuffix(trimmedLine, "/>") {
-			// Opening tag
-			if spineLevel == -1 && (strings.HasPrefix(trimmedLine, "<video ") || 
-				strings.HasPrefix(trimmedLine, "<asset-clip ") || 
-				strings.HasPrefix(trimmedLine, "<ref-clip ") ||
-				strings.HasPrefix(trimmedLine, "<mc-clip ") ||
-				strings.HasPrefix(trimmedLine, "<sync-clip ")) {
-				// This is a spine-level element, record the nesting level
-				spineLevel = nestingLevel
-			}
-			nestingLevel++
-		} else if strings.HasPrefix(trimmedLine, "</") {
-			// Closing tag
-			nestingLevel--
-		}
-		
-		// Only count elements at the spine level (not nested)
-		if spineLevel != -1 && nestingLevel-1 == spineLevel &&
-		   (strings.HasPrefix(trimmedLine, "<video ") || 
-		    strings.HasPrefix(trimmedLine, "<asset-clip ") || 
-		    strings.HasPrefix(trimmedLine, "<ref-clip ") ||
-		    strings.HasPrefix(trimmedLine, "<mc-clip ") ||
-		    strings.HasPrefix(trimmedLine, "<sync-clip ")) &&
-		   strings.Contains(line, "duration=") {
-			
-			// Extract duration value
-			start := strings.Index(line, "duration=\"") + 10
-			if start > 9 {
-				end := strings.Index(line[start:], "\"")
-				if end > 0 {
-					durationStr := line[start : start+end]
-					// Parse "frames/24000s" format
-					if strings.HasSuffix(durationStr, "/24000s") {
-						framesStr := strings.TrimSuffix(durationStr, "/24000s")
-						if frames, err := strconv.Atoi(framesStr); err == nil {
-							totalFrames += frames
-						}
-					}
-				}
-			}
-		}
-	}
+	totalFrames := tb.parseSpineContentForDuration(spineContent)
 	
 	if totalFrames == 0 {
 		return "0s"
 	}
 	
 	return fmt.Sprintf("%d/24000s", totalFrames)
+}
+
+// parseSpineContentForDuration parses spine content using proper XML structs and returns total frames
+func (tb *TimelineBuilder) parseSpineContentForDuration(spineContent string) int {
+	if strings.TrimSpace(spineContent) == "" {
+		return 0
+	}
+	
+	// Wrap content in a root element to make it valid XML
+	wrappedContent := "<spine>" + spineContent + "</spine>"
+	
+	// Use the same parsing approach as fcp/common.go
+	var spineData struct {
+		Videos     []fcp.Video     `xml:"video"`
+		AssetClips []fcp.AssetClip `xml:"asset-clip"`
+		RefClips   []fcp.RefClip   `xml:"ref-clip"`
+		Gaps       []fcp.Gap       `xml:"gap"`
+	}
+	
+	err := xml.Unmarshal([]byte(wrappedContent), &spineData)
+	if err != nil {
+		// If parsing fails, fall back to 0 (don't crash the application)
+		return 0
+	}
+	
+	totalFrames := 0
+	
+	// Count frames from video elements
+	for _, video := range spineData.Videos {
+		frames := parseDurationToFrames(video.Duration)
+		totalFrames += frames
+	}
+	
+	// Count frames from asset-clip elements
+	for _, assetClip := range spineData.AssetClips {
+		frames := parseDurationToFrames(assetClip.Duration)
+		totalFrames += frames
+	}
+	
+	// Count frames from ref-clip elements
+	for _, refClip := range spineData.RefClips {
+		frames := parseDurationToFrames(refClip.Duration)
+		totalFrames += frames
+	}
+	
+	// Count frames from gap elements
+	for _, gap := range spineData.Gaps {
+		frames := parseDurationToFrames(gap.Duration)
+		totalFrames += frames
+	}
+	
+	return totalFrames
 }
