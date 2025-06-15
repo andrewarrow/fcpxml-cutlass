@@ -41,7 +41,7 @@ type Effect struct {
 
 type Format struct {
 	ID            string `xml:"id,attr"`
-	Name          string `xml:"name,attr"`
+	Name          string `xml:"name,attr,omitempty"` // CRITICAL: omitempty allows compatible formats without names
 	FrameDuration string `xml:"frameDuration,attr,omitempty"`
 	Width         string `xml:"width,attr,omitempty"`
 	Height        string `xml:"height,attr,omitempty"`

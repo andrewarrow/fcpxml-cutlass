@@ -68,9 +68,12 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 
 	// Set file-type specific properties
 	if isImageFile(absPath) {
-		// Image files (PNG, JPG, JPEG) should NOT have audio properties
+		// 🚨 CRITICAL: Images are timeless - asset duration MUST be "0s"
+		// Display duration is applied only to Video element in spine, not asset
+		// This matches working samples/png.fcpxml pattern: asset duration="0s"
+		asset.Duration = "0s" // CRITICAL: Override caller duration for images
 		asset.VideoSources = "1" // Required for image assets
-		// Note: Duration is set by caller, not hardcoded to "0s"
+		// Image files (PNG, JPG, JPEG) should NOT have audio properties
 	} else {
 		// Video files have audio properties
 		asset.HasAudio = "1"
@@ -83,21 +86,21 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 }
 
 // CreateFormat creates a format with transaction management
-// 🚨 CRITICAL: frameDuration is REQUIRED for all formats to prevent FCP crashes
-// Missing frameDuration causes addAssetClip:toObject:parentFormatID: crashes when FCP
-// validates format compatibility between asset-clips and sequence formats
-func (tx *ResourceTransaction) CreateFormat(id, name, width, height, colorSpace, frameDuration string) (*Format, error) {
+// 🚨 CRITICAL: frameDuration should ONLY be set for sequence formats, NOT image formats
+// Image formats must NOT have frameDuration or FCP's performAudioPreflightCheckForObject crashes
+// Analysis of working top5orig.fcpxml shows image formats have NO frameDuration attribute
+func (tx *ResourceTransaction) CreateFormat(id, name, width, height, colorSpace string) (*Format, error) {
 	if tx.rolled {
 		return nil, fmt.Errorf("transaction has been rolled back")
 	}
 
 	format := &Format{
-		ID:            id,
-		Name:          name,
-		Width:         width,
-		Height:        height,
-		ColorSpace:    colorSpace,
-		FrameDuration: frameDuration, // CRITICAL: Required for FCP format compatibility validation
+		ID:         id,
+		Name:       name,
+		Width:      width,
+		Height:     height,
+		ColorSpace: colorSpace,
+		// Note: FrameDuration intentionally omitted - only sequence formats need frameDuration
 	}
 
 	tx.created = append(tx.created, &FormatWrapper{format})

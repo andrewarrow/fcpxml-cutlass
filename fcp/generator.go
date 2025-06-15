@@ -527,12 +527,13 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
 	// Create image-specific format using transaction
-	// 🚨 CRITICAL FIX: Image formats MUST have frameDuration to prevent FCP crashes
-	// Analysis of samples/simple_video1.fcpxml vs cutlass_1749984829.fcpxml revealed
-	// missing frameDuration causes addAssetClip:toObject:parentFormatID: crash
-	// Images should use same frameDuration as sequence to ensure compatibility
-	imageFrameDuration := "1001/24000s" // Match sequence format r1 timing
-	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1", imageFrameDuration)
+	// 🚨 CRITICAL FIX: Image formats must match working top5orig.fcpxml pattern
+	// Analysis of working top5orig.fcpxml vs our crashing files revealed:
+	// 1. Image formats must NOT have frameDuration (causes performAudioPreflightCheckForObject crash)
+	// 2. Image formats must use name="FFVideoFormatRateUndefined" and colorSpace="1-13-1"
+	// 3. Only sequence formats should have frameDuration, image formats are timeless
+	// Working pattern: name="FFVideoFormatRateUndefined", colorSpace="1-13-1", NO frameDuration
+	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1")
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to create image format: %v", err)
@@ -555,43 +556,36 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	return addImageAssetClipToSpine(fcpxml, asset, durationSeconds)
 }
 
-// addImageAssetClipToSpine adds an image asset-clip to the sequence spine
+// addImageAssetClipToSpine adds an image Video element to the sequence spine
+// 🚨 CRITICAL FIX: Images use Video elements, NOT AssetClip elements
+// Analysis of working samples/png.fcpxml shows images use <video> in spine
+// This prevents addAssetClip:toObject:parentFormatID crashes in FCP
 func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) error {
-	// Add asset-clip to the spine if there's a sequence
+	// Add Video element to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 
-		// Create asset-clip with frame-aligned duration
+		// Create Video element with frame-aligned duration
+		// 🚨 CRITICAL: Display duration applied to Video element, not asset
+		// Asset duration is "0s" (timeless), Video element has display duration
 		clipDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
-		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
-		// - Asset-clips MUST use the ASSET's format, not sequence format
-		// - This matches the pattern in working FCPXML files
-		// - Asset has its own format, clip inherits that format
-
-		assetClip := AssetClip{
+		// Create Video element matching working samples/png.fcpxml pattern
+		// Working pattern: <video ref="r2" offset="0s" name="cs.pitt.edu" start="86399313/24000s" duration="241241/24000s"/>
+		video := Video{
 			Ref:      asset.ID,
 			Offset:   "0s",
 			Name:     asset.Name,
+			Start:    "86399313/24000s", // Standard FCP start offset for images
 			Duration: clipDuration,
-			Format:   asset.Format, // CRITICAL: Use asset's format, not sequence format
-			TCFormat: "NDF",
-			// Note: NO AudioRole for image clips
+			// Note: No Format attribute on Video elements (different from AssetClip)
 		}
 
-		// Add asset-clip to spine using structs
-		sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)
+		// Add Video element to spine using structs
+		sequence.Spine.Videos = append(sequence.Spine.Videos, video)
 
-		// Update sequence duration to match the total duration
-		// If this is the first clip, set duration. Otherwise, we'd need to calculate total duration
-		if len(sequence.Spine.AssetClips) == 1 {
-			sequence.Duration = clipDuration
-		} else {
-			// For multiple clips, we'd need more sophisticated duration calculation
-			// For now, just extend the sequence to include this clip
-			// This is a simplified approach - real timeline management would be more complex
-			sequence.Duration = clipDuration
-		}
+		// Update sequence duration to match the display duration
+		sequence.Duration = clipDuration
 	}
 
 	return nil

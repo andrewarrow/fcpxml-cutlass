@@ -103,39 +103,100 @@ assetID := fmt.Sprintf("r%d", resourceCount+1)  // RACE CONDITIONS!
 
 **The complexity in the old code exists because FCPXML generation is inherently complex and FCP's requirements are strict.**
 
+## 🚨 CRITICAL: Images Are Timeless - Asset Duration and Spine Element Requirements 🚨
+
+**ROOT CAUSE IDENTIFIED: Analysis of working samples/png.fcpxml vs crash patterns revealed the critical "images are timeless" rule:**
+
+### 🚨 CRITICAL DISCOVERY: Images Use Video Elements, NOT AssetClip Elements
+
+**The addAssetClip:toObject:parentFormatID: crash occurs because images should use `<video>` elements in spine, not `<asset-clip>` elements.**
+
+**Working Pattern Analysis (samples/png.fcpxml):**
+1. **Asset duration**: `duration="0s"` (images are timeless)
+2. **Spine element**: `<video ref="r2" ... duration="241241/24000s"/>` (display duration on Video element)
+3. **Format**: No frameDuration attribute (image formats are timeless)
+
+**Broken Pattern (our previous code):**
+1. **Asset duration**: User-specified duration (e.g., 9 seconds converted to frames) ❌
+2. **Spine element**: `<asset-clip>` ❌ (causes addAssetClip:toObject:parentFormatID crash)
+3. **Format**: No frameDuration (this part was correct)
+
+### 📋 MANDATORY IMAGE REQUIREMENTS:
+
+**IMAGE ASSETS must follow the "timeless" pattern:**
+1. **Asset duration**: MUST be `"0s"` (images have no inherent timeline duration)
+2. **Display duration**: Applied ONLY to Video element in spine, NOT to asset
+3. **Spine element**: MUST use `<video>` elements, NEVER `<asset-clip>` for images
+4. **Format**: MUST NOT have frameDuration (image formats are timeless)
+
+### ❌ BROKEN IMAGE PATTERN (causes addAssetClip:toObject:parentFormatID crash):
+```xml
+<!-- WRONG: Asset has duration, uses asset-clip in spine -->
+<asset duration="215978/24000s" .../>
+<spine>
+    <asset-clip ref="r2" duration="215978/24000s"/>
+</spine>
+```
+
+### ✅ CORRECT IMAGE PATTERN (works in FCP - from samples/png.fcpxml):
+```xml
+<!-- CORRECT: Asset duration="0s", Video element has display duration -->
+<asset duration="0s" .../>
+<spine>
+    <video ref="r2" duration="241241/24000s"/>
+</spine>
+```
+
 ## 🚨 CRITICAL: Format FrameDuration Requirements 🚨
 
 **Analysis of actual FCP crash (samples/crash.txt) revealed missing frameDuration causes addAssetClip:toObject:parentFormatID: crashes.**
 
-### ❌ BROKEN FORMAT DEFINITION (causes FCP crash):
-```xml
-<format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"/>
-```
-
-### ✅ CORRECT FORMAT DEFINITION (works in FCP):
+### ❌ BROKEN IMAGE FORMAT DEFINITION (causes performAudioPreflightCheckForObject crash):
 ```xml
 <format id="r3" name="FFVideoFormatRateUndefined" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-13-1"/>
 ```
 
+### ✅ CORRECT IMAGE FORMAT DEFINITION (works in FCP - from top5orig.fcpxml):
+```xml
+<format id="r3" name="FFVideoFormatRateUndefined" width="262" height="282" colorSpace="1-13-1"/>
+```
+
+### ✅ CORRECT VIDEO FORMAT DEFINITION (works in FCP - sequence formats):
+```xml
+<format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+```
+
 ### 🔍 CRASH ANALYSIS FINDINGS:
 
-**Comparing cutlass_1749984829.fcpxml (crashes) vs samples/simple_video1.fcpxml (works):**
+**Comparing our crashing files vs working assets/top5orig.fcpxml:**
 
-1. **Both files have same structure** - sequence format r1, asset format r3, asset-clip format r3
-2. **Only difference**: Working file has `frameDuration="20/600s"` in format r3
-3. **Our broken file**: Missing frameDuration in format r3 
-4. **FCP's addAssetClip:toObject:parentFormatID:**: Validates format timing compatibility
-5. **Without frameDuration**: FCP cannot validate timing → immediate crash
+1. **Critical discovery**: samples/simple_video1.fcpxml is a VIDEO file, not an image example
+2. **Real image format pattern** from working top5orig.fcpxml:
+   - **Image format**: `name="FFVideoFormatRateUndefined"`, `colorSpace="1-13-1"`, **NO frameDuration**
+   - **Image asset**: `duration="0s"`, `hasVideo="1"`, `videoSources="1"`, **NO audio properties**
+3. **Crash cause identified**: Adding frameDuration to image formats triggers `performAudioPreflightCheckForObject` crash
+4. **FCP audio preflight**: Expects image formats to be "timeless" (no frameDuration) for audio validation to pass
+5. **Format type separation**: Sequence formats have frameDuration, image formats do not
 
 ### 📋 MANDATORY FORMAT REQUIREMENTS:
 
-**ALL format definitions MUST include frameDuration:**
-- **Video formats**: Must have frameDuration for timing validation
-- **Image formats**: Must have frameDuration for compatibility with sequence timing
-- **Sequence formats**: Already have frameDuration (not the issue)
-- **Asset formats**: Missing frameDuration = guaranteed FCP crash
+**Format definitions MUST follow type-specific rules:**
 
-**Rule: Every format definition MUST have frameDuration attribute or FCP will crash during import.**
+**SEQUENCE FORMATS (r1):**
+1. **frameDuration**: REQUIRED - defines timeline timing (e.g., "1001/24000s")
+2. **name**: REQUIRED - format identifier (e.g., "FFVideoFormat720p2398")
+3. **colorSpace**: Use "1-1-1 (Rec. 709)" for HD video
+
+**IMAGE ASSET FORMATS (r3+):**
+1. **frameDuration**: FORBIDDEN - causes performAudioPreflightCheckForObject crash
+2. **name**: REQUIRED - must be "FFVideoFormatRateUndefined" for image compatibility  
+3. **colorSpace**: Use "1-13-1" for image formats (different from video)
+
+**Critical Rules:**
+- **Sequence formats**: Define timeline timing with frameDuration + named format
+- **Image formats**: Must be "timeless" (no frameDuration) for FCP audio validation
+- **Format separation**: Different format types serve different purposes in FCP's import logic
+- **Audio preflight**: FCP validates audio relationships and expects image formats to have no timing
 
 ## CRITICAL: Unique ID Requirements
 FCPXML requires ALL IDs to be unique within the document. Common violations include:
