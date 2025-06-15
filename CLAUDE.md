@@ -72,6 +72,7 @@ assetID := fmt.Sprintf("r%d", resourceCount+1)  // RACE CONDITIONS!
    - ID collisions cause immediate crashes during import
    - Resource reference integrity must be maintained
    - Format compatibility between sequence and assets is complex
+   - **🚨 CRITICAL: Missing frameDuration in format definitions causes immediate crashes**
 
 ### 🚨 LESSONS LEARNED FROM CRASH ANALYSIS:
 
@@ -101,6 +102,40 @@ assetID := fmt.Sprintf("r%d", resourceCount+1)  // RACE CONDITIONS!
 5. **Test each change with actual FCP import** to verify crash resolution
 
 **The complexity in the old code exists because FCPXML generation is inherently complex and FCP's requirements are strict.**
+
+## 🚨 CRITICAL: Format FrameDuration Requirements 🚨
+
+**Analysis of actual FCP crash (samples/crash.txt) revealed missing frameDuration causes addAssetClip:toObject:parentFormatID: crashes.**
+
+### ❌ BROKEN FORMAT DEFINITION (causes FCP crash):
+```xml
+<format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"/>
+```
+
+### ✅ CORRECT FORMAT DEFINITION (works in FCP):
+```xml
+<format id="r3" name="FFVideoFormatRateUndefined" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-13-1"/>
+```
+
+### 🔍 CRASH ANALYSIS FINDINGS:
+
+**Comparing cutlass_1749984829.fcpxml (crashes) vs samples/simple_video1.fcpxml (works):**
+
+1. **Both files have same structure** - sequence format r1, asset format r3, asset-clip format r3
+2. **Only difference**: Working file has `frameDuration="20/600s"` in format r3
+3. **Our broken file**: Missing frameDuration in format r3 
+4. **FCP's addAssetClip:toObject:parentFormatID:**: Validates format timing compatibility
+5. **Without frameDuration**: FCP cannot validate timing → immediate crash
+
+### 📋 MANDATORY FORMAT REQUIREMENTS:
+
+**ALL format definitions MUST include frameDuration:**
+- **Video formats**: Must have frameDuration for timing validation
+- **Image formats**: Must have frameDuration for compatibility with sequence timing
+- **Sequence formats**: Already have frameDuration (not the issue)
+- **Asset formats**: Missing frameDuration = guaranteed FCP crash
+
+**Rule: Every format definition MUST have frameDuration attribute or FCP will crash during import.**
 
 ## CRITICAL: Unique ID Requirements
 FCPXML requires ALL IDs to be unique within the document. Common violations include:

@@ -527,7 +527,12 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
 	// Create image-specific format using transaction
-	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1")
+	// 🚨 CRITICAL FIX: Image formats MUST have frameDuration to prevent FCP crashes
+	// Analysis of samples/simple_video1.fcpxml vs cutlass_1749984829.fcpxml revealed
+	// missing frameDuration causes addAssetClip:toObject:parentFormatID: crash
+	// Images should use same frameDuration as sequence to ensure compatibility
+	imageFrameDuration := "1001/24000s" // Match sequence format r1 timing
+	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1", imageFrameDuration)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to create image format: %v", err)

@@ -83,17 +83,21 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 }
 
 // CreateFormat creates a format with transaction management
-func (tx *ResourceTransaction) CreateFormat(id, name, width, height, colorSpace string) (*Format, error) {
+// 🚨 CRITICAL: frameDuration is REQUIRED for all formats to prevent FCP crashes
+// Missing frameDuration causes addAssetClip:toObject:parentFormatID: crashes when FCP
+// validates format compatibility between asset-clips and sequence formats
+func (tx *ResourceTransaction) CreateFormat(id, name, width, height, colorSpace, frameDuration string) (*Format, error) {
 	if tx.rolled {
 		return nil, fmt.Errorf("transaction has been rolled back")
 	}
 
 	format := &Format{
-		ID:         id,
-		Name:       name,
-		Width:      width,
-		Height:     height,
-		ColorSpace: colorSpace,
+		ID:            id,
+		Name:          name,
+		Width:         width,
+		Height:        height,
+		ColorSpace:    colorSpace,
+		FrameDuration: frameDuration, // CRITICAL: Required for FCP format compatibility validation
 	}
 
 	tx.created = append(tx.created, &FormatWrapper{format})
