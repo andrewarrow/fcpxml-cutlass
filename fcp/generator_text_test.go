@@ -253,8 +253,8 @@ func TestAddTextFromFileErrorCases(t *testing.T) {
 	}
 
 	err = AddTextFromFile(baseFCPXML, testTextFile, 1.0)
-	if err == nil || !strings.Contains(err.Error(), "no video element found") {
-		t.Error("Expected error about no video element found")
+	if err == nil || !strings.Contains(err.Error(), "no video or asset-clip element found") {
+		t.Error("Expected error about no video or asset-clip element found")
 	}
 }
 

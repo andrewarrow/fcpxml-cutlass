@@ -882,6 +882,7 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 		var targetVideo *Video = nil
 		offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(offsetSeconds))
 		
+		// First check Video elements
 		for i := range sequence.Spine.Videos {
 			video := &sequence.Spine.Videos[i]
 			videoOffsetFrames := parseFCPDuration(video.Offset)
@@ -895,13 +896,59 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			}
 		}
 		
+		// If no Video element found, check AssetClip elements and convert to Video
+		if targetVideo == nil {
+			for i := range sequence.Spine.AssetClips {
+				clip := &sequence.Spine.AssetClips[i]
+				clipOffsetFrames := parseFCPDuration(clip.Offset)
+				clipDurationFrames := parseFCPDuration(clip.Duration)
+				clipEndFrames := clipOffsetFrames + clipDurationFrames
+				
+				// Check if the text offset falls within this clip's timeline
+				if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
+					// Convert AssetClip to Video element for text overlay attachment
+					video := &Video{
+						Ref:      clip.Ref,
+						Offset:   clip.Offset,
+						Name:     clip.Name,
+						Duration: clip.Duration,
+						Start:    clip.Start,
+					}
+					
+					// Remove the AssetClip and replace with Video
+					sequence.Spine.AssetClips = append(sequence.Spine.AssetClips[:i], sequence.Spine.AssetClips[i+1:]...)
+					sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
+					targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+					break
+				}
+			}
+		}
+		
 		// If no video covers the text timing, use the last video or first video as fallback
 		if targetVideo == nil && len(sequence.Spine.Videos) > 0 {
 			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 		}
 		
+		// If still no Video elements, check if we can convert any AssetClip as fallback
+		if targetVideo == nil && len(sequence.Spine.AssetClips) > 0 {
+			// Convert the first AssetClip to Video as fallback
+			clip := &sequence.Spine.AssetClips[0]
+			video := &Video{
+				Ref:      clip.Ref,
+				Offset:   clip.Offset,
+				Name:     clip.Name,
+				Duration: clip.Duration,
+				Start:    clip.Start,
+			}
+			
+			// Remove the AssetClip and replace with Video
+			sequence.Spine.AssetClips = sequence.Spine.AssetClips[1:]
+			sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
+			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+		}
+		
 		if targetVideo == nil {
-			return fmt.Errorf("no video element found in spine to add text overlays to")
+			return fmt.Errorf("no video or asset-clip element found in spine to add text overlays to")
 		}
 
 
