@@ -3,6 +3,7 @@ package cmd
 import (
 	"cutlass/fcp"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -82,6 +83,59 @@ var addVideoCmd = &cobra.Command{
 	},
 }
 
+var addImageCmd = &cobra.Command{
+	Use:   "add-image [image-file]",
+	Short: "Add an image to an FCPXML file using structs",
+	Long:  `Add an image asset and asset-clip to an FCPXML file using the fcp package structs. Supports PNG, JPG, and JPEG files.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		imageFile := args[0]
+		
+		// Get duration from flag (default 9 seconds)
+		durationStr, _ := cmd.Flags().GetString("duration")
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
+		// Get output filename from flag or generate default
+		output, _ := cmd.Flags().GetString("output")
+		var filename string
+		
+		if output != "" {
+			filename = output
+		} else {
+			// Generate default filename with unix timestamp
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
+		}
+		
+		// Generate empty FCPXML structure
+		fcpxml, err := fcp.GenerateEmpty("")
+		if err != nil {
+			fmt.Printf("Error creating FCPXML structure: %v\n", err)
+			return
+		}
+		
+		// Add image to the structure
+		err = fcp.AddImage(fcpxml, imageFile, duration)
+		if err != nil {
+			fmt.Printf("Error adding image: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated FCPXML with image: %s (duration: %.1fs)\n", filename, duration)
+	},
+}
+
 func init() {
 	// Add output flag to main fcp command
 	fcpCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -89,5 +143,10 @@ func init() {
 	// Add output flag to add-video subcommand
 	addVideoCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	
+	// Add flags to add-image subcommand
+	addImageCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
+	addImageCmd.Flags().StringP("duration", "d", "9", "Duration in seconds (default 9)")
+	
 	fcpCmd.AddCommand(addVideoCmd)
+	fcpCmd.AddCommand(addImageCmd)
 }
