@@ -62,7 +62,7 @@ def verify_channel_access(youtube, channel_id):
         print(f"Error verifying channel access: {e}")
         return False
 
-def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None, not_made_for_kids=False):
+def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None, not_made_for_kids=True):
     """Upload a video to YouTube."""
     if not os.path.exists(video_file):
         print(f"Error: Video file '{video_file}' not found.")
@@ -82,7 +82,7 @@ def upload_video(youtube, video_file, title, description, channel_id=None, tags=
         },
         'status': {
             'privacyStatus': privacy_status,
-            'madeForKids': not not_made_for_kids
+            'madeForKids': False,
         }
     }
     
