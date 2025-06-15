@@ -76,8 +76,9 @@ type RefClip struct {
 }
 
 type Library struct {
-	Location string  `xml:"location,attr,omitempty"`
-	Events   []Event `xml:"event"`
+	Location          string            `xml:"location,attr,omitempty"`
+	Events            []Event           `xml:"event"`
+	SmartCollections  []SmartCollection `xml:"smart-collection,omitempty"`
 }
 
 type Event struct {
@@ -218,6 +219,28 @@ type TextStyle struct {
 	Bold        string `xml:"bold,attr,omitempty"`
 	Alignment   string `xml:"alignment,attr"`
 	LineSpacing string `xml:"lineSpacing,attr,omitempty"`
+}
+
+type SmartCollection struct {
+	Name     string      `xml:"name,attr"`
+	Match    string      `xml:"match,attr"`
+	Matches  []Match     `xml:"match-clip,omitempty"`
+	MediaMatches []MediaMatch `xml:"match-media,omitempty"`
+	RatingMatches []RatingMatch `xml:"match-ratings,omitempty"`
+}
+
+type Match struct {
+	Rule string `xml:"rule,attr"`
+	Type string `xml:"type,attr"`
+}
+
+type MediaMatch struct {
+	Rule string `xml:"rule,attr"`
+	Type string `xml:"type,attr"`
+}
+
+type RatingMatch struct {
+	Value string `xml:"value,attr"`
 }
 
 type ParseOptions struct {

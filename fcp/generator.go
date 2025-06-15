@@ -3,6 +3,7 @@ package fcp
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"os/exec"
@@ -94,4 +95,110 @@ do {
 	}
 
 	return bookmark, nil
+}
+
+// GenerateEmpty creates an empty FCPXML file structure
+func GenerateEmpty(filename string) error {
+	// Create empty FCPXML structure matching empty.fcpxml
+	fcpxml := FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat720p2398",
+					FrameDuration: "1001/24000s",
+					Width:         "1280",
+					Height:        "720",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+		},
+		Library: Library{
+			Location: "file:///Users/aa/Movies/Untitled.fcpbundle/",
+			Events: []Event{
+				{
+					Name: "6-13-25",
+					UID:  "78463397-97FD-443D-B4E2-07C581674AFC",
+					Projects: []Project{
+						{
+							Name:    "wiki",
+							UID:     "DEA19981-DED5-4851-8435-14515931C68A",
+							ModDate: "2025-06-13 11:46:22 -0700",
+							Sequences: []Sequence{
+								{
+									Format:      "r1",
+									Duration:    "0s",
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine:       Spine{},
+								},
+							},
+						},
+					},
+				},
+			},
+			SmartCollections: []SmartCollection{
+				{
+					Name:  "Projects",
+					Match: "all",
+					Matches: []Match{
+						{Rule: "is", Type: "project"},
+					},
+				},
+				{
+					Name:  "All Video",
+					Match: "any",
+					MediaMatches: []MediaMatch{
+						{Rule: "is", Type: "videoOnly"},
+						{Rule: "is", Type: "videoWithAudio"},
+					},
+				},
+				{
+					Name:  "Audio Only",
+					Match: "all",
+					MediaMatches: []MediaMatch{
+						{Rule: "is", Type: "audioOnly"},
+					},
+				},
+				{
+					Name:  "Stills",
+					Match: "all",
+					MediaMatches: []MediaMatch{
+						{Rule: "is", Type: "stills"},
+					},
+				},
+				{
+					Name:  "Favorites",
+					Match: "all",
+					RatingMatches: []RatingMatch{
+						{Value: "favorites"},
+					},
+				},
+			},
+		},
+	}
+
+	// Marshal to XML with proper formatting
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal XML: %v", err)
+	}
+
+	// Add XML declaration and DOCTYPE
+	xmlHeader := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+`
+	fullXML := xmlHeader + string(output)
+
+	// Write to file
+	err = os.WriteFile(filename, []byte(fullXML), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %v", err)
+	}
+
+	return nil
 }

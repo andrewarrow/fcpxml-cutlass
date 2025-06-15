@@ -25,4 +25,5 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(downloadCmd)
 	rootCmd.AddCommand(utilsCmd)
+	rootCmd.AddCommand(fcpCmd)
 }
