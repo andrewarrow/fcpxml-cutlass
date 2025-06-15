@@ -918,10 +918,10 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			// This prevents ID collisions when adding text to existing FCPXML files
 			textStyleID := GenerateTextStyleID(textLine, fmt.Sprintf("line_%d_offset_%.1f", i, offsetSeconds))
 
-			// Calculate staggered timing: first element at offsetSeconds, each subsequent +1 second
-			// Text timing should be relative to the target video's start time
+			// Calculate staggered timing: first element at offsetSeconds in sequence timeline, each subsequent +1 second
+			// Text timing should use the video's start time as base for proper FCP timing
 			videoStartFrames := parseFCPDuration(targetVideo.Start)
-			staggerFrames := i * 24024 // 24024 frames = 1 second
+			staggerFrames := i * 24024 // 24024 frames = 1 second  
 			elementOffsetFrames := videoStartFrames + staggerFrames
 			elementOffset := fmt.Sprintf("%d/24000s", elementOffsetFrames)
 
