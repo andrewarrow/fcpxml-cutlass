@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="cs.pitt.edu" uid="3BE5548A-316C-B614-3FE0-DE58B2D89611" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="51A2F5B2B155DD154B8B874520FD94F6" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png">
+                <bookmark>Ym9va0ADAAAAAAQQMAAAALUr0ai0R0YwioZbSC6oJhe5QGpcX5ABfWyTL8oZjnchGAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAACAAAAAQEAAGNzAAAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAA8AAAABAQAAY3MucGl0dC5lZHUucG5nABgAAAABBgAAEAAAACAAAAAsAAAAOAAAAEgAAABYAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAACHRBgQAAAAACAAAAAQDAAAd1QgEAAAAAAgAAAAEAwAA1VMQBAAAAAAIAAAABAMAADJsTwQAAAAAGAAAAAEGAACQAAAAoAAAALAAAADAAAAA0AAAAOAAAAAIAAAAAAQAAEHG/auxZ6lNGAAAAAECAAABAAAAAAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAQUAAAQAAAADAwAACAAAAAQAAAADAwAABAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxmPHqoAAACQAAAABAQAANUUzOUUyNTMtNjBBOC00RDkyLTkzQ0ItREYxREZEMjAxQ0JEGAAAAAECAACBAAAAAQAAAO8TAAABAAAAAAAAAAAAAAABAAAAAQEAAC8AAADwAAAA/v///wEAAAAAAAAAEwAAAAQQAABwAAAAAAAAAAUQAADwAAAAAAAAABAQAAAgAQAAAAAAAEAQAAAQAQAAAAAAAFQQAABIAQAAAAAAAFUQAABUAQAAAAAAAFYQAABAAQAAAAAAAAIgAAAMAgAAAAAAAAUgAAB8AQAAAAAAABAgAACMAQAAAAAAABEgAADAAQAAAAAAABIgAACgAQAAAAAAABMgAACwAQAAAAAAACAgAADsAQAAAAAAADAgAABAAQAAAAAAAAHAAABgAQAAAAAAABHAAAAgAAAAAAAAABLAAABwAQAAAAAAABDQAAAEAAAAAAAAAA==</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-15 04:41:45 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="800" colorSpace="1-13-1"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="86F38399-34D3-4E93-B396-42105806C734">
+            <project name="png" uid="B1A0C113-37B2-4C7F-9952-939685A05998" modDate="2025-06-15 05:30:00 -0700">
+                <sequence format="r1" duration="241241/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="cs.pitt.edu" start="86399313/24000s" duration="241241/24000s">
+                            <adjust-transform>
+                                <param name="anchor">
+                                    <keyframeAnimation>
+                                        <keyframe time="86423337/24000s" value="0 0" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="position">
+                                    <keyframeAnimation>
+                                        <keyframe time="86399313/24000s" value="0 0"/>
+                                        <keyframe time="86423337/24000s" value="51.3109 0"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="rotation">
+                                    <keyframeAnimation>
+                                        <keyframe time="86423337/24000s" value="0" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="scale">
+                                    <keyframeAnimation>
+                                        <keyframe time="86423337/24000s" value="1 1" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
