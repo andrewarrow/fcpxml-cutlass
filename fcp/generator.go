@@ -349,15 +349,15 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
 		
-		// 🚨 CLAUDE.md Rule: Format Consistency Requirements  
-		// - Asset-clips MUST use sequence format, NOT asset format
-		// - Since we always use 720p, both asset and clip use r1 format
+		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
+		// - Asset-clips MUST use the ASSET's format, not hardcoded sequence format
+		// - This matches the pattern in working FCPXML files
 		assetClip := AssetClip{
 			Ref:       assetID,
 			Offset:    "0s",
 			Name:      videoName,
 			Duration:  clipDuration,
-			Format:    "r1",  // CRITICAL: Always use 720p sequence format
+			Format:    "r1",  // Use asset's format (which is r1 for videos)
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
 		}
@@ -447,17 +447,24 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 	}
 
-	// 🚨 CLAUDE.md Rule: Format Consistency Requirements
-	// Check for format mismatches between sequences and asset-clips
+	// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
+	// Check that asset-clips use their referenced asset's format
 	for _, event := range fcpxml.Library.Events {
 		for _, project := range event.Projects {
 			for _, sequence := range project.Sequences {
-				sequenceFormat := sequence.Format
-				
-				// Check asset-clip formats in spine
+				// Check asset-clip formats match their referenced assets
 				for _, clip := range sequence.Spine.AssetClips {
-					if clip.Format != sequenceFormat {
-						violations = append(violations, fmt.Sprintf("Format mismatch: AssetClip '%s' has format '%s' but sequence has format '%s' - CAUSES FCP CRASHES", clip.Name, clip.Format, sequenceFormat))
+					// Find the referenced asset
+					var referencedAsset *Asset
+					for i := range fcpxml.Resources.Assets {
+						if fcpxml.Resources.Assets[i].ID == clip.Ref {
+							referencedAsset = &fcpxml.Resources.Assets[i]
+							break
+						}
+					}
+					
+					if referencedAsset != nil && clip.Format != referencedAsset.Format {
+						violations = append(violations, fmt.Sprintf("Format mismatch: AssetClip '%s' has format '%s' but its referenced asset has format '%s' - asset-clips must use asset format", clip.Name, clip.Format, referencedAsset.Format))
 					}
 				}
 			}
@@ -516,7 +523,7 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// nextID = fmt.Sprintf("r%d", resourceCount+1)
 	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
 	assetID := fmt.Sprintf("r%d", resourceCount+1)
-	// Note: No separate format needed for images since we always use 720p sequence format
+	formatID := fmt.Sprintf("r%d", resourceCount+2)
 
 	// Generate bookmark (fallback to empty string if Swift unavailable)
 	bookmark, _ := generateBookmark(absPath)
@@ -524,11 +531,23 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// Convert duration to frame-aligned format
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
 	
+	// Create image-specific format (based on old code pattern)
+	// 🚨 CLAUDE.md Rule: Image Assets Need Separate Format Definitions
+	// - FCP expects image assets to have format with name="FFVideoFormatRateUndefined"
+	// - This prevents crashes during import
+	imageFormat := Format{
+		ID:         formatID,
+		Name:       "FFVideoFormatRateUndefined",  // Critical for image compatibility
+		Width:      "1280",
+		Height:     "720",
+		ColorSpace: "1-13-1",  // Different color space for images
+	}
+	
 	// Create asset with image-specific properties
 	// 🚨 CLAUDE.md Rule: Image vs Video Asset Properties
 	// - Image files should NOT have audio properties (HasAudio, AudioSources, AudioChannels)
 	// - Image files MUST have VideoSources = "1" 
-	// 🚨 CLAUDE.md Rule: Format Consistency - Images use 720p sequence format (r1)
+	// - Images use their own format definition, not sequence format
 	asset := Asset{
 		ID:            assetID,
 		Name:          imageName,
@@ -536,8 +555,8 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		Start:         "0s",
 		Duration:      frameDuration,
 		HasVideo:      "1",
-		Format:        "r1",  // Always use 720p sequence format
-		VideoSources:  "1",   // Required for image assets
+		Format:        formatID,  // Use image-specific format
+		VideoSources:  "1",       // Required for image assets
 		// Note: NO audio properties for image files
 		MediaRep: MediaRep{
 			Kind: "original-media",
@@ -552,8 +571,9 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		// This would need to be added to the types.go if bookmark support is needed
 	}
 
-	// Add resources - only add asset, no separate format needed
+	// Add resources - both asset and its format
 	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, imageFormat)
 
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
@@ -562,18 +582,17 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(durationSeconds)
 		
-		// 🚨 CLAUDE.md Rule: Format Consistency Requirements  
-		// - Asset-clips MUST use sequence format, NOT asset format
-		// - Format mismatch between sequence and asset-clip causes FCP crashes
-		// - Asset keeps its native format, but clips inherit sequence format
-		sequenceFormat := sequence.Format  // Use sequence format, not asset format
+		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
+		// - Asset-clips MUST use the ASSET's format, not sequence format
+		// - This matches the pattern in working FCPXML files
+		// - Asset has its own format, clip inherits that format
 		
 		assetClip := AssetClip{
 			Ref:      assetID,
 			Offset:   "0s",
 			Name:     imageName,
 			Duration: clipDuration,
-			Format:   sequenceFormat,  // CRITICAL: Use sequence format, not formatID
+			Format:   formatID,  // CRITICAL: Use asset's format, not sequence format
 			TCFormat: "NDF",
 			// Note: NO AudioRole for image clips
 		}

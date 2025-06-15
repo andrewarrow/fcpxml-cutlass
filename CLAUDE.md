@@ -32,36 +32,75 @@ xmllint --dtdvalid FCPXMLv1_13.dtd output.fcpxml
 
 This validation MUST pass without errors. If it fails, the XML structure is broken and must be fixed before the changes are complete.
 
-## 🚨 CRITICAL: Format Consistency Requirements 🚨
+## 🚨 CRITICAL: Resource Management and ID Generation Requirements 🚨
 
-**FCPXML asset-clips MUST use the sequence format, NOT the asset's native format. Format mismatches CRASH Final Cut Pro.**
+**FCPXML crashes are caused by improper resource management and ID generation, NOT just format mismatches.**
 
-❌ BAD: Asset has format "r3" (1080p), but asset-clip uses format "r3" while sequence uses format "r1" (720p)
-✅ GOOD: Asset has format "r1" (720p), asset-clip uses format "r1" (720p), sequence uses format "r1" (720p)
+### ❌ NAIVE APPROACHES THAT CAUSE CRASHES:
 
-**Key Rules:**
-- Asset-clips inherit the sequence format, never their asset's native format
-- For this program: ALWAYS use "r1" (720p) for both assets and asset-clips since we generate 720p videos
-- Format mismatch between sequence.Format and assetClip.Format causes FCP import crashes
-- The ValidateClaudeCompliance() function MUST check for format consistency violations
-
-**Example crash pattern:**
-```xml
-<sequence format="r1">  <!-- 720p sequence -->
-  <spine>
-    <asset-clip format="r3"/> <!-- 1080p clip = CRASH! -->
-  </spine>
-</sequence>
+**Simple ID counting (BROKEN):**
+```go
+resourceCount := len(assets) + len(formats) + len(effects) + len(media)
+assetID := fmt.Sprintf("r%d", resourceCount+1)  // RACE CONDITIONS!
 ```
 
-**Correct pattern:**
-```xml
-<sequence format="r1">  <!-- 720p sequence -->
-  <spine>
-    <asset-clip format="r1"/> <!-- 720p clip = WORKS! -->
-  </spine>
-</sequence>
-```
+**Problems with naive approach:**
+- ID collisions when multiple resources created simultaneously
+- No atomic transaction management
+- No thread safety for concurrent access
+- No validation of existing resource state
+- Ignores FCP's complex resource relationship requirements
+
+### ✅ REQUIRED PATTERN: Registry/Transaction System
+
+**The old code in `reference/old_code/build2/core/` exists for critical reasons:**
+
+1. **ResourceRegistry** - Centralized resource tracking:
+   - Thread-safe ID management with mutex locks
+   - Global uniqueness enforcement across all resource types
+   - Existing resource detection to prevent duplicates
+   - Consistent UID generation for file-based assets
+
+2. **ResourceTransaction** - Atomic resource operations:
+   - Reserve multiple IDs atomically to prevent collisions
+   - Rollback capability if any operation fails
+   - Ensure all-or-nothing resource creation
+   - Proper cleanup on failure scenarios
+
+3. **Critical FCP Crash Points:**
+   - `addAssetClip:toObject:parentFormatID:` - The `parentFormatID` parameter suggests complex format relationships
+   - ID collisions cause immediate crashes during import
+   - Resource reference integrity must be maintained
+   - Format compatibility between sequence and assets is complex
+
+### 🚨 LESSONS LEARNED FROM CRASH ANALYSIS:
+
+1. **Don't guess at FCP requirements** - The crash happens deep in FCP's import logic
+2. **Simple counting breaks** - Resource ID generation needs sophisticated state management  
+3. **Format relationships are complex** - Not just asset→clip format matching
+4. **The old code complexity exists for good reasons** - Registry/transaction pattern prevents crashes
+5. **Thread safety matters** - Even in single-threaded contexts, atomic operations prevent corruption
+
+### 📋 REQUIRED IMPLEMENTATION APPROACH:
+
+**Before implementing any new FCPXML generation:**
+1. Study the `ResourceRegistry` and `ResourceTransaction` patterns in detail
+2. Understand WHY the old code was complex (crash prevention)
+3. Implement proper resource management, don't bypass it for "simplicity"
+4. Use atomic ID reservation, not naive counting
+5. Test with actual FCP import, not just XML validation
+
+**The simple approach of counting resources and incrementing IDs is fundamentally broken and causes FCP crashes.**
+
+### 🔄 NEXT STEPS FOR CRASH RESOLUTION:
+
+1. **Implement ResourceRegistry pattern** from `reference/old_code/build2/core/registry.go`
+2. **Use ResourceTransaction pattern** from `reference/old_code/build2/core/transaction.go`  
+3. **Study the `parentFormatID` relationship** in FCP's import logic
+4. **Don't assume format consistency rules** without understanding FCP's actual requirements
+5. **Test each change with actual FCP import** to verify crash resolution
+
+**The complexity in the old code exists because FCPXML generation is inherently complex and FCP's requirements are strict.**
 
 ## CRITICAL: Unique ID Requirements
 FCPXML requires ALL IDs to be unique within the document. Common violations include:
