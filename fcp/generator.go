@@ -40,13 +40,7 @@ type TemplateData struct {
 	Numbers        []NumberSection
 }
 
-// generateUID creates a consistent UID from a video ID using MD5 hash.
-// 
-// 🚨 CLAUDE.md Rule: UID Consistency Requirements
-// - UIDs MUST be deterministic based on file content/name, not file path
-// - Once FCP imports a media file with a specific UID, that UID is permanently associated
-// - Different UIDs for same file cause "cannot be imported again with different unique identifier" errors
-func generateUID(videoID string) string {
+func oldGgenerateUID(videoID string) string {
 	// Create a hash from the video ID to ensure consistent UIDs
 	hasher := md5.New()
 	hasher.Write([]byte("cutlass_video_" + videoID))
@@ -124,21 +118,21 @@ func ConvertSecondsToFCPDuration(seconds float64) string {
 	// This means 24000/1001 frames per second ≈ 23.976 fps
 	framesPerSecond := 24000.0 / 1001.0
 	exactFrames := seconds * framesPerSecond
-	
+
 	// Choose the frame count that gives the closest duration to the target
 	floorFrames := int(math.Floor(exactFrames))
 	ceilFrames := int(math.Ceil(exactFrames))
-	
+
 	floorDuration := float64(floorFrames) / framesPerSecond
 	ceilDuration := float64(ceilFrames) / framesPerSecond
-	
+
 	var frames int
 	if math.Abs(seconds-floorDuration) <= math.Abs(seconds-ceilDuration) {
 		frames = floorFrames
 	} else {
 		frames = ceilFrames
 	}
-	
+
 	// Format as rational using the sequence time base
 	return fmt.Sprintf("%d/24000s", frames*1001)
 }
@@ -243,7 +237,7 @@ func GenerateEmpty(filename string) (*FCPXML, error) {
 // WriteToFile marshals the FCPXML struct to a file.
 //
 // 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES → USE xml.MarshalIndent() function
-// - After writing, VALIDATE with: xmllint --dtdvalid FCPXMLv1_13.dtd filename  
+// - After writing, VALIDATE with: xmllint --dtdvalid FCPXMLv1_13.dtd filename
 // - Before commits, CHECK with: ValidateClaudeCompliance() function
 func WriteToFile(fcpxml *FCPXML, filename string) error {
 	// Marshal to XML with proper formatting
@@ -293,7 +287,7 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	// Generate unique IDs
 	videoName := strings.TrimSuffix(filepath.Base(videoPath), filepath.Ext(videoPath))
 	uid := generateUID(videoName)
-	
+
 	// Count existing resources to generate unique IDs
 	// 🚨 CLAUDE.md Rule: Unique ID Requirements → THIS pattern prevents ID collisions:
 	// resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media)
@@ -310,7 +304,7 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	// Use a default duration of 10 seconds, properly frame-aligned
 	defaultDurationSeconds := 10.0
 	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
-	
+
 	// Create asset
 	// 🚨 CLAUDE.md Rule: Format Consistency - Videos use 720p sequence format (r1)
 	asset := Asset{
@@ -320,7 +314,7 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		Start:         "0s",
 		Duration:      frameDuration,
 		HasVideo:      "1",
-		Format:        "r1",  // Always use 720p sequence format
+		Format:        "r1", // Always use 720p sequence format
 		HasAudio:      "1",
 		VideoSources:  "1",
 		AudioSources:  "1",
@@ -339,16 +333,16 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		// This would need to be added to the types.go if bookmark support is needed
 	}
 
-	// Add resources - only add asset, no separate format needed  
+	// Add resources - only add asset, no separate format needed
 	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
 
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-		
+
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
-		
+
 		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
 		// - Asset-clips MUST use the ASSET's format, not hardcoded sequence format
 		// - This matches the pattern in working FCPXML files
@@ -357,14 +351,14 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 			Offset:    "0s",
 			Name:      videoName,
 			Duration:  clipDuration,
-			Format:    "r1",  // Use asset's format (which is r1 for videos)
+			Format:    "r1", // Use asset's format (which is r1 for videos)
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
 		}
 
 		// Add asset-clip to spine using structs
 		sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)
-		
+
 		// Update sequence duration to match the asset
 		sequence.Duration = clipDuration
 	}
@@ -378,10 +372,10 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 // This function helps catch violations of critical rules in CLAUDE.md
 func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 	var violations []string
-	
+
 	// Check for unique IDs across all resources
 	idMap := make(map[string]bool)
-	
+
 	// Check asset IDs
 	for _, asset := range fcpxml.Resources.Assets {
 		if idMap[asset.ID] {
@@ -389,15 +383,15 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 		idMap[asset.ID] = true
 	}
-	
-	// Check format IDs  
+
+	// Check format IDs
 	for _, format := range fcpxml.Resources.Formats {
 		if idMap[format.ID] {
 			violations = append(violations, fmt.Sprintf("Duplicate ID found: %s (Format)", format.ID))
 		}
 		idMap[format.ID] = true
 	}
-	
+
 	// Check effect IDs
 	for _, effect := range fcpxml.Resources.Effects {
 		if idMap[effect.ID] {
@@ -405,7 +399,7 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 		idMap[effect.ID] = true
 	}
-	
+
 	// Check media IDs
 	for _, media := range fcpxml.Resources.Media {
 		if idMap[media.ID] {
@@ -413,7 +407,7 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 		idMap[media.ID] = true
 	}
-	
+
 	// Check for frame alignment in durations (basic check for common violations)
 	// Look for duration patterns that are definitely not frame-aligned
 	checkDuration := func(duration, location string) {
@@ -427,18 +421,18 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 			}
 		}
 	}
-	
+
 	// Check asset durations
 	for _, asset := range fcpxml.Resources.Assets {
 		checkDuration(asset.Duration, fmt.Sprintf("Asset %s", asset.ID))
 	}
-	
+
 	// Check sequence durations
 	for _, event := range fcpxml.Library.Events {
 		for _, project := range event.Projects {
 			for _, sequence := range project.Sequences {
 				checkDuration(sequence.Duration, fmt.Sprintf("Sequence in Project %s", project.Name))
-				
+
 				// Check asset-clip durations in spine
 				for _, clip := range sequence.Spine.AssetClips {
 					checkDuration(clip.Duration, fmt.Sprintf("AssetClip %s in Spine", clip.Name))
@@ -462,7 +456,7 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 							break
 						}
 					}
-					
+
 					if referencedAsset != nil && clip.Format != referencedAsset.Format {
 						violations = append(violations, fmt.Sprintf("Format mismatch: AssetClip '%s' has format '%s' but its referenced asset has format '%s' - asset-clips must use asset format", clip.Name, clip.Format, referencedAsset.Format))
 					}
@@ -470,7 +464,7 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 			}
 		}
 	}
-	
+
 	return violations
 }
 
@@ -478,7 +472,7 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 //
 // 🚨 CLAUDE.md Rule: Image vs Video Asset Properties
 // - Image files should NOT have audio properties (HasAudio, AudioSources, AudioChannels)
-// - Image files MUST have VideoSources = "1" 
+// - Image files MUST have VideoSources = "1"
 // - Duration is set by caller, not hardcoded to "0s"
 func isImageFile(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
@@ -516,7 +510,7 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// Generate unique IDs
 	imageName := strings.TrimSuffix(filepath.Base(imagePath), filepath.Ext(imagePath))
 	uid := generateUID(imageName)
-	
+
 	// Count existing resources to generate unique IDs
 	// 🚨 CLAUDE.md Rule: Unique ID Requirements → THIS pattern prevents ID collisions:
 	// resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media)
@@ -530,33 +524,33 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 
 	// Convert duration to frame-aligned format
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
-	
+
 	// Create image-specific format (based on old code pattern)
 	// 🚨 CLAUDE.md Rule: Image Assets Need Separate Format Definitions
 	// - FCP expects image assets to have format with name="FFVideoFormatRateUndefined"
 	// - This prevents crashes during import
 	imageFormat := Format{
 		ID:         formatID,
-		Name:       "FFVideoFormatRateUndefined",  // Critical for image compatibility
+		Name:       "FFVideoFormatRateUndefined", // Critical for image compatibility
 		Width:      "1280",
 		Height:     "720",
-		ColorSpace: "1-13-1",  // Different color space for images
+		ColorSpace: "1-13-1", // Different color space for images
 	}
-	
+
 	// Create asset with image-specific properties
 	// 🚨 CLAUDE.md Rule: Image vs Video Asset Properties
 	// - Image files should NOT have audio properties (HasAudio, AudioSources, AudioChannels)
-	// - Image files MUST have VideoSources = "1" 
+	// - Image files MUST have VideoSources = "1"
 	// - Images use their own format definition, not sequence format
 	asset := Asset{
-		ID:            assetID,
-		Name:          imageName,
-		UID:           uid,
-		Start:         "0s",
-		Duration:      frameDuration,
-		HasVideo:      "1",
-		Format:        formatID,  // Use image-specific format
-		VideoSources:  "1",       // Required for image assets
+		ID:           assetID,
+		Name:         imageName,
+		UID:          uid,
+		Start:        "0s",
+		Duration:     frameDuration,
+		HasVideo:     "1",
+		Format:       formatID, // Use image-specific format
+		VideoSources: "1",      // Required for image assets
 		// Note: NO audio properties for image files
 		MediaRep: MediaRep{
 			Kind: "original-media",
@@ -578,28 +572,28 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-		
+
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(durationSeconds)
-		
+
 		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
 		// - Asset-clips MUST use the ASSET's format, not sequence format
 		// - This matches the pattern in working FCPXML files
 		// - Asset has its own format, clip inherits that format
-		
+
 		assetClip := AssetClip{
 			Ref:      assetID,
 			Offset:   "0s",
 			Name:     imageName,
 			Duration: clipDuration,
-			Format:   formatID,  // CRITICAL: Use asset's format, not sequence format
+			Format:   formatID, // CRITICAL: Use asset's format, not sequence format
 			TCFormat: "NDF",
 			// Note: NO AudioRole for image clips
 		}
 
 		// Add asset-clip to spine using structs
 		sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)
-		
+
 		// Update sequence duration to match the total duration
 		// If this is the first clip, set duration. Otherwise, we'd need to calculate total duration
 		if len(sequence.Spine.AssetClips) == 1 {
