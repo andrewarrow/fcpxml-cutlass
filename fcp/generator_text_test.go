@@ -134,9 +134,9 @@ Third Text Line`
 		}
 	}
 
-	// Test 4: Verify staggered timing - should be video start + i seconds
+	// Test 4: Verify staggered timing - should be video start + i*6 seconds
 	for i, title := range video.NestedTitles {
-		expectedOffset := 86399313 + (i * 24024) // Video start + i seconds (24024 frames per second)
+		expectedOffset := 86399313 + (i * 144144) // Video start + i*6 seconds (144144 frames per 6 seconds)
 		actualOffsetStr := title.Offset
 		actualOffset := parseFCPDuration(actualOffsetStr)
 		
@@ -338,10 +338,10 @@ Line Four`
 			t.Errorf("Expected first text offset %d, got %d", expectedFirstOffset, firstOffset)
 		}
 		
-		// Verify second element is staggered by 1 second
+		// Verify second element is staggered by 6 seconds
 		if len(updatedVideo.NestedTitles) > 1 {
 			secondOffset := parseFCPDuration(updatedVideo.NestedTitles[1].Offset)
-			expectedSecondOffset := 86399313 + 24024 // Video start + 1 second
+			expectedSecondOffset := 86399313 + 144144 // Video start + 6 seconds
 			if secondOffset != expectedSecondOffset {
 				t.Errorf("Expected second text offset %d, got %d", expectedSecondOffset, secondOffset)
 			}
@@ -511,10 +511,10 @@ Costs $200k`
 		}
 	}
 
-	// Test 2: Verify proper staggering with 1-second intervals
+	// Test 2: Verify proper staggering with 6-second intervals
 	videoStartFrames := 86399313 // The source start time for the second video
 	for i, title := range secondVideo.NestedTitles {
-		expectedOffsetFrames := videoStartFrames + (i * 24024) // i seconds stagger
+		expectedOffsetFrames := videoStartFrames + (i * 144144) // i*6 seconds stagger
 		actualOffset := parseFCPDuration(title.Offset)
 		
 		if actualOffset != expectedOffsetFrames {

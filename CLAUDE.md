@@ -301,3 +301,4 @@ reference/FCPXML.md
 reference/ANIMATION.md
 and FCPXMLv1_13.dtd
 
+DO NOT look in reference/old_code unless told to

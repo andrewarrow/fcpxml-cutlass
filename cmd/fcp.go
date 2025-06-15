@@ -195,7 +195,7 @@ var addTextCmd = &cobra.Command{
 	Use:   "add-text [text-file]",
 	Short: "Add staggered text elements from a file to an FCPXML",
 	Long:  `Add multiple text elements from a text file to an FCPXML file. Each line in the text file becomes a text element with progressive Y positioning and staggered timing.
-The first text element starts at the specified offset, and each subsequent element appears 1 second later with a 300px Y offset.
+The first text element starts at the specified offset, and each subsequent element appears 6 seconds later with a 300px Y offset.
 If --input is specified, the text elements will be appended to an existing FCPXML file.
 Otherwise, a new FCPXML file is created.`,
 	Args:  cobra.ExactArgs(1),
