@@ -82,8 +82,8 @@ func TestAddImageWithSlide(t *testing.T) {
 	if keyframes[0].Value != "0 0" {
 		t.Errorf("Expected first keyframe value '0 0', got '%s'", keyframes[0].Value)
 	}
-	if keyframes[1].Value != "51.3109 0" {
-		t.Errorf("Expected second keyframe value '51.3109 0', got '%s'", keyframes[1].Value)
+	if keyframes[1].Value != "59.3109 0" {
+		t.Errorf("Expected second keyframe value '59.3109 0', got '%s'", keyframes[1].Value)
 	}
 
 	// Check keyframe timing matches samples/slide.fcpxml pattern
@@ -179,7 +179,7 @@ func TestSlideAnimationXMLOutput(t *testing.T) {
 		`time="86399313/24000s"`,
 		`time="86423337/24000s"`,
 		`value="0 0"`,
-		`value="51.3109 0"`,
+		`value="59.3109 0"`,
 		`curve="linear"`,
 	}
 
@@ -247,8 +247,8 @@ func TestCreateSlideAnimation(t *testing.T) {
 	if keyframes[0].Value != "0 0" {
 		t.Errorf("Expected start position '0 0', got '%s'", keyframes[0].Value)
 	}
-	if keyframes[1].Value != "51.3109 0" {
-		t.Errorf("Expected end position '51.3109 0', got '%s'", keyframes[1].Value)
+	if keyframes[1].Value != "59.3109 0" {
+		t.Errorf("Expected end position '59.3109 0', got '%s'", keyframes[1].Value)
 	}
 }
 

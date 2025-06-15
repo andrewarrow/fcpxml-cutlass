@@ -659,7 +659,7 @@ func ReadFromFile(filename string) (*FCPXML, error) {
 // by examining all clips in the spine and finding the maximum offset + duration
 func calculateTimelineDuration(sequence *Sequence) string {
 	maxEndTime := 0 // Track end time in 1001/24000s units
-	
+
 	// Check all asset clips in spine
 	for _, clip := range sequence.Spine.AssetClips {
 		clipEndTime := parseOffsetAndDuration(clip.Offset, clip.Duration)
@@ -667,7 +667,7 @@ func calculateTimelineDuration(sequence *Sequence) string {
 			maxEndTime = clipEndTime
 		}
 	}
-	
+
 	// Check all video clips in spine
 	for _, video := range sequence.Spine.Videos {
 		videoEndTime := parseOffsetAndDuration(video.Offset, video.Duration)
@@ -675,7 +675,7 @@ func calculateTimelineDuration(sequence *Sequence) string {
 			maxEndTime = videoEndTime
 		}
 	}
-	
+
 	// Check all title clips in spine
 	for _, title := range sequence.Spine.Titles {
 		titleEndTime := parseOffsetAndDuration(title.Offset, title.Duration)
@@ -683,7 +683,7 @@ func calculateTimelineDuration(sequence *Sequence) string {
 			maxEndTime = titleEndTime
 		}
 	}
-	
+
 	// Check all gaps in spine
 	for _, gap := range sequence.Spine.Gaps {
 		gapEndTime := parseOffsetAndDuration(gap.Offset, gap.Duration)
@@ -691,7 +691,7 @@ func calculateTimelineDuration(sequence *Sequence) string {
 			maxEndTime = gapEndTime
 		}
 	}
-	
+
 	// Return as FCP duration format
 	if maxEndTime == 0 {
 		return "0s"
@@ -711,7 +711,7 @@ func parseFCPDuration(duration string) int {
 	if duration == "0s" {
 		return 0
 	}
-	
+
 	// Parse format like "12345/24000s"
 	if strings.HasSuffix(duration, "/24000s") {
 		framesStr := strings.TrimSuffix(duration, "/24000s")
@@ -719,7 +719,7 @@ func parseFCPDuration(duration string) int {
 			return frames
 		}
 	}
-	
+
 	return 0
 }
 
@@ -739,17 +739,17 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 	// The sample uses video start time as base: start="86399313/24000s"
 	// We'll use the standard FCP start time for images
 	videoStartFrames := 86399313 // Standard FCP start time for image assets
-	
+
 	// Calculate keyframe times:
-	// - Start keyframe: at the video start time 
+	// - Start keyframe: at the video start time
 	// - End keyframe: 1 second later (24024 frames = exactly 1 second in 1001/24000s timebase)
 	oneSecondFrames := 24024 // This is exactly 1 second in 1001/24000s timebase
-	
+
 	startTime := fmt.Sprintf("%d/24000s", videoStartFrames)
-	endTime := fmt.Sprintf("%d/24000s", videoStartFrames + oneSecondFrames)
-	
+	endTime := fmt.Sprintf("%d/24000s", videoStartFrames+oneSecondFrames)
+
 	// Create AdjustTransform with keyframe animation matching samples/slide.fcpxml
-	// The sample shows position animation from "0 0" to "51.3109 0"
+	// The sample shows position animation from "0 0" to "51.3109 0", increased by 100px to "59.3109 0"
 	return &AdjustTransform{
 		Params: []Param{
 			{
@@ -765,7 +765,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 				},
 			},
 			{
-				Name: "position", 
+				Name: "position",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
@@ -774,7 +774,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						},
 						{
 							Time:  endTime,
-							Value: "51.3109 0",
+							Value: "59.3109 0",
 						},
 					},
 				},
@@ -881,21 +881,21 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 		// Find the video element that covers the text offset time
 		var targetVideo *Video = nil
 		offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(offsetSeconds))
-		
+
 		// First check Video elements
 		for i := range sequence.Spine.Videos {
 			video := &sequence.Spine.Videos[i]
 			videoOffsetFrames := parseFCPDuration(video.Offset)
 			videoDurationFrames := parseFCPDuration(video.Duration)
 			videoEndFrames := videoOffsetFrames + videoDurationFrames
-			
+
 			// Check if the text offset falls within this video's timeline
 			if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
 				targetVideo = video
 				break
 			}
 		}
-		
+
 		// If no Video element found, check AssetClip elements and convert to Video
 		if targetVideo == nil {
 			for i := range sequence.Spine.AssetClips {
@@ -903,7 +903,7 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 				clipOffsetFrames := parseFCPDuration(clip.Offset)
 				clipDurationFrames := parseFCPDuration(clip.Duration)
 				clipEndFrames := clipOffsetFrames + clipDurationFrames
-				
+
 				// Check if the text offset falls within this clip's timeline
 				if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
 					// Convert AssetClip to Video element for text overlay attachment
@@ -914,7 +914,7 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 						Duration: clip.Duration,
 						Start:    clip.Start,
 					}
-					
+
 					// Remove the AssetClip and replace with Video
 					sequence.Spine.AssetClips = append(sequence.Spine.AssetClips[:i], sequence.Spine.AssetClips[i+1:]...)
 					sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
@@ -923,12 +923,12 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 				}
 			}
 		}
-		
+
 		// If no video covers the text timing, use the last video or first video as fallback
 		if targetVideo == nil && len(sequence.Spine.Videos) > 0 {
 			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 		}
-		
+
 		// If still no Video elements, check if we can convert any AssetClip as fallback
 		if targetVideo == nil && len(sequence.Spine.AssetClips) > 0 {
 			// Convert the first AssetClip to Video as fallback
@@ -940,17 +940,16 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 				Duration: clip.Duration,
 				Start:    clip.Start,
 			}
-			
+
 			// Remove the AssetClip and replace with Video
 			sequence.Spine.AssetClips = sequence.Spine.AssetClips[1:]
 			sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
 			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 		}
-		
+
 		if targetVideo == nil {
 			return fmt.Errorf("no video or asset-clip element found in spine to add text overlays to")
 		}
-
 
 		// Default text duration of 10 seconds
 		textDurationSeconds := 10.0
@@ -973,7 +972,7 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			elementOffset := fmt.Sprintf("%d/24000s", elementOffsetFrames)
 
 			// Calculate Y position offset: each element 300px lower (negative Y in FCP coordinates)
-			// Pattern from sample: Position "0 0", "0 -300", "0 -600" 
+			// Pattern from sample: Position "0 0", "0 -300", "0 -600"
 			yOffset := i * -300
 			positionValue := fmt.Sprintf("0 %d", yOffset)
 
@@ -1126,29 +1125,29 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
 		return fmt.Errorf("no sequence found in FCPXML")
 	}
-	
+
 	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-	
+
 	// Convert offset to frame-aligned format
 	offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(offsetSeconds))
-	
+
 	// Find the video at the specified offset
 	var targetVideo *Video = nil
-	
+
 	// Search through Video elements first
 	for i := range sequence.Spine.Videos {
 		video := &sequence.Spine.Videos[i]
 		videoOffsetFrames := parseFCPDuration(video.Offset)
 		videoDurationFrames := parseFCPDuration(video.Duration)
 		videoEndFrames := videoOffsetFrames + videoDurationFrames
-		
+
 		// Check if the offset falls within this video's timeline
 		if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
 			targetVideo = video
 			break
 		}
 	}
-	
+
 	// If no Video element found, check AssetClip elements and convert to Video
 	if targetVideo == nil {
 		for i := range sequence.Spine.AssetClips {
@@ -1156,7 +1155,7 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 			clipOffsetFrames := parseFCPDuration(clip.Offset)
 			clipDurationFrames := parseFCPDuration(clip.Duration)
 			clipEndFrames := clipOffsetFrames + clipDurationFrames
-			
+
 			// Check if the offset falls within this video's timeline
 			if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
 				// Convert AssetClip to Video element for slide animation
@@ -1167,7 +1166,7 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 					Duration: clip.Duration,
 					Start:    clip.Start,
 				}
-				
+
 				// Remove the AssetClip and replace with Video
 				sequence.Spine.AssetClips = append(sequence.Spine.AssetClips[:i], sequence.Spine.AssetClips[i+1:]...)
 				sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
@@ -1176,11 +1175,11 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 			}
 		}
 	}
-	
+
 	if targetVideo == nil {
 		return fmt.Errorf("no video found at offset %.1f seconds", offsetSeconds)
 	}
-	
+
 	// Check if video already has slide animation
 	if targetVideo.AdjustTransform != nil {
 		// Check if position parameter already exists with keyframes
@@ -1190,7 +1189,7 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 			}
 		}
 	}
-	
+
 	// Calculate slide animation duration (1 second from video start)
 	videoStartFrames := parseFCPDuration(targetVideo.Start)
 	if videoStartFrames == 0 {
@@ -1198,10 +1197,9 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 		videoStartFrames = 86399313
 		targetVideo.Start = "86399313/24000s"
 	}
-	
+
 	// Add slide animation to the video
 	targetVideo.AdjustTransform = createSlideAnimation(targetVideo.Offset, 1.0)
-	
+
 	return nil
 }
-
