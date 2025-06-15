@@ -1,5 +1,5 @@
 go build
-rm b.fcpxml
-./cutlass build2 b.fcpxml
-./cutlass build2 b.fcpxml add-video ./assets/yammer.com.png --with-duration 900 --with-slide
+rm filename.fcpxml
+./cutlass fcp filename.fcpxml
+./cutlass fcp add-video filename.fcpxml ./assets/speech1.mov
 

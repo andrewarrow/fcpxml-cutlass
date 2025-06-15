@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -95,6 +96,31 @@ do {
 	}
 
 	return bookmark, nil
+}
+
+// ConvertSecondsToFCPDuration converts seconds to frame-aligned FCP duration
+func ConvertSecondsToFCPDuration(seconds float64) string {
+	// Convert to frame count using the sequence time base (1001/24000s frame duration)
+	// This means 24000/1001 frames per second ≈ 23.976 fps
+	framesPerSecond := 24000.0 / 1001.0
+	exactFrames := seconds * framesPerSecond
+	
+	// Choose the frame count that gives the closest duration to the target
+	floorFrames := int(math.Floor(exactFrames))
+	ceilFrames := int(math.Ceil(exactFrames))
+	
+	floorDuration := float64(floorFrames) / framesPerSecond
+	ceilDuration := float64(ceilFrames) / framesPerSecond
+	
+	var frames int
+	if math.Abs(seconds-floorDuration) <= math.Abs(seconds-ceilDuration) {
+		frames = floorFrames
+	} else {
+		frames = ceilFrames
+	}
+	
+	// Format as rational using the sequence time base
+	return fmt.Sprintf("%d/24000s", frames*1001)
 }
 
 // GenerateEmpty creates an empty FCPXML file structure and returns a pointer to it
@@ -252,13 +278,17 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		ColorSpace:    "1-1-1 (Rec. 709)",
 	}
 
+	// Use a default duration of 10 seconds, properly frame-aligned
+	defaultDurationSeconds := 10.0
+	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
+	
 	// Create asset
 	asset := Asset{
 		ID:            assetID,
 		Name:          videoName,
 		UID:           uid,
 		Start:         "0s",
-		Duration:      "27183/600s", // Default duration, would need video analysis for real duration
+		Duration:      frameDuration,
 		HasVideo:      "1",
 		Format:        formatID,
 		HasAudio:      "1",
@@ -287,12 +317,14 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 		
-		// Create asset-clip
+		// Create asset-clip with frame-aligned duration
+		clipDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
+		
 		assetClip := AssetClip{
 			Ref:       assetID,
 			Offset:    "0s",
 			Name:      videoName,
-			Duration:  "27180/600s", // Slightly less than asset duration
+			Duration:  clipDuration,
 			Format:    formatID,
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
@@ -302,7 +334,7 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)
 		
 		// Update sequence duration to match the asset
-		sequence.Duration = "27180/600s"
+		sequence.Duration = clipDuration
 	}
 
 	return nil
