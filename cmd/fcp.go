@@ -54,12 +54,15 @@ var createEmptyCmd = &cobra.Command{
 var addVideoCmd = &cobra.Command{
 	Use:   "add-video [video-file]",
 	Short: "Add a video to an FCPXML file using structs",
-	Long:  `Add a video asset and asset-clip to an FCPXML file using the fcp package structs.`,
+	Long:  `Add a video asset and asset-clip to an FCPXML file using the fcp package structs.
+If --input is specified, the video will be appended to an existing FCPXML file.
+Otherwise, a new FCPXML file is created.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		videoFile := args[0]
 		
-		// Get output filename from flag or generate default
+		// Get input and output filenames from flags
+		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
 		var filename string
 		
@@ -71,11 +74,24 @@ var addVideoCmd = &cobra.Command{
 			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
 		}
 		
-		// Generate empty FCPXML structure
-		fcpxml, err := fcp.GenerateEmpty("")
-		if err != nil {
-			fmt.Printf("Error creating FCPXML structure: %v\n", err)
-			return
+		var fcpxml *fcp.FCPXML
+		var err error
+		
+		// Load existing FCPXML or create new one
+		if input != "" {
+			fcpxml, err = fcp.ReadFromFile(input)
+			if err != nil {
+				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+				return
+			}
+			fmt.Printf("Loaded existing FCPXML: %s\n", input)
+		} else {
+			// Generate empty FCPXML structure
+			fcpxml, err = fcp.GenerateEmpty("")
+			if err != nil {
+				fmt.Printf("Error creating FCPXML structure: %v\n", err)
+				return
+			}
 		}
 		
 		// Add video to the structure
@@ -92,14 +108,20 @@ var addVideoCmd = &cobra.Command{
 			return
 		}
 		
-		fmt.Printf("Generated FCPXML with video: %s\n", filename)
+		if input != "" {
+			fmt.Printf("Added video to existing FCPXML and saved to: %s\n", filename)
+		} else {
+			fmt.Printf("Generated FCPXML with video: %s\n", filename)
+		}
 	},
 }
 
 var addImageCmd = &cobra.Command{
 	Use:   "add-image [image-file]",
 	Short: "Add an image to an FCPXML file using structs",
-	Long:  `Add an image asset and asset-clip to an FCPXML file using the fcp package structs. Supports PNG, JPG, and JPEG files.`,
+	Long:  `Add an image asset and asset-clip to an FCPXML file using the fcp package structs. Supports PNG, JPG, and JPEG files.
+If --input is specified, the image will be appended to an existing FCPXML file.
+Otherwise, a new FCPXML file is created.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		imageFile := args[0]
@@ -112,7 +134,8 @@ var addImageCmd = &cobra.Command{
 			return
 		}
 		
-		// Get output filename from flag or generate default
+		// Get input and output filenames from flags
+		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
 		var filename string
 		
@@ -124,11 +147,23 @@ var addImageCmd = &cobra.Command{
 			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
 		}
 		
-		// Generate empty FCPXML structure
-		fcpxml, err := fcp.GenerateEmpty("")
-		if err != nil {
-			fmt.Printf("Error creating FCPXML structure: %v\n", err)
-			return
+		var fcpxml *fcp.FCPXML
+		
+		// Load existing FCPXML or create new one
+		if input != "" {
+			fcpxml, err = fcp.ReadFromFile(input)
+			if err != nil {
+				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+				return
+			}
+			fmt.Printf("Loaded existing FCPXML: %s\n", input)
+		} else {
+			// Generate empty FCPXML structure
+			fcpxml, err = fcp.GenerateEmpty("")
+			if err != nil {
+				fmt.Printf("Error creating FCPXML structure: %v\n", err)
+				return
+			}
 		}
 		
 		// Add image to the structure
@@ -145,7 +180,11 @@ var addImageCmd = &cobra.Command{
 			return
 		}
 		
-		fmt.Printf("Generated FCPXML with image: %s (duration: %.1fs)\n", filename, duration)
+		if input != "" {
+			fmt.Printf("Added image to existing FCPXML and saved to: %s (duration: %.1fs)\n", filename, duration)
+		} else {
+			fmt.Printf("Generated FCPXML with image: %s (duration: %.1fs)\n", filename, duration)
+		}
 	},
 }
 
@@ -153,10 +192,12 @@ func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	
-	// Add output flag to add-video subcommand
+	// Add flags to add-video subcommand
+	addVideoCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
 	addVideoCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	
 	// Add flags to add-image subcommand
+	addImageCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
 	addImageCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addImageCmd.Flags().StringP("duration", "d", "9", "Duration in seconds (default 9)")
 	

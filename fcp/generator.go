@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -333,6 +334,9 @@ func addAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) 
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 
+		// Calculate current timeline duration by examining existing clips
+		currentTimelineDuration := calculateTimelineDuration(sequence)
+
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
@@ -341,7 +345,7 @@ func addAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) 
 		// - This matches the pattern in working FCPXML files
 		assetClip := AssetClip{
 			Ref:       asset.ID,
-			Offset:    "0s",
+			Offset:    currentTimelineDuration, // Append after existing content
 			Name:      asset.Name,
 			Duration:  clipDuration,
 			Format:    asset.Format, // Use asset's format
@@ -352,8 +356,9 @@ func addAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) 
 		// Add asset-clip to spine using structs
 		sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)
 
-		// Update sequence duration to match the asset
-		sequence.Duration = clipDuration
+		// Update sequence duration to include new content
+		newTimelineDuration := addDurations(currentTimelineDuration, clipDuration)
+		sequence.Duration = newTimelineDuration
 	}
 
 	return nil
@@ -565,6 +570,9 @@ func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds floa
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 
+		// Calculate current timeline duration by examining existing clips
+		currentTimelineDuration := calculateTimelineDuration(sequence)
+
 		// Create Video element with frame-aligned duration
 		// 🚨 CRITICAL: Display duration applied to Video element, not asset
 		// Asset duration is "0s" (timeless), Video element has display duration
@@ -574,7 +582,7 @@ func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds floa
 		// Working pattern: <video ref="r2" offset="0s" name="cs.pitt.edu" start="86399313/24000s" duration="241241/24000s"/>
 		video := Video{
 			Ref:      asset.ID,
-			Offset:   "0s",
+			Offset:   currentTimelineDuration, // Append after existing content
 			Name:     asset.Name,
 			Start:    "86399313/24000s", // Standard FCP start offset for images
 			Duration: clipDuration,
@@ -584,9 +592,106 @@ func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds floa
 		// Add Video element to spine using structs
 		sequence.Spine.Videos = append(sequence.Spine.Videos, video)
 
-		// Update sequence duration to match the display duration
-		sequence.Duration = clipDuration
+		// Update sequence duration to include new content
+		newTimelineDuration := addDurations(currentTimelineDuration, clipDuration)
+		sequence.Duration = newTimelineDuration
 	}
 
 	return nil
+}
+
+// ReadFromFile parses an existing FCPXML file into structs.
+//
+// 🚨 CLAUDE.md Rule: ALWAYS use structs for XML parsing
+// - Reads FCPXML file and unmarshals into struct representation
+// - Maintains all existing resources and timeline structure
+// - Use this before AddVideo/AddImage to preserve existing content
+func ReadFromFile(filename string) (*FCPXML, error) {
+	// Read file contents
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %v", filename, err)
+	}
+
+	// Parse XML into struct
+	var fcpxml FCPXML
+	err = xml.Unmarshal(data, &fcpxml)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse XML from %s: %v", filename, err)
+	}
+
+	return &fcpxml, nil
+}
+
+// calculateTimelineDuration calculates the total duration of content in a sequence
+// by examining all clips in the spine and finding the maximum offset + duration
+func calculateTimelineDuration(sequence *Sequence) string {
+	maxEndTime := 0 // Track end time in 1001/24000s units
+	
+	// Check all asset clips in spine
+	for _, clip := range sequence.Spine.AssetClips {
+		clipEndTime := parseOffsetAndDuration(clip.Offset, clip.Duration)
+		if clipEndTime > maxEndTime {
+			maxEndTime = clipEndTime
+		}
+	}
+	
+	// Check all video clips in spine
+	for _, video := range sequence.Spine.Videos {
+		videoEndTime := parseOffsetAndDuration(video.Offset, video.Duration)
+		if videoEndTime > maxEndTime {
+			maxEndTime = videoEndTime
+		}
+	}
+	
+	// Check all title clips in spine
+	for _, title := range sequence.Spine.Titles {
+		titleEndTime := parseOffsetAndDuration(title.Offset, title.Duration)
+		if titleEndTime > maxEndTime {
+			maxEndTime = titleEndTime
+		}
+	}
+	
+	// Check all gaps in spine
+	for _, gap := range sequence.Spine.Gaps {
+		gapEndTime := parseOffsetAndDuration(gap.Offset, gap.Duration)
+		if gapEndTime > maxEndTime {
+			maxEndTime = gapEndTime
+		}
+	}
+	
+	// Return as FCP duration format
+	return fmt.Sprintf("%d/24000s", maxEndTime)
+}
+
+// parseOffsetAndDuration parses FCP time format and returns end time in 1001/24000s units
+func parseOffsetAndDuration(offset, duration string) int {
+	offsetFrames := parseFCPDuration(offset)
+	durationFrames := parseFCPDuration(duration)
+	return offsetFrames + durationFrames
+}
+
+// parseFCPDuration parses FCP duration format like "12345/24000s" and returns frames in 1001/24000s units
+func parseFCPDuration(duration string) int {
+	if duration == "0s" {
+		return 0
+	}
+	
+	// Parse format like "12345/24000s"
+	if strings.HasSuffix(duration, "/24000s") {
+		framesStr := strings.TrimSuffix(duration, "/24000s")
+		if frames, err := strconv.Atoi(framesStr); err == nil {
+			return frames
+		}
+	}
+	
+	return 0
+}
+
+// addDurations adds two FCP duration strings and returns the result
+func addDurations(duration1, duration2 string) string {
+	frames1 := parseFCPDuration(duration1)
+	frames2 := parseFCPDuration(duration2)
+	totalFrames := frames1 + frames2
+	return fmt.Sprintf("%d/24000s", totalFrames)
 }
