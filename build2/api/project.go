@@ -108,6 +108,7 @@ func (pb *ProjectBuilder) AddClip(config ClipConfig) *ProjectBuilder {
 		AudioFile:      config.AudioFile,
 		Text:           config.Text,
 		CustomDuration: config.CustomDuration,
+		WithSlide:      config.WithSlide,
 	})
 	if err != nil {
 		// Store error for later retrieval
@@ -123,6 +124,7 @@ type ClipConfig struct {
 	AudioFile      string
 	Text           string
 	CustomDuration string // Optional: if provided, overrides automatic duration calculation
+	WithSlide      bool   // Optional: if true, adds slide animation to the video
 }
 
 // getLastError returns the last error encountered
@@ -239,4 +241,20 @@ func (pb *ProjectBuilder) AddVideoWithNestedAudioSafe(videoFile, audioFile, text
 // AddVideoWithNestedAudioWithDurationSafe adds a video clip with nested audio clip using specified audio duration
 func (pb *ProjectBuilder) AddVideoWithNestedAudioWithDurationSafe(videoFile, audioFile, text, customDuration, audioDuration string) error {
 	return pb.builder.AddVideoWithNestedAudioWithDuration(videoFile, audioFile, text, customDuration, audioDuration)
+}
+
+// AddVideoToProjectWithSlide adds a video to an existing project with optional slide animation
+func AddVideoToProjectWithSlide(projectFile, videoFile, withText, withSound, withDuration string, withSlide bool) error {
+	pb, err := NewProjectBuilder(projectFile)
+	if err != nil {
+		return err
+	}
+	
+	return pb.AddClip(ClipConfig{
+		VideoFile:      videoFile,
+		AudioFile:      withSound,
+		Text:           withText,
+		CustomDuration: withDuration,
+		WithSlide:      withSlide,
+	}).Save()
 }

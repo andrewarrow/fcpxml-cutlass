@@ -103,7 +103,7 @@ func GenerateStandard(inputFile, outputFile string) error {
 									AudioLayout: "stereo",
 									AudioRate:   "48k",
 									Spine: Spine{
-										Content: `<asset-clip ref="r2" offset="0s" name="` + nameWithoutExt + `" duration="3600s" tcFormat="NDF" audioRole="dialogue"/>`,
+										Content: "",  // Will be populated below using structs
 									},
 								},
 							},
@@ -113,6 +113,25 @@ func GenerateStandard(inputFile, outputFile string) error {
 			},
 		},
 	}
+
+	// Create the asset-clip using structs
+	assetClip := AssetClip{
+		Ref:       "r2",
+		Offset:    "0s",
+		Name:      nameWithoutExt,
+		Duration:  "3600s",
+		TCFormat:  "NDF",
+		AudioRole: "dialogue",
+	}
+	
+	// Marshal the asset-clip to XML and set it as spine content
+	spineXML, err := xml.MarshalIndent(assetClip, "                        ", "    ")
+	if err != nil {
+		return err
+	}
+	
+	// Set the spine content with proper indentation
+	fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Content = "\n                        " + string(spineXML) + "\n                    "
 
 	output, err := xml.MarshalIndent(fcpxml, "", "    ")
 	if err != nil {

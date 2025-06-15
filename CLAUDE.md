@@ -1,6 +1,24 @@
 # Project Context for AI Assistance
 
-never generate xml from hard coded string templates with %s placeholders, use structs
+## 🚨 ABSOLUTELY CRITICAL: NO XML STRING TEMPLATES 🚨
+
+**NEVER EVER generate XML from hardcoded string templates with %s placeholders, use structs**
+
+❌ BAD: xml := `<video ref="` + videoRef + `" name="` + name + `">` + content + `</video>`
+❌ BAD: fmt.Sprintf(`<asset-clip ref="%s" name="%s"/>`, ref, name)
+✅ GOOD: xml.MarshalIndent(&fcp.Video{Ref: videoRef, Name: name}, "", "    ")
+
+**This is a CRITICAL VIOLATION if not followed. All FCPXML generation MUST use the fcp.* structs in the fcp package.**
+
+## 🚨 SUPER CRITICAL: Build Package Mission 🚨
+The build package (build/command.go) and build2 package are the foundation for ALL FCPXML generation in this repo. They provide:
+- **MANDATORY**: Rock solid FCPXML generation using proper structs (NEVER string templates with %s placeholders)
+- Correct time calculations, R2 vs R1 handling, UID generation, and spine management
+- Template-based approach for reusable FCPXML components
+- DTD validation compliance
+- Timeline continuity without gaps between clips
+
+**🚨 SUPER CRITICAL 🚨**: All new FCPXML features MUST be built on the build/build2 package foundation. Other packages may have legacy logic that should be learned from but NEVER duplicated. Any FCPXML generation that bypasses these packages and uses string templates is a critical violation.
 
 ## REQUIRED: DTD Validation
 ALWAYS test for DTD validation after changing any code that generates FCPXML. This is MANDATORY.
@@ -107,12 +125,3 @@ reference/FCPXML.md
 reference/ANIMATION.md
 and FCPXMLv1_13.dtd
 
-## CRITICAL: Build Package Mission
-The build package (build/command.go) and build2 package are the foundation for ALL FCPXML generation in this repo. They provide:
-- **MANDATORY**: Rock solid FCPXML generation using proper structs (NEVER string templates with %s placeholders)
-- Correct time calculations, R2 vs R1 handling, UID generation, and spine management
-- Template-based approach for reusable FCPXML components
-- DTD validation compliance
-- Timeline continuity without gaps between clips
-
-**CRITICAL**: All new FCPXML features MUST be built on the build/build2 package foundation. Other packages may have legacy logic that should be learned from but NEVER duplicated. Any FCPXML generation that bypasses these packages and uses string templates is a critical violation.

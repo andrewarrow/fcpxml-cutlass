@@ -20,6 +20,7 @@ type ClipConfig struct {
 	Text           string
 	CustomDuration string
 	AudioDuration  string
+	WithSlide      bool
 }
 
 // TimelineBuilder provides fluent API for timeline construction
@@ -159,6 +160,7 @@ func (tb *TimelineBuilder) AddClipWithConfig(config ClipConfig) error {
 		AudioDuration: config.AudioDuration,
 		Offset:        offset,
 		Text:          config.Text,
+		WithSlide:     config.WithSlide,
 	}
 	
 	element := tb.strategy.CreateOptimalClip(absVideoPath, config.AudioFile, config.Text, clipConfig)

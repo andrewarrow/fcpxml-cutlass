@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/xml"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -152,16 +153,46 @@ func (tx *ResourceTransaction) CreateCompoundClipMedia(id, baseName, duration st
 	return media, nil
 }
 
-// createCompoundClipSpineContent creates the spine content for a compound clip
+// createCompoundClipSpineContent creates the spine content for a compound clip using structs
 func (tx *ResourceTransaction) createCompoundClipSpineContent(videoAssetID, audioAssetID, baseName, duration string) string {
-	// This is a simplified approach - creates XML directly without marshaling structs
-	return fmt.Sprintf(`
-                        <video ref="%s" offset="0s" name="%s" start="86399313/24000s" duration="%s">
-                            <asset-clip ref="%s" lane="-1" offset="28799771/8000s" name="%s" duration="%s" format="r1" tcFormat="NDF" audioRole="dialogue"/>
-                        </video>`,
-		videoAssetID, baseName, duration,
-		audioAssetID, baseName, duration,
-	)
+	// Create audio asset-clip struct
+	audioClip := fcp.AssetClip{
+		Ref:       audioAssetID,
+		Lane:      "-1",
+		Offset:    "28799771/8000s",
+		Name:      baseName,
+		Duration:  duration,
+		Format:    "r1",
+		TCFormat:  "NDF",
+		AudioRole: "dialogue",
+	}
+	
+	// Create video element with nested audio
+	video := fcp.Video{
+		Ref:      videoAssetID,
+		Offset:   "0s",
+		Name:     baseName,
+		Start:    "86399313/24000s",
+		Duration: duration,
+	}
+	
+	// Note: The fcp.Video struct doesn't support nested asset-clips directly
+	// So we need a hybrid approach here - marshal the video and manually insert the audio clip
+	videoXML, err := xml.MarshalIndent(&video, "                        ", "    ")
+	if err != nil {
+		return "<!-- Error marshaling compound clip video: " + err.Error() + " -->"
+	}
+	
+	audioXML, err := xml.MarshalIndent(&audioClip, "                            ", "    ")
+	if err != nil {
+		return "<!-- Error marshaling compound clip audio: " + err.Error() + " -->"
+	}
+	
+	// Insert the audio clip before the closing video tag
+	videoStr := string(videoXML)
+	videoStr = strings.Replace(videoStr, "</video>", "    "+string(audioXML)+"\n                        </video>", 1)
+	
+	return videoStr
 }
 
 // Commit commits all created resources to the registry

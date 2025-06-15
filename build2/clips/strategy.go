@@ -1,9 +1,12 @@
 package clips
 
 import (
+	"encoding/xml"
 	"html"
 	"path/filepath"
 	"strings"
+
+	"cutlass/fcp"
 )
 
 // ClipStrategy defines how clips should be created based on content and context
@@ -30,6 +33,7 @@ type ClipConfig struct {
 	AudioDuration   string
 	Offset          string
 	Text            string
+	WithSlide       bool
 }
 
 // TimelineElement represents any element that can be added to a timeline
@@ -88,6 +92,7 @@ func (s *SmartClipStrategy) createVideoElement(config ClipConfig) TimelineElemen
 		Name:     config.BaseName,
 		Start:    "0s",
 		Duration: config.Duration,
+		WithSlide: config.WithSlide,
 	}
 	
 	// Add text overlay if requested
@@ -176,45 +181,113 @@ type VideoElement struct {
 	TextEffectID  string
 	Text          string
 	HasAnimation  bool
+	WithSlide     bool
 }
 
 func (v *VideoElement) GetXML() string {
-	xml := `<video ref="` + v.Ref + `" offset="` + v.Offset + `" name="` + v.Name + `" start="` + v.Start + `" duration="` + v.Duration + `"`
-	
-	if v.HasText {
-		xml += `>`
-		
-		// Add adjust-transform before title (DTD requirement)
-		if v.HasAnimation {
-			xml += `
-                            <adjust-transform>
-                                <param name="position" key="" value="">
-                                    <keyframeAnimation>
-                                        <keyframe time="0s" value="0 0"/>
-                                        <keyframe time="48048/24000s" value="0 -22.1038"/>
-                                    </keyframeAnimation>
-                                </param>
-                            </adjust-transform>`
-		}
-		
-		xml += `
-                            <title ref="` + v.TextEffectID + `" lane="1" offset="0s" name="` + v.Name + ` - Text" duration="` + v.Duration + `" start="86486400/24000s">
-                                ` + s.getTextParams() + `
-                                <text>
-                                    <text-style ref="` + s.generateTextStyleID(v.Text, v.Name) + `">` + html.EscapeString(v.Text) + `</text-style>
-                                </text>
-                                <text-style-def id="` + s.generateTextStyleID(v.Text, v.Name) + `">
-                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
-                                </text-style-def>
-                            </title>`
-		
-		xml += `
-                        </video>`
-	} else {
-		xml += `/>`
+	video := &fcp.Video{
+		Ref:      v.Ref,
+		Offset:   v.Offset,
+		Name:     v.Name,
+		Start:    v.Start,
+		Duration: v.Duration,
 	}
 	
-	return xml
+	// Add adjust-transform for slide animation or text animation
+	if v.WithSlide {
+		video.AdjustTransform = &fcp.AdjustTransform{
+			Params: []fcp.Param{
+				{
+					Name: "anchor",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0 0"},
+						},
+					},
+				},
+				{
+					Name: "position",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0 0"},
+							{Time: "48048/24000s", Value: "67.9349 0"},
+						},
+					},
+				},
+				{
+					Name: "rotation",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0"},
+						},
+					},
+				},
+				{
+					Name: "scale",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "1 1"},
+						},
+					},
+				},
+			},
+		}
+	} else if v.HasAnimation {
+		video.AdjustTransform = &fcp.AdjustTransform{
+			Params: []fcp.Param{
+				{
+					Name:  "position",
+					Key:   "",
+					Value: "",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0 0"},
+							{Time: "48048/24000s", Value: "0 -22.1038"},
+						},
+					},
+				},
+			},
+		}
+	}
+	
+	// Add text overlay if requested
+	if v.HasText {
+		textStyleID := s.generateTextStyleID(v.Text, v.Name)
+		title := fcp.Title{
+			Ref:      v.TextEffectID,
+			Lane:     "1",
+			Offset:   "0s",
+			Name:     v.Name + " - Text",
+			Duration: v.Duration,
+			Start:    "86486400/24000s",
+			Params:   s.getTextParamsStruct(),
+			Text: &fcp.TitleText{
+				TextStyle: fcp.TextStyleRef{
+					Ref:  textStyleID,
+					Text: html.EscapeString(v.Text),
+				},
+			},
+			TextStyleDef: &fcp.TextStyleDef{
+				ID: textStyleID,
+				TextStyle: fcp.TextStyle{
+					Font:        "Helvetica Neue",
+					FontSize:    "196",
+					FontColor:   "1 1 1 1",
+					Bold:        "1",
+					Alignment:   "center",
+					LineSpacing: "-19",
+				},
+			},
+		}
+		video.NestedTitles = []fcp.Title{title}
+	}
+	
+	// Marshal to XML
+	xmlBytes, err := xml.MarshalIndent(video, "", "    ")
+	if err != nil {
+		return "<!-- Error marshaling video element: " + err.Error() + " -->"
+	}
+	return string(xmlBytes)
 }
 
 func (v *VideoElement) GetDuration() string { return v.Duration }
@@ -232,45 +305,76 @@ type AssetClipElement struct {
 	TextEffectID  string
 	Text          string
 	HasAnimation  bool
+	WithSlide     bool
 }
 
 func (a *AssetClipElement) GetXML() string {
-	xml := `<asset-clip ref="` + a.Ref + `" offset="` + a.Offset + `" name="` + a.Name + `" duration="` + a.Duration + `" format="` + a.Format + `" tcFormat="` + a.TCFormat + `"`
-	
-	if a.HasText {
-		xml += `>`
-		
-		// Add adjust-transform before title (DTD requirement)
-		if a.HasAnimation {
-			xml += `
-                            <adjust-transform>
-                                <param name="position" key="" value="">
-                                    <keyframeAnimation>
-                                        <keyframe time="0s" value="0 0"/>
-                                        <keyframe time="48048/24000s" value="0 -22.1038"/>
-                                    </keyframeAnimation>
-                                </param>
-                            </adjust-transform>`
-		}
-		
-		xml += `
-                            <title ref="` + a.TextEffectID + `" lane="1" offset="0s" name="` + a.Name + ` - Text" duration="` + a.Duration + `" start="86486400/24000s">
-                                ` + s.getTextParams() + `
-                                <text>
-                                    <text-style ref="` + s.generateTextStyleID(a.Text, a.Name) + `">` + html.EscapeString(a.Text) + `</text-style>
-                                </text>
-                                <text-style-def id="` + s.generateTextStyleID(a.Text, a.Name) + `">
-                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
-                                </text-style-def>
-                            </title>`
-		
-		xml += `
-                        </asset-clip>`
-	} else {
-		xml += `/>`
+	assetClip := &fcp.AssetClip{
+		Ref:      a.Ref,
+		Offset:   a.Offset,
+		Name:     a.Name,
+		Duration: a.Duration,
+		Format:   a.Format,
+		TCFormat: a.TCFormat,
 	}
 	
-	return xml
+	// Add adjust-transform before title (DTD requirement)
+	if a.HasAnimation {
+		assetClip.AdjustTransform = &fcp.AdjustTransform{
+			Params: []fcp.Param{
+				{
+					Name:  "position",
+					Key:   "",
+					Value: "",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0 0"},
+							{Time: "48048/24000s", Value: "0 -22.1038"},
+						},
+					},
+				},
+			},
+		}
+	}
+	
+	// Add text overlay if requested
+	if a.HasText {
+		textStyleID := s.generateTextStyleID(a.Text, a.Name)
+		title := fcp.Title{
+			Ref:      a.TextEffectID,
+			Lane:     "1",
+			Offset:   "0s",
+			Name:     a.Name + " - Text",
+			Duration: a.Duration,
+			Start:    "86486400/24000s",
+			Params:   s.getTextParamsStruct(),
+			Text: &fcp.TitleText{
+				TextStyle: fcp.TextStyleRef{
+					Ref:  textStyleID,
+					Text: html.EscapeString(a.Text),
+				},
+			},
+			TextStyleDef: &fcp.TextStyleDef{
+				ID: textStyleID,
+				TextStyle: fcp.TextStyle{
+					Font:        "Helvetica Neue",
+					FontSize:    "196",
+					FontColor:   "1 1 1 1",
+					Bold:        "1",
+					Alignment:   "center",
+					LineSpacing: "-19",
+				},
+			},
+		}
+		assetClip.Titles = []fcp.Title{title}
+	}
+	
+	// Marshal to XML
+	xmlBytes, err := xml.MarshalIndent(assetClip, "", "    ")
+	if err != nil {
+		return "<!-- Error marshaling asset-clip element: " + err.Error() + " -->"
+	}
+	return string(xmlBytes)
 }
 
 func (a *AssetClipElement) GetDuration() string { return a.Duration }
@@ -289,42 +393,70 @@ type RefClipElement struct {
 }
 
 func (r *RefClipElement) GetXML() string {
-	xml := `<ref-clip ref="` + r.Ref + `" offset="` + r.Offset + `" name="` + r.Name + `" duration="` + r.Duration + `"`
-	
-	if r.HasText {
-		xml += `>`
-		
-		// Add adjust-transform before title (DTD requirement)
-		if r.HasAnimation {
-			xml += `
-                            <adjust-transform>
-                                <param name="position" key="" value="">
-                                    <keyframeAnimation>
-                                        <keyframe time="0s" value="0 0"/>
-                                        <keyframe time="48048/24000s" value="0 -22.1038"/>
-                                    </keyframeAnimation>
-                                </param>
-                            </adjust-transform>`
-		}
-		
-		xml += `
-                            <title ref="` + r.TextEffectID + `" lane="1" offset="0s" name="` + r.Name + ` - Text" duration="` + r.Duration + `" start="86486400/24000s">
-                                ` + s.getTextParams() + `
-                                <text>
-                                    <text-style ref="` + s.generateTextStyleID(r.Text, r.Name) + `">` + html.EscapeString(r.Text) + `</text-style>
-                                </text>
-                                <text-style-def id="` + s.generateTextStyleID(r.Text, r.Name) + `">
-                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
-                                </text-style-def>
-                            </title>`
-		
-		xml += `
-                        </ref-clip>`
-	} else {
-		xml += `/>`
+	refClip := &fcp.RefClip{
+		Ref:      r.Ref,
+		Offset:   r.Offset,
+		Name:     r.Name,
+		Duration: r.Duration,
 	}
 	
-	return xml
+	// Add adjust-transform before title (DTD requirement)
+	if r.HasAnimation {
+		refClip.AdjustTransform = &fcp.AdjustTransform{
+			Params: []fcp.Param{
+				{
+					Name:  "position",
+					Key:   "",
+					Value: "",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0 0"},
+							{Time: "48048/24000s", Value: "0 -22.1038"},
+						},
+					},
+				},
+			},
+		}
+	}
+	
+	// Add text overlay if requested
+	if r.HasText {
+		textStyleID := s.generateTextStyleID(r.Text, r.Name)
+		title := fcp.Title{
+			Ref:      r.TextEffectID,
+			Lane:     "1",
+			Offset:   "0s",
+			Name:     r.Name + " - Text",
+			Duration: r.Duration,
+			Start:    "86486400/24000s",
+			Params:   s.getTextParamsStruct(),
+			Text: &fcp.TitleText{
+				TextStyle: fcp.TextStyleRef{
+					Ref:  textStyleID,
+					Text: html.EscapeString(r.Text),
+				},
+			},
+			TextStyleDef: &fcp.TextStyleDef{
+				ID: textStyleID,
+				TextStyle: fcp.TextStyle{
+					Font:        "Helvetica Neue",
+					FontSize:    "196",
+					FontColor:   "1 1 1 1",
+					Bold:        "1",
+					Alignment:   "center",
+					LineSpacing: "-19",
+				},
+			},
+		}
+		refClip.Titles = []fcp.Title{title}
+	}
+	
+	// Marshal to XML
+	xmlBytes, err := xml.MarshalIndent(refClip, "", "    ")
+	if err != nil {
+		return "<!-- Error marshaling ref-clip element: " + err.Error() + " -->"
+	}
+	return string(xmlBytes)
 }
 
 func (r *RefClipElement) GetDuration() string { return r.Duration }
@@ -346,48 +478,72 @@ type VideoWithAudioElement struct {
 }
 
 func (v *VideoWithAudioElement) GetXML() string {
-	xml := `<video ref="` + v.VideoRef + `" offset="` + v.Offset + `" name="` + v.Name + `" start="` + v.Start + `" duration="` + v.Duration + `">`
+	video := &fcp.Video{
+		Ref:      v.VideoRef,
+		Offset:   v.Offset,
+		Name:     v.Name,
+		Start:    v.Start,
+		Duration: v.Duration,
+	}
 	
 	// Add adjust-transform FIRST (intrinsic params come before anchor items per DTD)
 	if v.HasText && v.HasAnimation {
-		xml += `
-                            <adjust-transform>
-                                <param name="position" key="" value="">
-                                    <keyframeAnimation>
-                                        <keyframe time="0s" value="0 0"/>
-                                        <keyframe time="48048/24000s" value="0 -22.1038"/>
-                                    </keyframeAnimation>
-                                </param>
-                            </adjust-transform>`
+		video.AdjustTransform = &fcp.AdjustTransform{
+			Params: []fcp.Param{
+				{
+					Name:  "position",
+					Key:   "",
+					Value: "",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{Time: "0s", Value: "0 0"},
+							{Time: "48048/24000s", Value: "0 -22.1038"},
+						},
+					},
+				},
+			},
+		}
 	}
 	
 	// Add the audio asset-clip on lane -1 (audio lane) with correct audio duration
-	// (anchor items come after intrinsic params per DTD)
 	audioDuration := v.AudioDuration
 	if audioDuration == "" {
 		audioDuration = v.Duration // fallback to video duration if not specified
 	}
-	xml += `
-                            <asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + audioDuration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
 	
-	// Add text overlay if requested
-	if v.HasText {
-		xml += `
-                            <title ref="` + v.TextEffectID + `" lane="1" offset="0s" name="` + v.Name + ` - Text" duration="` + v.Duration + `" start="86486400/24000s">
-                                ` + s.getTextParams() + `
-                                <text>
-                                    <text-style ref="` + s.generateTextStyleID(v.Text, v.Name) + `">` + html.EscapeString(v.Text) + `</text-style>
-                                </text>
-                                <text-style-def id="` + s.generateTextStyleID(v.Text, v.Name) + `">
-                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
-                                </text-style-def>
-                            </title>`
+	// Create nested videos list with the audio asset-clip
+	video.NestedVideos = []fcp.Video{}
+	
+	// We need to add this as a nested asset-clip, but fcp.Video doesn't support nested asset-clips
+	// So we'll temporarily use a manual approach for this complex case
+	xmlBytes, err := xml.MarshalIndent(video, "", "    ")
+	if err != nil {
+		return "<!-- Error marshaling video with audio element: " + err.Error() + " -->"
 	}
 	
-	xml += `
-                        </video>`
+	xmlStr := string(xmlBytes)
 	
-	return xml
+	// Insert the audio asset-clip before closing the video tag
+	audioClipXML := `<asset-clip ref="` + v.AudioRef + `" lane="-1" offset="0s" name="` + v.Name + ` - Audio" duration="` + audioDuration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
+	
+	if v.HasText {
+		textStyleID := s.generateTextStyleID(v.Text, v.Name)
+		titleXML := `<title ref="` + v.TextEffectID + `" lane="1" offset="0s" name="` + v.Name + ` - Text" duration="` + v.Duration + `" start="86486400/24000s">`
+		
+		// Add text params as XML string temporarily (TODO: convert to struct approach)
+		titleXML += s.getTextParams()
+		titleXML += `<text><text-style ref="` + textStyleID + `">` + html.EscapeString(v.Text) + `</text-style></text>`
+		titleXML += `<text-style-def id="` + textStyleID + `"><text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/></text-style-def>`
+		titleXML += `</title>`
+		
+		// Insert both audio and title before closing tag
+		xmlStr = strings.Replace(xmlStr, "</video>", "    "+audioClipXML+"\n    "+titleXML+"\n</video>", 1)
+	} else {
+		// Insert just audio before closing tag
+		xmlStr = strings.Replace(xmlStr, "</video>", "    "+audioClipXML+"\n</video>", 1)
+	}
+	
+	return xmlStr
 }
 
 func (v *VideoWithAudioElement) GetDuration() string { return v.Duration }
@@ -416,6 +572,33 @@ func (s *SmartClipStrategy) getTextParams() string {
                                     </keyframeAnimation>
                                 </param>
                                 <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>`
+}
+
+func (s *SmartClipStrategy) getTextParamsStruct() []fcp.Param {
+	return []fcp.Param{
+		{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+		{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1730"},
+		{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1730"},
+		{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "960"},
+		{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-960"},
+		{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+		{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+		{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+		{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 0 (Top)"},
+		{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+		{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+		{
+			Name: "Custom Speed",
+			Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+			KeyframeAnimation: &fcp.KeyframeAnimation{
+				Keyframes: []fcp.Keyframe{
+					{Time: "-469658744/1000000000s", Value: "0"},
+					{Time: "12328542033/1000000000s", Value: "1"},
+				},
+			},
+		},
+		{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+	}
 }
 
 func (s *SmartClipStrategy) generateTextStyleID(text, baseName string) string {
@@ -460,7 +643,23 @@ type AudioOnlyElement struct {
 }
 
 func (a *AudioOnlyElement) GetXML() string {
-	return `<asset-clip ref="` + a.AudioRef + `" lane="-1" offset="` + a.Offset + `" name="` + a.Name + `" duration="` + a.Duration + `" format="r1" tcFormat="NDF" audioRole="dialogue"/>`
+	assetClip := &fcp.AssetClip{
+		Ref:       a.AudioRef,
+		Lane:      "-1",
+		Offset:    a.Offset,
+		Name:      a.Name,
+		Duration:  a.Duration,
+		Format:    "r1",
+		TCFormat:  "NDF",
+		AudioRole: "dialogue",
+	}
+	
+	// Marshal to XML
+	xmlBytes, err := xml.MarshalIndent(assetClip, "", "    ")
+	if err != nil {
+		return "<!-- Error marshaling audio-only element: " + err.Error() + " -->"
+	}
+	return string(xmlBytes)
 }
 
 func (a *AudioOnlyElement) GetDuration() string { return a.Duration }
