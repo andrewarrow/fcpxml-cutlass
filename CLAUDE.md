@@ -10,15 +10,20 @@
 
 **This is a CRITICAL VIOLATION if not followed. All FCPXML generation MUST use the fcp.* structs in the fcp package.**
 
-## 🚨 SUPER CRITICAL: Build Package Mission 🚨
-The build package (build/command.go) and build2 package are the foundation for ALL FCPXML generation in this repo. They provide:
-- **MANDATORY**: Rock solid FCPXML generation using proper structs (NEVER string templates with %s placeholders)
-- Correct time calculations, R2 vs R1 handling, UID generation, and spine management
-- Template-based approach for reusable FCPXML components
-- DTD validation compliance
-- Timeline continuity without gaps between clips
+  ## 🚨 ADDITIONAL VIOLATION PATTERNS TO AVOID 🚨
 
-**🚨 SUPER CRITICAL 🚨**: All new FCPXML features MUST be built on the build/build2 package foundation. Other packages may have legacy logic that should be learned from but NEVER duplicated. Any FCPXML generation that bypasses these packages and uses string templates is a critical violation.
+  **NEVER use any of these XML generation patterns:**
+  ❌ BAD: `sequence.Spine.Content = fmt.Sprintf("<asset-clip...")`
+  ❌ BAD: `xml := "<element>" + variable + "</element>"`
+  ❌ BAD: Any manual XML string construction
+  ❌ BAD: Setting .Content or .InnerXML fields with formatted strings
+
+  **ALWAYS use struct fields and let xml.Marshal handle XML generation:**
+  ✅ GOOD: `sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)`
+  ✅ GOOD: Populate struct fields and use xml.MarshalIndent
+  ✅ GOOD: Use proper XML struct tags for marshaling
+
+  **If you see string concatenation or fmt.Sprintf with XML, STOP IMMEDIATELY.**
 
 ## REQUIRED: DTD Validation
 ALWAYS test for DTD validation after changing any code that generates FCPXML. This is MANDATORY.
@@ -118,7 +123,7 @@ this program is a swiff army knife for generating fcpxml files. There is a compl
 do not add complex logic to main.go that belongs in other packages.
 have main.go call funcs in a package instead.
 
-make sure your code compiles, but do not run any of the menu options yourself. You can run xmllint but do not run ./cutlass
+make sure your code compiles. You can run xmllint but do not run ./cutlass
 
 review reference/FCPCAFE.md
 reference/FCPXML.md

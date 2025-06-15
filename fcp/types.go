@@ -105,8 +105,11 @@ type Sequence struct {
 }
 
 type Spine struct {
-	XMLName xml.Name `xml:"spine"`
-	Content string   `xml:",innerxml"`
+	XMLName    xml.Name    `xml:"spine"`
+	AssetClips []AssetClip `xml:"asset-clip,omitempty"`
+	Gaps       []Gap       `xml:"gap,omitempty"`
+	Titles     []Title     `xml:"title,omitempty"`
+	Videos     []Video     `xml:"video,omitempty"`
 }
 
 type AssetClip struct {
