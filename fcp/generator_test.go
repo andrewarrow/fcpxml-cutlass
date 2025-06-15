@@ -1,3 +1,10 @@
+// Package fcp provides tests for FCPXML generation.
+//
+// 🚨 CRITICAL: Tests MUST validate CLAUDE.md compliance:
+// - After ANY changes, run: xmllint --dtdvalid FCPXMLv1_13.dtd test_file.fcpxml  
+// - All generated XML must pass DTD validation
+// - Tests should verify NO string template usage in XML generation
+// - Duration values must be frame-aligned (see ConvertSecondsToFCPDuration)
 package fcp
 
 import (
@@ -17,7 +24,7 @@ func TestGenerateEmpty(t *testing.T) {
 	}()
 	
 	// Call GenerateEmpty with the test file
-	err := GenerateEmpty(testFile)
+	_, err := GenerateEmpty(testFile)
 	if err != nil {
 		t.Fatalf("GenerateEmpty failed: %v", err)
 	}

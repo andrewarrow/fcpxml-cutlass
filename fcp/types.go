@@ -1,3 +1,10 @@
+// Package fcp defines the struct types for FCPXML generation.
+//
+// 🚨 CRITICAL: These structs are the ONLY way to generate XML (see CLAUDE.md)
+// - NEVER use string templates or manual XML construction
+// - NEVER set .Content or .InnerXML fields with formatted strings  
+// - ALWAYS populate struct fields and let xml.Marshal handle XML generation
+// - ALL XML output MUST be generated via xml.MarshalIndent of these structs
 package fcp
 
 import (
@@ -11,6 +18,12 @@ type FCPXML struct {
 	Library   Library   `xml:"library"`
 }
 
+// Resources contains all assets, formats, effects, and media definitions.
+//
+// 🚨 CLAUDE.md Rule: Unique ID Requirements  
+// - ALL IDs across Assets, Formats, Effects, Media MUST be unique
+// - Use consistent counting: len(Assets)+len(Formats)+len(Effects)+len(Media)
+// - Never hardcode IDs like "r1", "r2" - always generate based on existing count
 type Resources struct {
 	Assets     []Asset     `xml:"asset,omitempty"`
 	Formats    []Format    `xml:"format"`
@@ -35,6 +48,13 @@ type Format struct {
 	ColorSpace    string `xml:"colorSpace,attr,omitempty"`
 }
 
+// Asset represents a media asset (video, audio, image) in FCPXML.
+//
+// 🚨 CLAUDE.md Rule: UID Consistency Requirements
+// - UID MUST be deterministic based on file content/name, not file path  
+// - Once FCP imports with a UID, that UID is permanent for that file
+// - Different UID for same file = "cannot be imported again with different unique identifier"
+// - Use generateUID() function for consistent UID generation
 type Asset struct {
 	ID            string   `xml:"id,attr"`
 	Name          string   `xml:"name,attr"`
@@ -104,6 +124,13 @@ type Sequence struct {
 	Spine       Spine  `xml:"spine"`
 }
 
+// Spine represents the main timeline container in FCPXML.
+//
+// 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES
+// - NEVER set spine content via string templates or .Content fields
+// - ALWAYS append to AssetClips, Gaps, Titles, Videos slices
+// - Example violation: spine.Content = fmt.Sprintf("<asset-clip...") ❌
+// - Correct usage: spine.AssetClips = append(spine.AssetClips, assetClip) ✅
 type Spine struct {
 	XMLName    xml.Name    `xml:"spine"`
 	AssetClips []AssetClip `xml:"asset-clip,omitempty"`

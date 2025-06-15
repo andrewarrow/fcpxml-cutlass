@@ -1,3 +1,11 @@
+// Package fcp provides FCPXML generation using structs.
+//
+// 🚨 CRITICAL: All XML generation MUST follow CLAUDE.md rules:
+// - NEVER use string templates with %s placeholders (see CLAUDE.md "NO XML STRING TEMPLATES")
+// - ALWAYS use structs and xml.MarshalIndent for XML generation
+// - ALL durations MUST be frame-aligned (see CLAUDE.md "Frame Boundary Alignment")
+// - ALL IDs MUST be unique (see CLAUDE.md "Unique ID Requirements")
+// - ALWAYS test with DTD validation: xmllint --dtdvalid FCPXMLv1_13.dtd output.fcpxml
 package fcp
 
 import (
@@ -32,7 +40,12 @@ type TemplateData struct {
 	Numbers        []NumberSection
 }
 
-// generateUID creates a consistent UID from a video ID using MD5 hash
+// generateUID creates a consistent UID from a video ID using MD5 hash.
+// 
+// 🚨 CLAUDE.md Rule: UID Consistency Requirements
+// - UIDs MUST be deterministic based on file content/name, not file path
+// - Once FCP imports a media file with a specific UID, that UID is permanently associated
+// - Different UIDs for same file cause "cannot be imported again with different unique identifier" errors
 func generateUID(videoID string) string {
 	// Create a hash from the video ID to ensure consistent UIDs
 	hasher := md5.New()
@@ -98,7 +111,14 @@ do {
 	return bookmark, nil
 }
 
-// ConvertSecondsToFCPDuration converts seconds to frame-aligned FCP duration
+// ConvertSecondsToFCPDuration converts seconds to frame-aligned FCP duration.
+//
+// 🚨 CLAUDE.md Rule: Frame Boundary Alignment - CRITICAL!
+// - FCP uses time base of 24000/1001 ≈ 23.976 fps for frame alignment
+// - Duration format: (frames*1001)/24000s where frames is an integer
+// - NEVER use simple seconds * 24000 calculations - creates non-frame-aligned durations
+// - Non-frame-aligned durations cause "not on an edit frame boundary" errors in FCP
+// - Example: 21600000/24000s = NON-FRAME-ALIGNED ❌, 21599578/24000s = FRAME-ALIGNED ✅
 func ConvertSecondsToFCPDuration(seconds float64) string {
 	// Convert to frame count using the sequence time base (1001/24000s frame duration)
 	// This means 24000/1001 frames per second ≈ 23.976 fps
@@ -220,7 +240,12 @@ func GenerateEmpty(filename string) (*FCPXML, error) {
 	return fcpxml, nil
 }
 
-// WriteToFile marshals the FCPXML struct to a file
+// WriteToFile marshals the FCPXML struct to a file.
+//
+// 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES
+// - Uses xml.MarshalIndent ONLY - never manual XML construction
+// - After writing, ALWAYS test with: xmllint --dtdvalid FCPXMLv1_13.dtd filename
+// - This is the ONLY approved way to generate XML output
 func WriteToFile(fcpxml *FCPXML, filename string) error {
 	// Marshal to XML with proper formatting
 	output, err := xml.MarshalIndent(fcpxml, "", "    ")
@@ -244,7 +269,16 @@ func WriteToFile(fcpxml *FCPXML, filename string) error {
 	return nil
 }
 
-// AddVideo adds a video asset and asset-clip to the FCPXML structure
+// AddVideo adds a video asset and asset-clip to the FCPXML structure.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses STRUCTS ONLY - no string templates (see "NO XML STRING TEMPLATES")
+// - Generates UNIQUE IDs by counting existing resources (see "Unique ID Requirements") 
+// - Uses frame-aligned durations via ConvertSecondsToFCPDuration (see "Frame Boundary Alignment")
+// - Must maintain UID consistency for same files (see "UID Consistency Requirements")
+//
+// ❌ NEVER do: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS do: append to fcpxml.Resources.Assets, sequence.Spine.AssetClips
 func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	// Get absolute path
 	absPath, err := filepath.Abs(videoPath)
@@ -262,6 +296,10 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	uid := generateUID(videoName)
 	
 	// Count existing resources to generate unique IDs
+	// 🚨 CLAUDE.md Rule: Unique ID Requirements
+	// - ALL IDs must be unique within document 
+	// - Count ALL resource types consistently (assets+formats+effects+media)
+	// - Use sequence generation to avoid collisions in same transaction
 	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
 	assetID := fmt.Sprintf("r%d", resourceCount+1)
 	formatID := fmt.Sprintf("r%d", resourceCount+2)
@@ -338,4 +376,82 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	}
 
 	return nil
+}
+
+// ValidateClaudeCompliance performs automated checks for CLAUDE.md rule compliance.
+//
+// 🚨 CLAUDE.md Validation - Run this before any commit!
+// This function helps catch violations of critical rules in CLAUDE.md
+func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
+	var violations []string
+	
+	// Check for unique IDs across all resources
+	idMap := make(map[string]bool)
+	
+	// Check asset IDs
+	for _, asset := range fcpxml.Resources.Assets {
+		if idMap[asset.ID] {
+			violations = append(violations, fmt.Sprintf("Duplicate ID found: %s (Asset)", asset.ID))
+		}
+		idMap[asset.ID] = true
+	}
+	
+	// Check format IDs  
+	for _, format := range fcpxml.Resources.Formats {
+		if idMap[format.ID] {
+			violations = append(violations, fmt.Sprintf("Duplicate ID found: %s (Format)", format.ID))
+		}
+		idMap[format.ID] = true
+	}
+	
+	// Check effect IDs
+	for _, effect := range fcpxml.Resources.Effects {
+		if idMap[effect.ID] {
+			violations = append(violations, fmt.Sprintf("Duplicate ID found: %s (Effect)", effect.ID))
+		}
+		idMap[effect.ID] = true
+	}
+	
+	// Check media IDs
+	for _, media := range fcpxml.Resources.Media {
+		if idMap[media.ID] {
+			violations = append(violations, fmt.Sprintf("Duplicate ID found: %s (Media)", media.ID))
+		}
+		idMap[media.ID] = true
+	}
+	
+	// Check for frame alignment in durations (basic check for common violations)
+	// Look for duration patterns that are definitely not frame-aligned
+	checkDuration := func(duration, location string) {
+		if strings.Contains(duration, "/600s") && !strings.Contains(duration, "1001") {
+			violations = append(violations, fmt.Sprintf("Potentially non-frame-aligned duration '%s' at %s - use ConvertSecondsToFCPDuration()", duration, location))
+		}
+		if strings.Contains(duration, "/24000s") {
+			// Check if it follows (frames*1001)/24000s pattern
+			if !strings.Contains(duration, "1001") {
+				violations = append(violations, fmt.Sprintf("Non-frame-aligned duration '%s' at %s - must be (frames*1001)/24000s", duration, location))
+			}
+		}
+	}
+	
+	// Check asset durations
+	for _, asset := range fcpxml.Resources.Assets {
+		checkDuration(asset.Duration, fmt.Sprintf("Asset %s", asset.ID))
+	}
+	
+	// Check sequence durations
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				checkDuration(sequence.Duration, fmt.Sprintf("Sequence in Project %s", project.Name))
+				
+				// Check asset-clip durations in spine
+				for _, clip := range sequence.Spine.AssetClips {
+					checkDuration(clip.Duration, fmt.Sprintf("AssetClip %s in Spine", clip.Name))
+				}
+			}
+		}
+	}
+	
+	return violations
 }
