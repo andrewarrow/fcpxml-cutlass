@@ -2,14 +2,13 @@ package genvideo
 
 import (
 	"bufio"
+	"cutlass/reference/old_code/build2/api"
+	"cutlass/reference/old_code/build2/utils"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"cutlass/build2/api"
-	"cutlass/build2/utils"
 )
 
 func HandleGenVideoCommand(args []string) {
@@ -170,11 +169,11 @@ func validateGenVideoData(genData *GenVideoData) error {
 
 // TextOverlay represents a text overlay with positioning
 type TextOverlay struct {
-	Text        string
-	Lane        int
-	Offset      string
-	Duration    string
-	YPosition   float64
+	Text      string
+	Lane      int
+	Offset    string
+	Duration  string
+	YPosition float64
 }
 
 // generateTextOverlays creates the staggered 3-lane text overlay system
@@ -184,7 +183,7 @@ func generateTextOverlays(texts []string, segmentOffset, segmentDuration string)
 	// Create 3 staggered text overlays per text group, cycling through lanes 3, 2, 1
 	for i, text := range texts {
 		lane := 3 - (i % 3) // Cycles: 3, 2, 1, 3, 2, 1, ...
-		
+
 		// Vertical positioning based on pattern from antiedit.fcpxml
 		yPos := -19.7744
 		if i%2 == 1 {
@@ -301,14 +300,14 @@ func generateFCPXMLFromGenData(outputFile string, genData *GenVideoData, audioDu
 
 	// Process each segment - add frames sequentially starting after audio duration
 	allTextOverlays := make([]TextOverlay, 0)
-	
+
 	// Start video clips after the audio track ends
 	audioFrames, err := parseDurationToFrames(audioDuration)
 	if err != nil {
 		return fmt.Errorf("failed to parse audio duration: %v", err)
 	}
 	currentVideoOffset := fmt.Sprintf("%d/24000s", audioFrames)
-	
+
 	for segmentIndex, segment := range genData.Segments {
 		segmentOffset := offsets[segmentIndex]
 		segmentDuration := durations[segmentIndex]
@@ -319,11 +318,11 @@ func generateFCPXMLFromGenData(outputFile string, genData *GenVideoData, audioDu
 			if err != nil {
 				return fmt.Errorf("failed to add frame %s: %v", frame, err)
 			}
-			
+
 			// Advance offset for next video clip
 			segmentFrames, _ := parseDurationToFrames(segmentDuration)
 			currentOffsetFrames, _ := parseDurationToFrames(currentVideoOffset)
-			currentVideoOffset = fmt.Sprintf("%d/24000s", currentOffsetFrames + segmentFrames)
+			currentVideoOffset = fmt.Sprintf("%d/24000s", currentOffsetFrames+segmentFrames)
 		}
 
 		// Generate text overlays for this segment
