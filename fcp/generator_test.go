@@ -244,6 +244,131 @@ var appendmovtopngxmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     </library>
 </fcpxml>`
 
+// Templates for the new "append to existing" tests (different durations)
+var appendPngToExistingTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="cs.pitt.edu" uid="%s" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
+        </asset>
+        <asset id="r4" name="cutlass_logo_t" uid="%s" start="0s" hasVideo="1" format="r5" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cutlass_logo_t.png"></media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"></format>
+        <format id="r5" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"></format>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="432432/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="cs.pitt.edu" duration="216216/24000s" start="86399313/24000s"></video>
+                        <video ref="r4" offset="216216/24000s" name="cutlass_logo_t" duration="216216/24000s" start="86399313/24000s"></video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>`
+
+var appendMovToExistingTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="cs.pitt.edu" uid="%s" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
+        </asset>
+        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="240240/24000s">
+            <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"></format>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="456456/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="cs.pitt.edu" duration="216216/24000s" start="86399313/24000s"></video>
+                        <asset-clip ref="r4" offset="216216/24000s" name="speech1" duration="240240/24000s" format="r1" tcFormat="NDF" audioRole="dialogue"></asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>`
+
+// createEmptyProject creates an empty FCPXML project for testing
+func createEmptyProject() (*FCPXML, error) {
+	return GenerateEmpty("")
+}
+
+// createProjectWithPng creates an FCPXML project with a single PNG image
+func createProjectWithPng() (*FCPXML, error) {
+	fcpxml, err := createEmptyProject()
+	if err != nil {
+		return nil, err
+	}
+
+	err = AddImage(fcpxml, "/Users/aa/cs/cutlass/assets/cs.pitt.edu.png", 9.0)
+	if err != nil {
+		return nil, err
+	}
+
+	return fcpxml, nil
+}
+
+// createProjectWithMov creates an FCPXML project with a single MOV video
+func createProjectWithMov() (*FCPXML, error) {
+	fcpxml, err := createEmptyProject()
+	if err != nil {
+		return nil, err
+	}
+
+	err = AddVideo(fcpxml, "/Users/aa/cs/cutlass/assets/speech1.mov")
+	if err != nil {
+		return nil, err
+	}
+
+	return fcpxml, nil
+}
+
 func TestGeneratePng(t *testing.T) {
 	testFile := "test_generate_png.fcpxml"
 
@@ -253,14 +378,9 @@ func TestGeneratePng(t *testing.T) {
 		}
 	}()
 
-	fcpxml, err := GenerateEmpty("")
+	fcpxml, err := createProjectWithPng()
 	if err != nil {
-		t.Fatalf("GenerateEmpty failed: %v", err)
-	}
-
-	err = AddImage(fcpxml, "/Users/aa/cs/cutlass/assets/cs.pitt.edu.png", 9.0)
-	if err != nil {
-		t.Fatalf("AddImage failed: %v", err)
+		t.Fatalf("createProjectWithPng failed: %v", err)
 	}
 
 	err = WriteToFile(fcpxml, testFile)
@@ -291,14 +411,9 @@ func TestGenerateMov(t *testing.T) {
 		}
 	}()
 
-	fcpxml, err := GenerateEmpty("")
+	fcpxml, err := createProjectWithMov()
 	if err != nil {
-		t.Fatalf("GenerateEmpty failed: %v", err)
-	}
-
-	err = AddVideo(fcpxml, "/Users/aa/cs/cutlass/assets/speech1.mov")
-	if err != nil {
-		t.Fatalf("AddVideo failed: %v", err)
+		t.Fatalf("createProjectWithMov failed: %v", err)
 	}
 
 	err = WriteToFile(fcpxml, testFile)
@@ -329,9 +444,10 @@ func TestAppendPng(t *testing.T) {
 		}
 	}()
 
-	fcpxml, err := GenerateEmpty("")
+	// Start from empty - important to test the full workflow
+	fcpxml, err := createEmptyProject()
 	if err != nil {
-		t.Fatalf("GenerateEmpty failed: %v", err)
+		t.Fatalf("createEmptyProject failed: %v", err)
 	}
 
 	err = AddImage(fcpxml, "/Users/aa/cs/cutlass/assets/cs.pitt.edu.png", 10.05)
@@ -373,9 +489,10 @@ func TestAppendMovToPng(t *testing.T) {
 		}
 	}()
 
-	fcpxml, err := GenerateEmpty("")
+	// Start from empty - important to test the full workflow
+	fcpxml, err := createEmptyProject()
 	if err != nil {
-		t.Fatalf("GenerateEmpty failed: %v", err)
+		t.Fatalf("createEmptyProject failed: %v", err)
 	}
 
 	err = AddImage(fcpxml, "/Users/aa/cs/cutlass/assets/cs.pitt.edu.png", 10.05)
@@ -402,6 +519,90 @@ func TestAppendMovToPng(t *testing.T) {
 	pngUID := GenerateUID("/Users/aa/cs/cutlass/assets/cs.pitt.edu.png")
 	movUID := GenerateUID("/Users/aa/cs/cutlass/assets/speech1.mov")
 	expectedXML := fmt.Sprintf(appendmovtopngxmlTemplate, pngUID, pngUID, movUID, movUID)
+
+	if string(generatedContent) != expectedXML {
+		t.Errorf("Generated XML does not match expected output.\nExpected:\n%s\n\nGenerated:\n%s", expectedXML, string(generatedContent))
+	}
+}
+
+// New tests that start from existing projects (append to existing content)
+
+func TestAppendPngToExistingProject(t *testing.T) {
+	testFile := "test_append_png_to_existing.fcpxml"
+
+	defer func() {
+		if err := os.Remove(testFile); err != nil && !os.IsNotExist(err) {
+			t.Errorf("Failed to clean up test file: %v", err)
+		}
+	}()
+
+	// Start from existing PNG project
+	fcpxml, err := createProjectWithPng()
+	if err != nil {
+		t.Fatalf("createProjectWithPng failed: %v", err)
+	}
+
+	// Add second image to existing project
+	err = AddImage(fcpxml, "/Users/aa/cs/cutlass/assets/cutlass_logo_t.png", 9.0)
+	if err != nil {
+		t.Fatalf("AddImage to existing project failed: %v", err)
+	}
+
+	err = WriteToFile(fcpxml, testFile)
+	if err != nil {
+		t.Fatalf("WriteToFile failed: %v", err)
+	}
+
+	generatedContent, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Fatalf("Failed to read generated file: %v", err)
+	}
+
+	// Generate expected XML with correct UIDs
+	pngUID := GenerateUID("/Users/aa/cs/cutlass/assets/cs.pitt.edu.png")
+	logoUID := GenerateUID("/Users/aa/cs/cutlass/assets/cutlass_logo_t.png")
+	expectedXML := fmt.Sprintf(appendPngToExistingTemplate, pngUID, pngUID, logoUID, logoUID)
+
+	if string(generatedContent) != expectedXML {
+		t.Errorf("Generated XML does not match expected output.\nExpected:\n%s\n\nGenerated:\n%s", expectedXML, string(generatedContent))
+	}
+}
+
+func TestAppendMovToExistingProject(t *testing.T) {
+	testFile := "test_append_mov_to_existing.fcpxml"
+
+	defer func() {
+		if err := os.Remove(testFile); err != nil && !os.IsNotExist(err) {
+			t.Errorf("Failed to clean up test file: %v", err)
+		}
+	}()
+
+	// Start from existing PNG project  
+	fcpxml, err := createProjectWithPng()
+	if err != nil {
+		t.Fatalf("createProjectWithPng failed: %v", err)
+	}
+
+	// Add video to existing project
+	err = AddVideo(fcpxml, "/Users/aa/cs/cutlass/assets/speech1.mov")
+	if err != nil {
+		t.Fatalf("AddVideo to existing project failed: %v", err)
+	}
+
+	err = WriteToFile(fcpxml, testFile)
+	if err != nil {
+		t.Fatalf("WriteToFile failed: %v", err)
+	}
+
+	generatedContent, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Fatalf("Failed to read generated file: %v", err)
+	}
+
+	// Generate expected XML with correct UIDs
+	pngUID := GenerateUID("/Users/aa/cs/cutlass/assets/cs.pitt.edu.png")
+	movUID := GenerateUID("/Users/aa/cs/cutlass/assets/speech1.mov")
+	expectedXML := fmt.Sprintf(appendMovToExistingTemplate, pngUID, pngUID, movUID, movUID)
 
 	if string(generatedContent) != expectedXML {
 		t.Errorf("Generated XML does not match expected output.\nExpected:\n%s\n\nGenerated:\n%s", expectedXML, string(generatedContent))
