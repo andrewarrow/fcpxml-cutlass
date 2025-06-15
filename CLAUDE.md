@@ -25,6 +25,11 @@
 
   **If you see string concatenation or fmt.Sprintf with XML, STOP IMMEDIATELY.**
 
+## REQUIRED: fcp/generate_test.go
+ALWAYS run fcp pacakge tests after changing any code that generates FCPXML. This is MANDATORY.
+
+These tests MUST pass without errors. If it fails, the logic is broken and must be fixed before the changes are complete.
+
 ## REQUIRED: DTD Validation
 ALWAYS test for DTD validation after changing any code that generates FCPXML. This is MANDATORY.
 

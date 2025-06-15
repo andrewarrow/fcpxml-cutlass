@@ -662,6 +662,9 @@ func calculateTimelineDuration(sequence *Sequence) string {
 	}
 	
 	// Return as FCP duration format
+	if maxEndTime == 0 {
+		return "0s"
+	}
 	return fmt.Sprintf("%d/24000s", maxEndTime)
 }
 
