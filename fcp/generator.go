@@ -807,3 +807,326 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 	}
 }
 
+// AddTextFromFile reads a text file and adds staggered text elements to the FCPXML structure.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Effects, sequence.Spine.Titles
+// - Atomic ID reservation prevents race conditions and ID collisions
+// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
+// - Unique text-style-def IDs → generateUID() function for deterministic UIDs
+// - Each text element appears 1 second later with 300px Y offset progression
+//
+// ❌ NEVER: fmt.Sprintf("<title ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
+func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64) error {
+	// Read text file
+	data, err := os.ReadFile(textFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read text file: %v", err)
+	}
+
+	// Split into lines and filter out empty lines
+	lines := strings.Split(string(data), "\n")
+	var textLines []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			textLines = append(textLines, line)
+		}
+	}
+
+	if len(textLines) == 0 {
+		return fmt.Errorf("no text lines found in file: %s", textFilePath)
+	}
+
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Create transaction for atomic resource creation
+	tx := NewTransaction(registry)
+
+	// Check if text effect already exists, if not create it
+	textEffectID := ""
+	for _, effect := range fcpxml.Resources.Effects {
+		if strings.Contains(effect.UID, "Text.moti") {
+			textEffectID = effect.ID
+			break
+		}
+	}
+
+	if textEffectID == "" {
+		// Reserve ID for text effect
+		ids := tx.ReserveIDs(1)
+		textEffectID = ids[0]
+
+		// Create text effect using transaction
+		_, err = tx.CreateEffect(textEffectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create text effect: %v", err)
+		}
+	}
+
+	// Commit transaction to ensure effect is available
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit text effect: %v", err)
+	}
+
+	// Add text elements to the spine if there's a sequence
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+
+		// Find the first video element in the spine to add nested titles
+		var targetVideo *Video = nil
+		for i := range sequence.Spine.Videos {
+			targetVideo = &sequence.Spine.Videos[i]
+			break
+		}
+
+		if targetVideo == nil {
+			return fmt.Errorf("no video element found in spine to add text overlays to")
+		}
+
+		// Add slide animation to the video element if it doesn't already have one
+		if targetVideo.AdjustTransform == nil {
+			// Use the same animation pattern as samples/slide.fcpxml
+			targetVideo.AdjustTransform = &AdjustTransform{
+				Params: []Param{
+					{
+						Name: "anchor",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  "86423337/24000s",
+									Value: "0 0",
+									Curve: "linear",
+								},
+							},
+						},
+					},
+					{
+						Name: "position",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  "86399313/24000s",
+									Value: "0 0",
+								},
+								{
+									Time:  "86423337/24000s",
+									Value: "51.3109 0",
+								},
+							},
+						},
+					},
+					{
+						Name: "rotation",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  "86423337/24000s",
+									Value: "0",
+									Curve: "linear",
+								},
+							},
+						},
+					},
+					{
+						Name: "scale",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  "86423337/24000s",
+									Value: "1 1",
+									Curve: "linear",
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		// Default text duration of 10 seconds
+		textDurationSeconds := 10.0
+		textDuration := ConvertSecondsToFCPDuration(textDurationSeconds)
+
+		// Process each text line
+		for i, textLine := range textLines {
+			// Create new transaction for each text element to ensure unique IDs
+			textTx := NewTransaction(registry)
+
+			// Reserve ID for text-style-def (must be unique for each text element)
+			styleIDs := textTx.ReserveIDs(1)
+			textStyleID := fmt.Sprintf("ts%s", styleIDs[0][1:]) // Convert r123 to ts123
+
+			// Calculate staggered timing: first element at offsetSeconds, each subsequent +1 second
+			// These offsets need to be relative to the video's start time for proper FCP timing
+			elementOffsetSeconds := offsetSeconds + float64(i)
+			
+			// Parse the video's start time and add our offset to it
+			videoStartFrames := parseFCPDuration(targetVideo.Start)
+			offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(elementOffsetSeconds))
+			totalOffsetFrames := videoStartFrames + offsetFrames
+			elementOffset := fmt.Sprintf("%d/24000s", totalOffsetFrames)
+
+			// Calculate Y position offset: each element 300px lower (negative Y in FCP coordinates)
+			// Pattern from sample: Position "0 0", "0 -300", "0 -600" 
+			yOffset := i * -300
+			positionValue := fmt.Sprintf("0 %d", yOffset)
+
+			// Calculate lane number: decending lanes for stacking (3, 2, 1, ...)
+			laneNumber := len(textLines) - i
+
+			// Create Title element with comprehensive parameters matching sample pattern
+			title := Title{
+				Ref:      textEffectID,
+				Lane:     fmt.Sprintf("%d", laneNumber),
+				Offset:   elementOffset,
+				Name:     fmt.Sprintf("%s - Text", textLine),
+				Start:    "86486400/24000s", // Standard FCP start time for text
+				Duration: textDuration,
+				Params: []Param{
+					{
+						Name:  "Layout Method",
+						Key:   "9999/10003/13260/3296672360/2/314",
+						Value: "1 (Paragraph)",
+					},
+					{
+						Name:  "Left Margin",
+						Key:   "9999/10003/13260/3296672360/2/323",
+						Value: "-1730",
+					},
+					{
+						Name:  "Right Margin",
+						Key:   "9999/10003/13260/3296672360/2/324",
+						Value: "1730",
+					},
+					{
+						Name:  "Top Margin",
+						Key:   "9999/10003/13260/3296672360/2/325",
+						Value: "960",
+					},
+					{
+						Name:  "Bottom Margin",
+						Key:   "9999/10003/13260/3296672360/2/326",
+						Value: "-960",
+					},
+					{
+						Name:  "Alignment",
+						Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
+						Value: "0 (Left)",
+					},
+					{
+						Name:  "Line Spacing",
+						Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
+						Value: "-19",
+					},
+					{
+						Name:  "Auto-Shrink",
+						Key:   "9999/10003/13260/3296672360/2/370",
+						Value: "3 (To All Margins)",
+					},
+					{
+						Name:  "Alignment",
+						Key:   "9999/10003/13260/3296672360/2/373",
+						Value: "0 (Left) 0 (Top)",
+					},
+					{
+						Name:  "Opacity",
+						Key:   "9999/10003/13260/3296672360/4/3296673134/1000/1044",
+						Value: "0",
+					},
+					{
+						Name:  "Speed",
+						Key:   "9999/10003/13260/3296672360/4/3296673134/201/208",
+						Value: "6 (Custom)",
+					},
+					{
+						Name: "Custom Speed",
+						Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  "-469658744/1000000000s",
+									Value: "0",
+								},
+								{
+									Time:  "12328542033/1000000000s",
+									Value: "1",
+								},
+							},
+						},
+					},
+					{
+						Name:  "Apply Speed",
+						Key:   "9999/10003/13260/3296672360/4/3296673134/201/211",
+						Value: "2 (Per Object)",
+					},
+				},
+				Text: &TitleText{
+					TextStyle: TextStyleRef{
+						Ref:  textStyleID,
+						Text: textLine,
+					},
+				},
+				TextStyleDef: &TextStyleDef{
+					ID: textStyleID,
+					TextStyle: TextStyle{
+						Font:        "Helvetica Neue",
+						FontSize:    "134",
+						FontColor:   "1 1 1 1",
+						Bold:        "1",
+						LineSpacing: "-19",
+					},
+				},
+			}
+
+			// Only add Position parameter if it's not the first element (which has 0 0 position)
+			if i > 0 {
+				positionParam := Param{
+					Name:  "Position",
+					Key:   "9999/10003/13260/3296672360/1/100/101",
+					Value: positionValue,
+				}
+				// Insert Position parameter at the beginning for consistency with sample
+				title.Params = append([]Param{positionParam}, title.Params...)
+			}
+
+			// Commit text transaction to ensure unique IDs
+			err = textTx.Commit()
+			if err != nil {
+				return fmt.Errorf("failed to commit text transaction for element %d: %v", i, err)
+			}
+
+			// Add title as nested element inside the video element
+			targetVideo.NestedTitles = append(targetVideo.NestedTitles, title)
+		}
+
+		// Extend the video duration to accommodate all text elements
+		if len(textLines) > 0 {
+			// Calculate the end time of the last text element
+			lastTextOffsetSeconds := offsetSeconds + float64(len(textLines)-1)
+			videoStartFrames := parseFCPDuration(targetVideo.Start)
+			lastTextOffsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(lastTextOffsetSeconds))
+			textDurationFrames := parseFCPDuration(textDuration)
+			
+			// Total frames needed: video start + last text offset + text duration
+			totalNeededFrames := videoStartFrames + lastTextOffsetFrames + textDurationFrames
+			
+			// Update video duration if needed
+			currentVideoFrames := parseFCPDuration(targetVideo.Duration)
+			if totalNeededFrames > currentVideoFrames {
+				targetVideo.Duration = fmt.Sprintf("%d/24000s", totalNeededFrames)
+				
+				// Also update the sequence duration
+				sequence.Duration = targetVideo.Duration
+			}
+		}
+	}
+
+	return nil
+}
+

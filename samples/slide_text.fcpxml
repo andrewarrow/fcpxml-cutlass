@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="waymo" uid="6440FE03DF313332269A5418CCFA0239" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="6440FE03DF313332269A5418CCFA0239" src="file:///Users/aa/Documents/waymo.png">
+                <bookmark>Ym9va/QCAAAAAAQQMAAAAF2eNP6QJXKsDIXBzxaZmwHHO1e2hpFKVOZtaKvl6kJ/zAEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAAAkAAAABAQAAd2F5bW8ucG5nAAAAEAAAAAEGAAAQAAAAIAAAACwAAABAAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAP1SBAAAAAAACAAAAAQDAABjFYMEAAAAABAAAAABBgAAbAAAAHwAAACMAAAAnAAAAAgAAAAABAAAQcb/GHfJ3dsYAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAACAAAACAAAAAQDAAACAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAFQAAAAAAAAABRAAAKwAAAAAAAAAEBAAANQAAAAAAAAAQBAAAMQAAAAAAAAAVBAAAPwAAAAAAAAAVRAAAAgBAAAAAAAAVhAAAPQAAAAAAAAAAiAAAMABAAAAAAAABSAAADABAAAAAAAAECAAAEABAAAAAAAAESAAAHQBAAAAAAAAEiAAAFQBAAAAAAAAEyAAAGQBAAAAAAAAICAAAKABAAAAAAAAMCAAAPQAAAAAAAAAAcAAABQBAAAAAAAAEcAAACAAAAAAAAAAEsAAACQBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-14 16:08:13 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"/>
+        <effect id="r4" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="86F38399-34D3-4E93-B396-42105806C734">
+            <project name="Untitled Project2" uid="A75D6784-9E05-4209-B184-775FF25893EB" modDate="2025-06-14 16:15:35 -0700">
+                <sequence format="r1" duration="2579577/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="waymo" start="86399313/24000s" duration="2579577/24000s">
+                            <adjust-transform>
+                                <param name="anchor">
+                                    <keyframeAnimation>
+                                        <keyframe time="86448362/24000s" value="0 0" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="position">
+                                    <keyframeAnimation>
+                                        <keyframe time="86399313/24000s" value="0 0"/>
+                                        <keyframe time="86448362/24000s" value="67.9349 0.051459"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="rotation">
+                                    <keyframeAnimation>
+                                        <keyframe time="86448362/24000s" value="0" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="scale">
+                                    <keyframeAnimation>
+                                        <keyframe time="86448362/24000s" value="1 1" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>
+                            <title ref="r4" lane="3" offset="86448362/24000s" name="Paused All of LA - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="0 (Left)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1">Paused All of LA</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="86494408/24000s" name="anti-ICE protests - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -300"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="0 (Left)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296712297/401" value="0 (Left)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296712297/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts2">anti-ICE protests
+</text-style>
+                                </text>
+                                <text-style-def id="ts2">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="1" offset="86545459/24000s" name="Jaguar I-PACE - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -600"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="0 (Left)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts3">Jaguar I-PACE</text-style>
+                                </text>
+                                <text-style-def id="ts3">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>

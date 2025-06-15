@@ -352,10 +352,10 @@ type TextStyleDef struct {
 type TextStyle struct {
 	Font        string `xml:"font,attr"`
 	FontSize    string `xml:"fontSize,attr"`
-	FontFace    string `xml:"fontFace,attr"`
+	FontFace    string `xml:"fontFace,attr,omitempty"`
 	FontColor   string `xml:"fontColor,attr"`
 	Bold        string `xml:"bold,attr,omitempty"`
-	Alignment   string `xml:"alignment,attr"`
+	Alignment   string `xml:"alignment,attr,omitempty"`
 	LineSpacing string `xml:"lineSpacing,attr,omitempty"`
 }
 
