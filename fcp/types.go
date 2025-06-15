@@ -157,8 +157,9 @@ type Video struct {
 	Start         string         `xml:"start,attr,omitempty"`
 	Params        []Param        `xml:"param,omitempty"`
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
-	NestedVideos  []Video        `xml:"video,omitempty"`  // Support nested video elements with lanes
-	NestedTitles  []Title        `xml:"title,omitempty"` // Support nested title elements with lanes
+	NestedVideos     []Video     `xml:"video,omitempty"`      // Support nested video elements with lanes
+	NestedAssetClips []AssetClip `xml:"asset-clip,omitempty"` // Support nested asset-clip elements with lanes
+	NestedTitles     []Title     `xml:"title,omitempty"`      // Support nested title elements with lanes
 }
 
 type AdjustTransform struct {

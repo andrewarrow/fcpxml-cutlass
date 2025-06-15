@@ -320,31 +320,53 @@ func (tb *TimelineBuilder) buildSpineContentUsingStructs() (string, error) {
 		}
 	}
 	
-	// Add new elements by converting from our custom types to fcp types
+	// Add new elements directly as structs instead of parsing XML strings
 	for _, element := range tb.elements {
-		elementXML := element.GetXML()
-		
-		// Parse each element into the appropriate fcp type
-		if strings.Contains(elementXML, "<video ") {
-			var video fcp.Video
-			if err := xml.Unmarshal([]byte(elementXML), &video); err == nil {
-				tempSpine.Videos = append(tempSpine.Videos, video)
-			}
-		} else if strings.Contains(elementXML, "<asset-clip ") {
-			var assetClip fcp.AssetClip
-			if err := xml.Unmarshal([]byte(elementXML), &assetClip); err == nil {
-				tempSpine.AssetClips = append(tempSpine.AssetClips, assetClip)
-			}
-		} else if strings.Contains(elementXML, "<ref-clip ") {
-			var refClip fcp.RefClip
-			if err := xml.Unmarshal([]byte(elementXML), &refClip); err == nil {
-				tempSpine.RefClips = append(tempSpine.RefClips, refClip)
+		// Type assert to get the underlying struct and convert to fcp types
+		switch e := element.(type) {
+		case *clips.VideoElement:
+			// Convert VideoElement to fcp.Video struct directly
+			video := tb.convertVideoElementToFCPVideo(e)
+			tempSpine.Videos = append(tempSpine.Videos, video)
+		case *clips.AssetClipElement:
+			// Convert AssetClipElement to fcp.AssetClip struct directly
+			assetClip := tb.convertAssetClipElementToFCPAssetClip(e)
+			tempSpine.AssetClips = append(tempSpine.AssetClips, assetClip)
+		case *clips.RefClipElement:
+			// Convert RefClipElement to fcp.RefClip struct directly
+			refClip := tb.convertRefClipElementToFCPRefClip(e)
+			tempSpine.RefClips = append(tempSpine.RefClips, refClip)
+		case *clips.VideoWithAudioElement:
+			// Convert VideoWithAudioElement to fcp.Video struct directly
+			video := tb.convertVideoWithAudioElementToFCPVideo(e)
+			tempSpine.Videos = append(tempSpine.Videos, video)
+		case *clips.AudioOnlyElement:
+			// Convert AudioOnlyElement to fcp.AssetClip struct directly
+			assetClip := tb.convertAudioOnlyElementToFCPAssetClip(e)
+			tempSpine.AssetClips = append(tempSpine.AssetClips, assetClip)
+		default:
+			// Fallback: parse XML for unknown types (should be eliminated over time)
+			elementXML := element.GetXML()
+			if strings.Contains(elementXML, "<video ") {
+				var video fcp.Video
+				if err := xml.Unmarshal([]byte(elementXML), &video); err == nil {
+					tempSpine.Videos = append(tempSpine.Videos, video)
+				}
+			} else if strings.Contains(elementXML, "<asset-clip ") {
+				var assetClip fcp.AssetClip
+				if err := xml.Unmarshal([]byte(elementXML), &assetClip); err == nil {
+					tempSpine.AssetClips = append(tempSpine.AssetClips, assetClip)
+				}
+			} else if strings.Contains(elementXML, "<ref-clip ") {
+				var refClip fcp.RefClip
+				if err := xml.Unmarshal([]byte(elementXML), &refClip); err == nil {
+					tempSpine.RefClips = append(tempSpine.RefClips, refClip)
+				}
 			}
 		}
 	}
 	
 	// Marshal the entire spine with proper formatting
-	// Use empty prefix and let the parent FCPXML handle indentation
 	spineXML, err := xml.MarshalIndent(tempSpine, "", "    ")
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal spine: %v", err)
@@ -352,8 +374,6 @@ func (tb *TimelineBuilder) buildSpineContentUsingStructs() (string, error) {
 	
 	// Extract just the inner content (remove the <spine> wrapper)
 	spineStr := string(spineXML)
-	
-	// Remove the spine tags and return just the inner content
 	start := strings.Index(spineStr, ">") + 1
 	end := strings.LastIndex(spineStr, "</spine>")
 	
@@ -361,32 +381,25 @@ func (tb *TimelineBuilder) buildSpineContentUsingStructs() (string, error) {
 		innerContent := spineStr[start:end]
 		
 		// Add proper indentation for spine content within the sequence
-		// Note: These indentation constants match the FCPXML structural hierarchy
 		const (
-			spineElementIndent = "                        " // 6 levels deep: fcpxml > library > event > project > sequence > spine > element
-			spineCloseIndent   = "                    "     // 5 levels deep: fcpxml > library > event > project > sequence > spine (closing)
+			spineElementIndent = "                        " // 6 levels deep
+			spineCloseIndent   = "                    "     // 5 levels deep
 		)
 		
 		if strings.TrimSpace(innerContent) != "" {
-			// Remove leading and trailing whitespace, then apply proper indentation
 			trimmedContent := strings.TrimSpace(innerContent)
-			
-			// Split into lines and re-indent properly
 			lines := strings.Split(trimmedContent, "\n")
 			indentedLines := make([]string, 0, len(lines)+2)
 			
-			// Add starting newline
 			indentedLines = append(indentedLines, "")
 			
 			for _, line := range lines {
 				trimmedLine := strings.TrimSpace(line)
 				if trimmedLine != "" {
-					// Indent each element line appropriately for spine content
 					indentedLines = append(indentedLines, spineElementIndent+trimmedLine)
 				}
 			}
 			
-			// Add ending indentation
 			indentedLines = append(indentedLines, spineCloseIndent)
 			
 			return strings.Join(indentedLines, "\n"), nil
@@ -394,6 +407,49 @@ func (tb *TimelineBuilder) buildSpineContentUsingStructs() (string, error) {
 	}
 	
 	return "", nil
+}
+
+// Converter methods to transform custom clip types to fcp structs
+
+func (tb *TimelineBuilder) convertVideoElementToFCPVideo(ve *clips.VideoElement) fcp.Video {
+	// This method needs to be implemented - for now use the existing GetXML approach
+	// as a temporary measure until we can refactor the clips package
+	var video fcp.Video
+	elementXML := ve.GetXML()
+	xml.Unmarshal([]byte(elementXML), &video)
+	return video
+}
+
+func (tb *TimelineBuilder) convertAssetClipElementToFCPAssetClip(ace *clips.AssetClipElement) fcp.AssetClip {
+	// This method needs to be implemented - for now use the existing GetXML approach
+	var assetClip fcp.AssetClip
+	elementXML := ace.GetXML()
+	xml.Unmarshal([]byte(elementXML), &assetClip)
+	return assetClip
+}
+
+func (tb *TimelineBuilder) convertRefClipElementToFCPRefClip(rce *clips.RefClipElement) fcp.RefClip {
+	// This method needs to be implemented - for now use the existing GetXML approach
+	var refClip fcp.RefClip
+	elementXML := rce.GetXML()
+	xml.Unmarshal([]byte(elementXML), &refClip)
+	return refClip
+}
+
+func (tb *TimelineBuilder) convertVideoWithAudioElementToFCPVideo(vwae *clips.VideoWithAudioElement) fcp.Video {
+	// This method needs to be implemented - for now use the existing GetXML approach
+	var video fcp.Video
+	elementXML := vwae.GetXML()
+	xml.Unmarshal([]byte(elementXML), &video)
+	return video
+}
+
+func (tb *TimelineBuilder) convertAudioOnlyElementToFCPAssetClip(aoe *clips.AudioOnlyElement) fcp.AssetClip {
+	// This method needs to be implemented - for now use the existing GetXML approach
+	var assetClip fcp.AssetClip
+	elementXML := aoe.GetXML()
+	xml.Unmarshal([]byte(elementXML), &assetClip)
+	return assetClip
 }
 
 // Helper methods

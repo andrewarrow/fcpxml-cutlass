@@ -511,19 +511,7 @@ func (v *VideoWithAudioElement) GetXML() string {
 		audioDuration = v.Duration // fallback to video duration if not specified
 	}
 
-	// Create nested videos list with the audio asset-clip
-	video.NestedVideos = []fcp.Video{}
-
-	// We need to add this as a nested asset-clip, but fcp.Video doesn't support nested asset-clips
-	// So we'll temporarily use a manual approach for this complex case
-	xmlBytes, err := xml.MarshalIndent(video, "", "    ")
-	if err != nil {
-		return "<!-- Error marshaling video with audio element: " + err.Error() + " -->"
-	}
-
-	xmlStr := string(xmlBytes)
-
-	// Create audio asset-clip using struct
+	// Create nested asset-clip using struct approach
 	audioClip := fcp.AssetClip{
 		Ref:       v.AudioRef,
 		Lane:      "-1",
@@ -535,12 +523,10 @@ func (v *VideoWithAudioElement) GetXML() string {
 		AudioRole: "dialogue",
 	}
 
-	audioClipXMLBytes, err := xml.MarshalIndent(audioClip, "    ", "    ")
-	if err != nil {
-		audioClipXMLBytes = []byte("<!-- Error marshaling audio clip: " + err.Error() + " -->")
-	}
-	audioClipXML := string(audioClipXMLBytes)
+	// Add nested asset-clips to the video struct
+	video.NestedAssetClips = []fcp.AssetClip{audioClip}
 
+	// Add text overlay if requested
 	if v.HasText {
 		textStyleID := s.generateTextStyleID(v.Text, v.Name)
 		title := fcp.Title{
@@ -569,20 +555,16 @@ func (v *VideoWithAudioElement) GetXML() string {
 				},
 			},
 		}
-
-		titleXML, err := xml.MarshalIndent(title, "    ", "    ")
-		if err != nil {
-			titleXML = []byte("<!-- Error marshaling title: " + err.Error() + " -->")
-		}
-
-		// Insert both audio and title before closing tag
-		xmlStr = strings.Replace(xmlStr, "</video>", "    "+audioClipXML+"\n    "+string(titleXML)+"\n</video>", 1)
-	} else {
-		// Insert just audio before closing tag
-		xmlStr = strings.Replace(xmlStr, "</video>", "    "+audioClipXML+"\n</video>", 1)
+		video.NestedTitles = []fcp.Title{title}
 	}
 
-	return xmlStr
+	// Marshal to XML using structs only
+	xmlBytes, err := xml.MarshalIndent(video, "", "    ")
+	if err != nil {
+		return "<!-- Error marshaling video with audio element: " + err.Error() + " -->"
+	}
+
+	return string(xmlBytes)
 }
 
 func (v *VideoWithAudioElement) GetDuration() string { return v.Duration }
