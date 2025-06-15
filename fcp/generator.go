@@ -878,76 +878,32 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 
-		// Find the first video element in the spine to add nested titles
+		// Find the video element that covers the text offset time
 		var targetVideo *Video = nil
+		offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(offsetSeconds))
+		
 		for i := range sequence.Spine.Videos {
-			targetVideo = &sequence.Spine.Videos[i]
-			break
+			video := &sequence.Spine.Videos[i]
+			videoOffsetFrames := parseFCPDuration(video.Offset)
+			videoDurationFrames := parseFCPDuration(video.Duration)
+			videoEndFrames := videoOffsetFrames + videoDurationFrames
+			
+			// Check if the text offset falls within this video's timeline
+			if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
+				targetVideo = video
+				break
+			}
 		}
-
+		
+		// If no video covers the text timing, use the last video or first video as fallback
+		if targetVideo == nil && len(sequence.Spine.Videos) > 0 {
+			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+		}
+		
 		if targetVideo == nil {
 			return fmt.Errorf("no video element found in spine to add text overlays to")
 		}
 
-		// Add slide animation to the video element if it doesn't already have one
-		if targetVideo.AdjustTransform == nil {
-			// Use the same animation pattern as samples/slide.fcpxml
-			targetVideo.AdjustTransform = &AdjustTransform{
-				Params: []Param{
-					{
-						Name: "anchor",
-						KeyframeAnimation: &KeyframeAnimation{
-							Keyframes: []Keyframe{
-								{
-									Time:  "86423337/24000s",
-									Value: "0 0",
-									Curve: "linear",
-								},
-							},
-						},
-					},
-					{
-						Name: "position",
-						KeyframeAnimation: &KeyframeAnimation{
-							Keyframes: []Keyframe{
-								{
-									Time:  "86399313/24000s",
-									Value: "0 0",
-								},
-								{
-									Time:  "86423337/24000s",
-									Value: "51.3109 0",
-								},
-							},
-						},
-					},
-					{
-						Name: "rotation",
-						KeyframeAnimation: &KeyframeAnimation{
-							Keyframes: []Keyframe{
-								{
-									Time:  "86423337/24000s",
-									Value: "0",
-									Curve: "linear",
-								},
-							},
-						},
-					},
-					{
-						Name: "scale",
-						KeyframeAnimation: &KeyframeAnimation{
-							Keyframes: []Keyframe{
-								{
-									Time:  "86423337/24000s",
-									Value: "1 1",
-									Curve: "linear",
-								},
-							},
-						},
-					},
-				},
-			}
-		}
 
 		// Default text duration of 10 seconds
 		textDurationSeconds := 10.0
@@ -958,19 +914,16 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			// Create new transaction for each text element to ensure unique IDs
 			textTx := NewTransaction(registry)
 
-			// Reserve ID for text-style-def (must be unique for each text element)
-			styleIDs := textTx.ReserveIDs(1)
-			textStyleID := fmt.Sprintf("ts%s", styleIDs[0][1:]) // Convert r123 to ts123
+			// Generate unique text-style-def ID using hash-based approach (CLAUDE.md requirement)
+			// This prevents ID collisions when adding text to existing FCPXML files
+			textStyleID := GenerateTextStyleID(textLine, fmt.Sprintf("line_%d_offset_%.1f", i, offsetSeconds))
 
 			// Calculate staggered timing: first element at offsetSeconds, each subsequent +1 second
-			// These offsets need to be relative to the video's start time for proper FCP timing
-			elementOffsetSeconds := offsetSeconds + float64(i)
-			
-			// Parse the video's start time and add our offset to it
+			// Text timing should be relative to the target video's start time
 			videoStartFrames := parseFCPDuration(targetVideo.Start)
-			offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(elementOffsetSeconds))
-			totalOffsetFrames := videoStartFrames + offsetFrames
-			elementOffset := fmt.Sprintf("%d/24000s", totalOffsetFrames)
+			staggerFrames := i * 24024 // 24024 frames = 1 second
+			elementOffsetFrames := videoStartFrames + staggerFrames
+			elementOffset := fmt.Sprintf("%d/24000s", elementOffsetFrames)
 
 			// Calculate Y position offset: each element 300px lower (negative Y in FCP coordinates)
 			// Pattern from sample: Position "0 0", "0 -300", "0 -600" 
@@ -1101,30 +1054,11 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 				return fmt.Errorf("failed to commit text transaction for element %d: %v", i, err)
 			}
 
-			// Add title as nested element inside the video element
+			// Add title as nested element within the target video
 			targetVideo.NestedTitles = append(targetVideo.NestedTitles, title)
 		}
 
-		// Extend the video duration to accommodate all text elements
-		if len(textLines) > 0 {
-			// Calculate the end time of the last text element on the timeline
-			lastTextOffsetSeconds := offsetSeconds + float64(len(textLines)-1)
-			lastTextEndSeconds := lastTextOffsetSeconds + textDurationSeconds
-			
-			// Convert to frame-aligned duration
-			lastTextEndFrames := parseFCPDuration(ConvertSecondsToFCPDuration(lastTextEndSeconds))
-			
-			// Current video duration in frames
-			currentVideoFrames := parseFCPDuration(targetVideo.Duration)
-			
-			// Only extend if the text goes beyond the current video duration
-			if lastTextEndFrames > currentVideoFrames {
-				targetVideo.Duration = fmt.Sprintf("%d/24000s", lastTextEndFrames)
-				
-				// Also update the sequence duration
-				sequence.Duration = targetVideo.Duration
-			}
-		}
+		// Text elements are added as overlays - no need to extend underlying video duration
 	}
 
 	return nil

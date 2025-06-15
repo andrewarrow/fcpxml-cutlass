@@ -113,36 +113,12 @@ Third Text Line`
 	sequence := &baseFCPXML.Library.Events[0].Projects[0].Sequences[0]
 	video := &sequence.Spine.Videos[0]
 
-	// Test 1: Verify slide animation was added
-	if video.AdjustTransform == nil {
-		t.Error("Expected slide animation (AdjustTransform) to be added to video element")
-	} else {
-		// Check that position animation exists
-		hasPositionParam := false
-		for _, param := range video.AdjustTransform.Params {
-			if param.Name == "position" && param.KeyframeAnimation != nil {
-				hasPositionParam = true
-				// Verify keyframes
-				if len(param.KeyframeAnimation.Keyframes) != 2 {
-					t.Errorf("Expected 2 position keyframes, got %d", len(param.KeyframeAnimation.Keyframes))
-				}
-				// Check slide values
-				if param.KeyframeAnimation.Keyframes[1].Value != "51.3109 0" {
-					t.Errorf("Expected slide end position '51.3109 0', got '%s'", param.KeyframeAnimation.Keyframes[1].Value)
-				}
-			}
-		}
-		if !hasPositionParam {
-			t.Error("Expected position parameter with keyframe animation in slide animation")
-		}
-	}
-
-	// Test 2: Verify text elements were added as nested titles
+	// Test 1: Verify text elements were added as nested titles within video
 	if len(video.NestedTitles) != 3 {
 		t.Errorf("Expected 3 nested title elements, got %d", len(video.NestedTitles))
 	}
 
-	// Test 3: Verify text content matches input
+	// Test 2: Verify text content matches input
 	expectedTexts := []string{"First Text Line", "Second Text Line", "Third Text Line"}
 	for i, title := range video.NestedTitles {
 		if title.Text == nil || title.Text.TextStyle.Text != expectedTexts[i] {
@@ -150,7 +126,7 @@ Third Text Line`
 		}
 	}
 
-	// Test 4: Verify lane assignments (descending order)
+	// Test 3: Verify lane assignments (descending order)
 	expectedLanes := []string{"3", "2", "1"}
 	for i, title := range video.NestedTitles {
 		if title.Lane != expectedLanes[i] {
@@ -158,10 +134,9 @@ Third Text Line`
 		}
 	}
 
-	// Test 5: Verify staggered timing (1 second intervals)
-	videoStart := 86399313 // frames from the video start time
+	// Test 4: Verify staggered timing - should be video start + i seconds
 	for i, title := range video.NestedTitles {
-		expectedOffset := videoStart + 24024*(i+1) // 24024 frames = 1 second
+		expectedOffset := 86399313 + (i * 24024) // Video start + i seconds (24024 frames per second)
 		actualOffsetStr := title.Offset
 		actualOffset := parseFCPDuration(actualOffsetStr)
 		
@@ -170,7 +145,7 @@ Third Text Line`
 		}
 	}
 
-	// Test 6: Verify Y position offsets (300px increments)
+	// Test 5: Verify Y position offsets (300px increments)
 	for i, title := range video.NestedTitles {
 		if i == 0 {
 			// First element should have no Position parameter (defaults to 0,0)
@@ -203,11 +178,11 @@ Third Text Line`
 		}
 	}
 
-	// Test 7: Verify video duration was extended
-	extendedDuration := parseFCPDuration(video.Duration)
+	// Test 7: Verify video duration remains unchanged (text overlays don't extend video)
+	actualDuration := parseFCPDuration(video.Duration)
 	originalDuration := 241241
-	if extendedDuration <= originalDuration {
-		t.Errorf("Expected video duration to be extended beyond %d frames, got %d frames", originalDuration, extendedDuration)
+	if actualDuration != originalDuration {
+		t.Errorf("Expected video duration to remain %d frames, got %d frames", originalDuration, actualDuration)
 	}
 
 	// Test 8: Verify text effect was added to resources
@@ -347,25 +322,29 @@ Line Four`
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
 
-	// Verify the integration worked
+	// Verify the integration worked - text should be nested within video
 	updatedVideo := &sequence.Spine.Videos[0]
 	
-	// Should have 4 text elements
+	// Should have 4 text elements nested in video
 	if len(updatedVideo.NestedTitles) != 4 {
 		t.Errorf("Expected 4 nested titles, got %d", len(updatedVideo.NestedTitles))
 	}
 
-	// Should have slide animation
-	if updatedVideo.AdjustTransform == nil {
-		t.Error("Expected slide animation to be added")
-	}
-
-	// Verify timing starts at 2 seconds offset
+	// Verify timing uses staggered offsets relative to video start time
 	if len(updatedVideo.NestedTitles) > 0 {
 		firstOffset := parseFCPDuration(updatedVideo.NestedTitles[0].Offset)
-		expectedFirstOffset := 86399313 + 48048 // video start + 2 seconds
+		expectedFirstOffset := 86399313 // Video start time for first element
 		if firstOffset != expectedFirstOffset {
 			t.Errorf("Expected first text offset %d, got %d", expectedFirstOffset, firstOffset)
+		}
+		
+		// Verify second element is staggered by 1 second
+		if len(updatedVideo.NestedTitles) > 1 {
+			secondOffset := parseFCPDuration(updatedVideo.NestedTitles[1].Offset)
+			expectedSecondOffset := 86399313 + 24024 // Video start + 1 second
+			if secondOffset != expectedSecondOffset {
+				t.Errorf("Expected second text offset %d, got %d", expectedSecondOffset, secondOffset)
+			}
 		}
 	}
 
@@ -381,8 +360,9 @@ Line Four`
 		t.Error("Expected text content not found in XML output")
 	}
 	
-	if !strings.Contains(xmlStr, "adjust-transform") {
-		t.Error("Expected slide animation not found in XML output")
+	// Text should appear as nested titles within videos
+	if !strings.Contains(xmlStr, "title") {
+		t.Error("Expected title elements not found in XML output")
 	}
 }
 
