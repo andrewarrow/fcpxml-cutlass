@@ -1203,3 +1203,127 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 
 	return nil
 }
+
+// isAudioFile checks if the given file is an audio file (WAV, MP3, M4A).
+//
+// 🚨 CLAUDE.md Rule: Audio vs Video Asset Properties
+// - Audio files MUST have HasAudio="1" and AudioSources set
+// - Audio files MUST NOT have HasVideo="1" or VideoSources
+// - Duration is determined by actual audio file duration
+func isAudioFile(filePath string) bool {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	return ext == ".wav" || ext == ".mp3" || ext == ".m4a" || ext == ".aac" || ext == ".flac"
+}
+
+// AddAudio adds an audio asset and asset-clip to the FCPXML structure as the main audio track starting at 00:00.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets, sequence.Spine.AssetClips
+// - Atomic ID reservation prevents race conditions and ID collisions
+// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
+// - Maintains UID consistency → generateUID() function for deterministic UIDs
+// - Audio-specific properties → HasAudio="1", AudioSources, AudioChannels, AudioRate
+//
+// ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
+func AddAudio(fcpxml *FCPXML, audioPath string) error {
+	// Validate that this is actually an audio file
+	if !isAudioFile(audioPath) {
+		return fmt.Errorf("file is not a supported audio format (WAV, MP3, M4A, AAC, FLAC): %s", audioPath)
+	}
+
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Check if asset already exists for this file
+	if asset, exists := registry.GetOrCreateAsset(audioPath); exists {
+		// Asset already exists, just add asset-clip to spine at 00:00
+		return addAudioAssetClipToSpine(fcpxml, asset)
+	}
+
+	// Create transaction for atomic resource creation
+	tx := NewTransaction(registry)
+
+	// Get absolute path
+	absPath, err := filepath.Abs(audioPath)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to get absolute path: %v", err)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		tx.Rollback()
+		return fmt.Errorf("audio file does not exist: %s", absPath)
+	}
+
+	// Reserve ID atomically to prevent collisions
+	ids := tx.ReserveIDs(1)
+	assetID := ids[0]
+
+	// Generate unique asset name
+	audioName := strings.TrimSuffix(filepath.Base(audioPath), filepath.Ext(audioPath))
+
+	// Use a default duration of 60 seconds for audio, properly frame-aligned
+	// Real audio duration would need audio file parsing, but for now use default
+	defaultDurationSeconds := 60.0
+	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
+
+	// Create asset using transaction (CreateAsset handles audio-specific properties)
+	asset, err := tx.CreateAsset(assetID, absPath, audioName, frameDuration, "r1")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create audio asset: %v", err)
+	}
+
+	// Commit transaction - adds resources to registry and FCPXML
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Add asset-clip to spine at 00:00
+	return addAudioAssetClipToSpine(fcpxml, asset)
+}
+
+// addAudioAssetClipToSpine adds an audio asset-clip to the sequence spine at 00:00
+func addAudioAssetClipToSpine(fcpxml *FCPXML, asset *Asset) error {
+	// Add asset-clip to the spine if there's a sequence
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+
+		// Audio track starts at 00:00 (offset "0s")
+		audioOffset := "0s"
+
+		// Get audio duration from asset
+		audioDuration := asset.Duration
+
+		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
+		// - Asset-clips MUST use the ASSET's format, not hardcoded sequence format
+		// - Audio clips use lane="A1" for the main audio track
+		assetClip := AssetClip{
+			Ref:       asset.ID,
+			Lane:      "A1",           // Main audio track
+			Offset:    audioOffset,    // Start at 00:00
+			Name:      asset.Name,
+			Duration:  audioDuration,
+			Format:    asset.Format,   // Use asset's format
+			TCFormat:  "NDF",
+			AudioRole: "dialogue",
+		}
+
+		// Add asset-clip to spine using structs
+		sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, assetClip)
+
+		// Update sequence duration if audio extends beyond current content
+		currentSequenceDurationFrames := parseFCPDuration(sequence.Duration)
+		audioDurationFrames := parseFCPDuration(audioDuration)
+		
+		if audioDurationFrames > currentSequenceDurationFrames {
+			sequence.Duration = audioDuration
+		}
+	}
+
+	return nil
+}

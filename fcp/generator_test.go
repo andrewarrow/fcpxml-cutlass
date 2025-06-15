@@ -121,7 +121,7 @@ var movxmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 
 <fcpxml version="1.13">
     <resources>
-        <asset id="r2" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="240240/24000s">
+        <asset id="r2" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
         </asset>
         <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
@@ -208,7 +208,7 @@ var appendmovtopngxmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         <asset id="r2" name="cs.pitt.edu" uid="%s" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
         </asset>
-        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="240240/24000s">
+        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
         </asset>
         <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
@@ -298,7 +298,7 @@ var appendMovToExistingTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         <asset id="r2" name="cs.pitt.edu" uid="%s" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
         </asset>
-        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" duration="240240/24000s">
+        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
         </asset>
         <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>

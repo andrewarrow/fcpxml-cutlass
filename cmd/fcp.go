@@ -326,6 +326,72 @@ Requires an existing FCPXML file with video content.`,
 	},
 }
 
+var addAudioCmd = &cobra.Command{
+	Use:   "add-audio [audio-file]",
+	Short: "Add an audio file as the main audio track starting at 00:00",
+	Long:  `Add an audio asset and asset-clip to an FCPXML file as the main audio track starting at 00:00.
+Supports WAV, MP3, M4A, and other audio formats.
+If --input is specified, the audio will be added to an existing FCPXML file.
+Otherwise, a new FCPXML file is created.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		audioFile := args[0]
+		
+		// Get input and output filenames from flags
+		input, _ := cmd.Flags().GetString("input")
+		output, _ := cmd.Flags().GetString("output")
+		var filename string
+		
+		if output != "" {
+			filename = output
+		} else {
+			// Generate default filename with unix timestamp
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
+		}
+		
+		var fcpxml *fcp.FCPXML
+		var err error
+		
+		// Load existing FCPXML or create new one
+		if input != "" {
+			fcpxml, err = fcp.ReadFromFile(input)
+			if err != nil {
+				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+				return
+			}
+			fmt.Printf("Loaded existing FCPXML: %s\n", input)
+		} else {
+			// Generate empty FCPXML structure
+			fcpxml, err = fcp.GenerateEmpty("")
+			if err != nil {
+				fmt.Printf("Error creating FCPXML structure: %v\n", err)
+				return
+			}
+		}
+		
+		// Add audio to the structure
+		err = fcp.AddAudio(fcpxml, audioFile)
+		if err != nil {
+			fmt.Printf("Error adding audio: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		if input != "" {
+			fmt.Printf("Added audio to existing FCPXML and saved to: %s\n", filename)
+		} else {
+			fmt.Printf("Generated FCPXML with audio: %s\n", filename)
+		}
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -349,9 +415,14 @@ func init() {
 	addSlideCmd.Flags().StringP("input", "i", "", "Input FCPXML file to read from (required)")
 	addSlideCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	
+	// Add flags to add-audio subcommand
+	addAudioCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
+	addAudioCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
 	fcpCmd.AddCommand(addTextCmd)
 	fcpCmd.AddCommand(addSlideCmd)
+	fcpCmd.AddCommand(addAudioCmd)
 }

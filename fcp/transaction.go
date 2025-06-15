@@ -74,11 +74,20 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		asset.Duration = "0s" // CRITICAL: Override caller duration for images
 		asset.VideoSources = "1" // Required for image assets
 		// Image files (PNG, JPG, JPEG) should NOT have audio properties
-	} else {
-		// Video files have audio properties
+	} else if isAudioFile(absPath) {
+		// Audio files have only audio properties, NO video properties
+		asset.HasVideo = "" // Remove video properties for audio
 		asset.HasAudio = "1"
 		asset.AudioSources = "1"
 		asset.AudioChannels = "2"
+		asset.AudioRate = "48000"
+		// Note: Duration remains as provided by caller (audio duration)
+	} else {
+		// Video files have both audio and video properties
+		asset.HasAudio = "1"
+		asset.AudioSources = "1"
+		asset.AudioChannels = "2"
+		asset.AudioRate = "48000"
 	}
 
 	tx.created = append(tx.created, &AssetWrapper{asset})
