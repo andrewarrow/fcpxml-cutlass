@@ -32,6 +32,37 @@ xmllint --dtdvalid FCPXMLv1_13.dtd output.fcpxml
 
 This validation MUST pass without errors. If it fails, the XML structure is broken and must be fixed before the changes are complete.
 
+## 🚨 CRITICAL: Format Consistency Requirements 🚨
+
+**FCPXML asset-clips MUST use the sequence format, NOT the asset's native format. Format mismatches CRASH Final Cut Pro.**
+
+❌ BAD: Asset has format "r3" (1080p), but asset-clip uses format "r3" while sequence uses format "r1" (720p)
+✅ GOOD: Asset has format "r1" (720p), asset-clip uses format "r1" (720p), sequence uses format "r1" (720p)
+
+**Key Rules:**
+- Asset-clips inherit the sequence format, never their asset's native format
+- For this program: ALWAYS use "r1" (720p) for both assets and asset-clips since we generate 720p videos
+- Format mismatch between sequence.Format and assetClip.Format causes FCP import crashes
+- The ValidateClaudeCompliance() function MUST check for format consistency violations
+
+**Example crash pattern:**
+```xml
+<sequence format="r1">  <!-- 720p sequence -->
+  <spine>
+    <asset-clip format="r3"/> <!-- 1080p clip = CRASH! -->
+  </spine>
+</sequence>
+```
+
+**Correct pattern:**
+```xml
+<sequence format="r1">  <!-- 720p sequence -->
+  <spine>
+    <asset-clip format="r1"/> <!-- 720p clip = WORKS! -->
+  </spine>
+</sequence>
+```
+
 ## CRITICAL: Unique ID Requirements
 FCPXML requires ALL IDs to be unique within the document. Common violations include:
 

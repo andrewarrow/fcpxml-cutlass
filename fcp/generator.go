@@ -300,25 +300,19 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	// nextID = fmt.Sprintf("r%d", resourceCount+1)
 	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
 	assetID := fmt.Sprintf("r%d", resourceCount+1)
-	formatID := fmt.Sprintf("r%d", resourceCount+2)
 
 	// Generate bookmark (fallback to empty string if Swift unavailable)
 	bookmark, _ := generateBookmark(absPath)
 
-	// Create asset format (based on simple_video1.fcpxml)
-	assetFormat := Format{
-		ID:            formatID,
-		FrameDuration: "20/600s",  // 1/30 second frame duration
-		Width:         "1620",
-		Height:        "1080",
-		ColorSpace:    "1-1-1 (Rec. 709)",
-	}
+	// 🚨 CLAUDE.md Rule: Format Consistency - Videos use 720p sequence format (r1)
+	// Note: No separate format needed since we always use 720p sequence format
 
 	// Use a default duration of 10 seconds, properly frame-aligned
 	defaultDurationSeconds := 10.0
 	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
 	
 	// Create asset
+	// 🚨 CLAUDE.md Rule: Format Consistency - Videos use 720p sequence format (r1)
 	asset := Asset{
 		ID:            assetID,
 		Name:          videoName,
@@ -326,7 +320,7 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		Start:         "0s",
 		Duration:      frameDuration,
 		HasVideo:      "1",
-		Format:        formatID,
+		Format:        "r1",  // Always use 720p sequence format
 		HasAudio:      "1",
 		VideoSources:  "1",
 		AudioSources:  "1",
@@ -345,9 +339,8 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		// This would need to be added to the types.go if bookmark support is needed
 	}
 
-	// Add resources
+	// Add resources - only add asset, no separate format needed  
 	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
-	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, assetFormat)
 
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
@@ -356,12 +349,15 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
 		
+		// 🚨 CLAUDE.md Rule: Format Consistency Requirements  
+		// - Asset-clips MUST use sequence format, NOT asset format
+		// - Since we always use 720p, both asset and clip use r1 format
 		assetClip := AssetClip{
 			Ref:       assetID,
 			Offset:    "0s",
 			Name:      videoName,
 			Duration:  clipDuration,
-			Format:    formatID,
+			Format:    "r1",  // CRITICAL: Always use 720p sequence format
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
 		}
@@ -450,6 +446,23 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 			}
 		}
 	}
+
+	// 🚨 CLAUDE.md Rule: Format Consistency Requirements
+	// Check for format mismatches between sequences and asset-clips
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				sequenceFormat := sequence.Format
+				
+				// Check asset-clip formats in spine
+				for _, clip := range sequence.Spine.AssetClips {
+					if clip.Format != sequenceFormat {
+						violations = append(violations, fmt.Sprintf("Format mismatch: AssetClip '%s' has format '%s' but sequence has format '%s' - CAUSES FCP CRASHES", clip.Name, clip.Format, sequenceFormat))
+					}
+				}
+			}
+		}
+	}
 	
 	return violations
 }
@@ -503,19 +516,10 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// nextID = fmt.Sprintf("r%d", resourceCount+1)
 	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
 	assetID := fmt.Sprintf("r%d", resourceCount+1)
-	formatID := fmt.Sprintf("r%d", resourceCount+2)
+	// Note: No separate format needed for images since we always use 720p sequence format
 
 	// Generate bookmark (fallback to empty string if Swift unavailable)
 	bookmark, _ := generateBookmark(absPath)
-
-	// Create asset format for image (based on image requirements)
-	assetFormat := Format{
-		ID:            formatID,
-		FrameDuration: "1001/24000s",  // Standard frame duration for 23.976 fps
-		Width:         "1920",         // Standard HD width for images
-		Height:        "1080",         // Standard HD height for images
-		ColorSpace:    "1-1-1 (Rec. 709)",
-	}
 
 	// Convert duration to frame-aligned format
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
@@ -524,6 +528,7 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// 🚨 CLAUDE.md Rule: Image vs Video Asset Properties
 	// - Image files should NOT have audio properties (HasAudio, AudioSources, AudioChannels)
 	// - Image files MUST have VideoSources = "1" 
+	// 🚨 CLAUDE.md Rule: Format Consistency - Images use 720p sequence format (r1)
 	asset := Asset{
 		ID:            assetID,
 		Name:          imageName,
@@ -531,8 +536,8 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		Start:         "0s",
 		Duration:      frameDuration,
 		HasVideo:      "1",
-		Format:        formatID,
-		VideoSources:  "1",  // Required for image assets
+		Format:        "r1",  // Always use 720p sequence format
+		VideoSources:  "1",   // Required for image assets
 		// Note: NO audio properties for image files
 		MediaRep: MediaRep{
 			Kind: "original-media",
@@ -547,9 +552,8 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		// This would need to be added to the types.go if bookmark support is needed
 	}
 
-	// Add resources
+	// Add resources - only add asset, no separate format needed
 	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
-	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, assetFormat)
 
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
@@ -558,12 +562,18 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		// Create asset-clip with frame-aligned duration
 		clipDuration := ConvertSecondsToFCPDuration(durationSeconds)
 		
+		// 🚨 CLAUDE.md Rule: Format Consistency Requirements  
+		// - Asset-clips MUST use sequence format, NOT asset format
+		// - Format mismatch between sequence and asset-clip causes FCP crashes
+		// - Asset keeps its native format, but clips inherit sequence format
+		sequenceFormat := sequence.Format  // Use sequence format, not asset format
+		
 		assetClip := AssetClip{
 			Ref:      assetID,
 			Offset:   "0s",
 			Name:     imageName,
 			Duration: clipDuration,
-			Format:   formatID,
+			Format:   sequenceFormat,  // CRITICAL: Use sequence format, not formatID
 			TCFormat: "NDF",
 			// Note: NO AudioRole for image clips
 		}
