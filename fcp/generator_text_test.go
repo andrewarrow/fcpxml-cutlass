@@ -366,6 +366,327 @@ Line Four`
 	}
 }
 
+// TestAddTextFromFileVideoTargeting tests the video targeting and staggering logic comprehensively
+func TestAddTextFromFileVideoTargeting(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test text file with 4 lines to match real scenario
+	testTextFile := filepath.Join(tempDir, "test_stagger.txt")
+	testTextContent := `Paused All of LA
+Anti-ICE protests
+Jaguar I-PACE
+Costs $200k`
+	
+	err := os.WriteFile(testTextFile, []byte(testTextContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test text file: %v", err)
+	}
+
+	// Create FCPXML with multiple video elements to test video targeting
+	// This mimics the structure of cutlass_1750002184.fcpxml
+	fcpxml := &FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Assets: []Asset{
+				{
+					ID:           "r2",
+					Name:         "cs.pitt.edu",
+					UID:          "3BE5548A-316C-B614-3FE0-DE58B2D89611",
+					Start:        "0s",
+					Duration:     "0s",
+					HasVideo:     "1",
+					Format:       "r3",
+					VideoSources: "1",
+				},
+				{
+					ID:           "r5",
+					Name:         "shopzilla.com",
+					UID:          "017AC05B-A3A0-4BA4-58B0-FFB89CCA64C6",
+					Start:        "0s",
+					Duration:     "0s",
+					HasVideo:     "1",
+					Format:       "r6",
+					VideoSources: "1",
+				},
+			},
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat720p2398",
+					FrameDuration: "1001/24000s",
+					Width:         "1280",
+					Height:        "720",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+				{
+					ID:         "r3",
+					Name:       "FFVideoFormatRateUndefined",
+					Width:      "1280",
+					Height:     "800",
+					ColorSpace: "1-13-1",
+				},
+				{
+					ID:         "r6",
+					Name:       "FFVideoFormatRateUndefined",
+					Width:      "1280",
+					Height:     "720",
+					ColorSpace: "1-13-1",
+				},
+			},
+			Effects: []Effect{
+				{
+					ID:   "r4",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Test Event",
+					UID:  "TEST-EVENT-UID",
+					Projects: []Project{
+						{
+							Name: "Test Project",
+							UID:  "TEST-PROJECT-UID",
+							Sequences: []Sequence{
+								{
+									Format:      "r1",
+									Duration:    "648648/24000s", // ~27 seconds total
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine: Spine{
+										Videos: []Video{
+											{
+												Ref:      "r2",
+												Offset:   "0s",              // Video 1: 0s to 14s
+												Name:     "cs.pitt.edu",
+												Duration: "336336/24000s",   // 14.01 seconds
+												Start:    "86399313/24000s", // Source start time
+											},
+											{
+												Ref:      "r5",
+												Offset:   "336336/24000s",   // Video 2: 14s to 23s
+												Name:     "shopzilla.com",
+												Duration: "216216/24000s",   // 9.01 seconds
+												Start:    "86399313/24000s", // Source start time
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test adding text at offset 14 seconds (should target the second video)
+	err = AddTextFromFile(fcpxml, testTextFile, 14.0)
+	if err != nil {
+		t.Fatalf("AddTextFromFile failed: %v", err)
+	}
+
+	// Verify text was added to the correct video (second video that plays at 14s)
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	
+	// First video should have no new nested titles (only any existing ones)
+	firstVideo := &sequence.Spine.Videos[0]
+	
+	// Second video should have the 4 new text elements
+	secondVideo := &sequence.Spine.Videos[1]
+	if len(secondVideo.NestedTitles) != 4 {
+		t.Errorf("Expected 4 nested titles in second video, got %d", len(secondVideo.NestedTitles))
+	}
+
+	// Test 1: Verify video targeting logic selected the correct video
+	expectedTexts := []string{"Paused All of LA", "Anti-ICE protests", "Jaguar I-PACE", "Costs $200k"}
+	for i, title := range secondVideo.NestedTitles {
+		if title.Text == nil || title.Text.TextStyle.Text != expectedTexts[i] {
+			t.Errorf("Expected text '%s' at index %d, got '%s'", expectedTexts[i], i, getTextContent(title))
+		}
+	}
+
+	// Test 2: Verify proper staggering with 1-second intervals
+	videoStartFrames := 86399313 // The source start time for the second video
+	for i, title := range secondVideo.NestedTitles {
+		expectedOffsetFrames := videoStartFrames + (i * 24024) // i seconds stagger
+		actualOffset := parseFCPDuration(title.Offset)
+		
+		if actualOffset != expectedOffsetFrames {
+			t.Errorf("Expected offset %d frames for text %d, got %d frames (%s)", 
+				expectedOffsetFrames, i, actualOffset, title.Offset)
+		}
+	}
+
+	// Test 3: Verify lane assignments (descending order: 4, 3, 2, 1)
+	expectedLanes := []string{"4", "3", "2", "1"}
+	for i, title := range secondVideo.NestedTitles {
+		if title.Lane != expectedLanes[i] {
+			t.Errorf("Expected lane '%s' for text %d, got '%s'", expectedLanes[i], i, title.Lane)
+		}
+	}
+
+	// Test 4: Verify Y position staggering (0, -300, -600, -900)
+	expectedPositions := []string{"", "0 -300", "0 -600", "0 -900"}
+	for i, title := range secondVideo.NestedTitles {
+		actualPosition := getPositionValue(title)
+		if actualPosition != expectedPositions[i] {
+			t.Errorf("Expected position '%s' for text %d, got '%s'", expectedPositions[i], i, actualPosition)
+		}
+	}
+
+	// Test 5: Verify text style IDs are unique (hash-based, not hardcoded)
+	textStyleIDs := make(map[string]bool)
+	for _, title := range secondVideo.NestedTitles {
+		if title.TextStyleDef != nil {
+			styleID := title.TextStyleDef.ID
+			if textStyleIDs[styleID] {
+				t.Errorf("Duplicate text style ID found: %s", styleID)
+			}
+			textStyleIDs[styleID] = true
+			
+			// Verify it's hash-based (starts with "ts" and has 8+ characters)
+			if !strings.HasPrefix(styleID, "ts") || len(styleID) < 10 {
+				t.Errorf("Expected hash-based text style ID, got: %s", styleID)
+			}
+		}
+	}
+
+	// Test 6: Verify proper start times
+	expectedStartTime := "86486400/24000s" // Standard FCP start time for text
+	for i, title := range secondVideo.NestedTitles {
+		if title.Start != expectedStartTime {
+			t.Errorf("Expected start time '%s' for text %d, got '%s'", expectedStartTime, i, title.Start)
+		}
+	}
+
+	// Test 7: Verify duration consistency
+	expectedDuration := "240240/24000s" // 10 seconds
+	for i, title := range secondVideo.NestedTitles {
+		if title.Duration != expectedDuration {
+			t.Errorf("Expected duration '%s' for text %d, got '%s'", expectedDuration, i, title.Duration)
+		}
+	}
+
+	// Test 8: Verify video durations were NOT extended (key fix)
+	if firstVideo.Duration != "336336/24000s" {
+		t.Errorf("First video duration was modified, expected '336336/24000s', got '%s'", firstVideo.Duration)
+	}
+	if secondVideo.Duration != "216216/24000s" {
+		t.Errorf("Second video duration was modified, expected '216216/24000s', got '%s'", secondVideo.Duration)
+	}
+
+	// Test 9: Verify XML marshaling works correctly
+	outputXML, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		t.Fatalf("Failed to marshal FCPXML with video targeting: %v", err)
+	}
+
+	xmlStr := string(outputXML)
+	// Verify all text content appears in the XML
+	for _, expectedText := range expectedTexts {
+		if !strings.Contains(xmlStr, expectedText) {
+			t.Errorf("Expected text '%s' not found in XML output", expectedText)
+		}
+	}
+}
+
+// TestAddTextFromFileEdgeCases tests edge cases for video targeting
+func TestAddTextFromFileEdgeCases(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create simple test text file
+	testTextFile := filepath.Join(tempDir, "edge_test.txt")
+	err := os.WriteFile(testTextFile, []byte("Test Text"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	// Test 1: Text offset beyond all videos (should use last video)
+	fcpxml := createTestFCPXMLWithVideos()
+	err = AddTextFromFile(fcpxml, testTextFile, 30.0) // Beyond 27s total duration
+	if err != nil {
+		t.Fatalf("AddTextFromFile failed with offset beyond videos: %v", err)
+	}
+
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	lastVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+	if len(lastVideo.NestedTitles) != 1 {
+		t.Errorf("Expected text to be added to last video when offset is beyond all videos")
+	}
+
+	// Test 2: Text offset at exact video boundary (should target the starting video)
+	fcpxml2 := createTestFCPXMLWithVideos()
+	err = AddTextFromFile(fcpxml2, testTextFile, 14.0) // Exactly at second video start
+	if err != nil {
+		t.Fatalf("AddTextFromFile failed with offset at video boundary: %v", err)
+	}
+
+	sequence2 := &fcpxml2.Library.Events[0].Projects[0].Sequences[0]
+	secondVideo := &sequence2.Spine.Videos[1]
+	if len(secondVideo.NestedTitles) != 1 {
+		t.Errorf("Expected text to be added to second video when offset is at its start time")
+	}
+}
+
+// Helper function to create test FCPXML with multiple videos
+func createTestFCPXMLWithVideos() *FCPXML {
+	return &FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Assets: []Asset{
+				{ID: "r2", Name: "video1", Start: "0s", Duration: "0s", HasVideo: "1"},
+				{ID: "r5", Name: "video2", Start: "0s", Duration: "0s", HasVideo: "1"},
+			},
+			Formats: []Format{
+				{ID: "r1", Name: "FFVideoFormat720p2398", FrameDuration: "1001/24000s"},
+			},
+			Effects: []Effect{
+				{ID: "r4", Name: "Text", UID: ".../Text.moti"},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Test Event",
+					Projects: []Project{
+						{
+							Name: "Test Project",
+							Sequences: []Sequence{
+								{
+									Format:   "r1",
+									Duration: "648648/24000s",
+									Spine: Spine{
+										Videos: []Video{
+											{
+												Ref:      "r2",
+												Offset:   "0s",
+												Duration: "336336/24000s", // 14s
+												Start:    "86399313/24000s",
+											},
+											{
+												Ref:      "r5",
+												Offset:   "336336/24000s", // starts at 14s
+												Duration: "216216/24000s",  // 9s
+												Start:    "86399313/24000s",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 // Helper functions
 func getTextContent(title Title) string {
 	if title.Text != nil {
