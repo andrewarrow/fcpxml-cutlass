@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="cs.pitt.edu" uid="3BE5548A-316C-B614-3FE0-DE58B2D89611" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="51A2F5B2B155DD154B8B874520FD94F6" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png">
+                <bookmark>Ym9va0ADAAAAAAQQMAAAAG4FJ+NeO5NqHRieoC4B8LgdrdbnWcDzPyXtblU/kf51GAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAACAAAAAQEAAGNzAAAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAA8AAAABAQAAY3MucGl0dC5lZHUucG5nABgAAAABBgAAEAAAACAAAAAsAAAAOAAAAEgAAABYAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAACHRBgQAAAAACAAAAAQDAAAd1QgEAAAAAAgAAAAEAwAA1VMQBAAAAAAIAAAABAMAADJsTwQAAAAAGAAAAAEGAACQAAAAoAAAALAAAADAAAAA0AAAAOAAAAAIAAAAAAQAAEHG/auxZ6lNGAAAAAECAAABAAAAAAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAQUAAAQAAAADAwAACAAAAAQAAAADAwAABAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxmPHqoAAACQAAAABAQAANUUzOUUyNTMtNjBBOC00RDkyLTkzQ0ItREYxREZEMjAxQ0JEGAAAAAECAACBAAAAAQAAAO8TAAABAAAAAAAAAAAAAAABAAAAAQEAAC8AAADwAAAA/v///wEAAAAAAAAAEwAAAAQQAABwAAAAAAAAAAUQAADwAAAAAAAAABAQAAAgAQAAAAAAAEAQAAAQAQAAAAAAAFQQAABIAQAAAAAAAFUQAABUAQAAAAAAAFYQAABAAQAAAAAAAAIgAAAMAgAAAAAAAAUgAAB8AQAAAAAAABAgAACMAQAAAAAAABEgAADAAQAAAAAAABIgAACgAQAAAAAAABMgAACwAQAAAAAAACAgAADsAQAAAAAAADAgAABAAQAAAAAAAAHAAABgAQAAAAAAABHAAAAgAAAAAAAAABLAAABwAQAAAAAAABDQAAAEAAAAAAAAAA==</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-15 04:41:45 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="800" colorSpace="1-13-1"/>
+        <effect id="r4" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+        <asset id="r5" name="shopzilla.com" uid="017AC05B-A3A0-4BA4-58B0-FFB89CCA64C6" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="B0F382E6527BE91198E28DC4D8133431" src="file:///Users/aa/cs/cutlass/assets/shopzilla.com.png">
+                <bookmark>Ym9va0QDAAAAAAQQMAAAADw5ZYmYnVOuc1+VciWhcHAUbDUTThMjwyfJh5cEcvR0HAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAACAAAAAQEAAGNzAAAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABEAAAABAQAAc2hvcHppbGxhLmNvbS5wbmcAAAAYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAHUIAAAAAAAAIAAAABAMAAMdSBAAAAAAACAAAAAQDAAAh0QYEAAAAAAgAAAAEAwAAHdUIBAAAAAAIAAAABAMAANVTEAQAAAAACAAAAAQDAADXbE8EAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxv2rsm9JZhgAAAABAgAAAQAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAEFAAAEAAAAAwMAAAgAAAAEAAAAAwMAAAQAAAAIAAAABAMAAAQAAAAAAAAABAAAAAMDAAD1AQAACAAAAAEJAABmaWxlOi8vLwwAAAABAQAATWFjaW50b3NoIEhECAAAAAQDAAAAkIKW5wAAAAgAAAAABAAAQcZjx6qAAAAkAAAAAQEAADVFMzlFMjUzLTYwQTgtNEQ5Mi05M0NCLURGMURGRDIwMUNCRBgAAAABAgAAgQAAAAEAAADvEwAAAQAAAAAAAAAAAAAAAQAAAAEBAAAvAAAA8AAAAP7///8BAAAAAAAAABMAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAABUEAAATAEAAAAAAABVEAAAWAEAAAAAAABWEAAARAEAAAAAAAACIAAAEAIAAAAAAAAFIAAAgAEAAAAAAAAQIAAAkAEAAAAAAAARIAAAxAEAAAAAAAASIAAApAEAAAAAAAATIAAAtAEAAAAAAAAgIAAA8AEAAAAAAAAwIAAARAEAAAAAAAABwAAAZAEAAAAAAAARwAAAIAAAAAAAAAASwAAAdAEAAAAAAAAQ0AAABAAAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-15 08:43:09 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="86F38399-34D3-4E93-B396-42105806C734">
+            <project name="png" uid="6FD94313-49F3-4E96-9AA6-837428CB53A1" modDate="2025-06-15 09:02:28 -0700">
+                <sequence format="r1" duration="648648/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="cs.pitt.edu" start="86399313/24000s" duration="336336/24000s">
+                            <adjust-transform>
+                                <param name="anchor">
+                                    <keyframeAnimation>
+                                        <keyframe time="86423337/24000s" value="0 0" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="position">
+                                    <keyframeAnimation>
+                                        <keyframe time="86399313/24000s" value="0 0"/>
+                                        <keyframe time="86423337/24000s" value="51.3109 0"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="rotation">
+                                    <keyframeAnimation>
+                                        <keyframe time="86423337/24000s" value="0" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="scale">
+                                    <keyframeAnimation>
+                                        <keyframe time="86423337/24000s" value="1 1" curve="linear"/>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>
+                            <title ref="r4" lane="4" offset="86423337/24000s" name="Paused All of LA - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1">Paused All of LA</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="3" offset="86447361/24000s" name="Anti-ICE protests - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -300"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts2">Anti-ICE protests</text-style>
+                                </text>
+                                <text-style-def id="ts2">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="86471385/24000s" name="Jaguar I-PACE - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -600"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts3">Jaguar I-PACE</text-style>
+                                </text>
+                                <text-style-def id="ts3">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="1" offset="86495409/24000s" name="Costs $200k - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -900"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts4">Costs $200k</text-style>
+                                </text>
+                                <text-style-def id="ts4">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                        </video>
+                        <video ref="r5" offset="336336/24000s" name="shopzilla.com" start="86399313/24000s" duration="216216/24000s">
+                            <title ref="r4" lane="4" offset="86399313/24000s" name="Paused All of LA - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts5">Paused All of LA</text-style>
+                                </text>
+                                <text-style-def id="ts5">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="3" offset="86423337/24000s" name="Anti-ICE protests - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -300"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts6">Anti-ICE protests</text-style>
+                                </text>
+                                <text-style-def id="ts6">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="86447361/24000s" name="Jaguar I-PACE - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -600"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts7">Jaguar I-PACE</text-style>
+                                </text>
+                                <text-style-def id="ts7">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="1" offset="86471385/24000s" name="Costs $200k - Text" start="86486400/24000s" duration="240240/24000s">
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -900"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1730"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1730"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="960"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-960"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts8">Costs $200k</text-style>
+                                </text>
+                                <text-style-def id="ts8">
+                                    <text-style font="Helvetica Neue" fontSize="134" fontColor="1 1 1 1" bold="1" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
