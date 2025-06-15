@@ -242,6 +242,7 @@ func GenerateEmpty(filename string) (*FCPXML, error) {
 // - Before commits, CHECK with: ValidateClaudeCompliance() function
 func WriteToFile(fcpxml *FCPXML, filename string) error {
 	// Marshal to XML with proper formatting
+	// Note: Custom MarshalXML on Spine struct ensures chronological order
 	output, err := xml.MarshalIndent(fcpxml, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal XML: %v", err)
@@ -695,3 +696,4 @@ func addDurations(duration1, duration2 string) string {
 	totalFrames := frames1 + frames2
 	return fmt.Sprintf("%d/24000s", totalFrames)
 }
+

@@ -9,6 +9,8 @@ package fcp
 
 import (
 	"encoding/xml"
+	"strconv"
+	"strings"
 )
 
 type FCPXML struct {
@@ -123,6 +125,12 @@ type Sequence struct {
 	Spine       Spine  `xml:"spine"`
 }
 
+// TimelineElement represents any element that can appear in a spine with an offset
+type TimelineElement interface {
+	GetOffset() string
+	GetEndOffset() string
+}
+
 // Spine represents the main timeline container in FCPXML.
 //
 // 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES → USE struct slices:
@@ -135,6 +143,83 @@ type Spine struct {
 	Gaps       []Gap       `xml:"gap,omitempty"`
 	Titles     []Title     `xml:"title,omitempty"`
 	Videos     []Video     `xml:"video,omitempty"`
+}
+
+// MarshalXML implements custom XML marshaling to maintain chronological order
+func (s Spine) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	// Start the spine element
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+
+	// Collect all elements with their offsets
+	type elementWithOffset struct {
+		offset  int
+		element interface{}
+	}
+	var elements []elementWithOffset
+
+	// Add all element types
+	for _, clip := range s.AssetClips {
+		elements = append(elements, elementWithOffset{
+			offset:  parseFCPDurationForSort(clip.Offset),
+			element: clip,
+		})
+	}
+	for _, video := range s.Videos {
+		elements = append(elements, elementWithOffset{
+			offset:  parseFCPDurationForSort(video.Offset),
+			element: video,
+		})
+	}
+	for _, title := range s.Titles {
+		elements = append(elements, elementWithOffset{
+			offset:  parseFCPDurationForSort(title.Offset),
+			element: title,
+		})
+	}
+	for _, gap := range s.Gaps {
+		elements = append(elements, elementWithOffset{
+			offset:  parseFCPDurationForSort(gap.Offset),
+			element: gap,
+		})
+	}
+
+	// Sort by offset
+	for i := 0; i < len(elements)-1; i++ {
+		for j := 0; j < len(elements)-i-1; j++ {
+			if elements[j].offset > elements[j+1].offset {
+				elements[j], elements[j+1] = elements[j+1], elements[j]
+			}
+		}
+	}
+
+	// Encode elements in chronological order
+	for _, elem := range elements {
+		if err := e.Encode(elem.element); err != nil {
+			return err
+		}
+	}
+
+	// End the spine element
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
+}
+
+// parseFCPDurationForSort parses FCP duration for sorting (similar to existing function)
+func parseFCPDurationForSort(duration string) int {
+	if duration == "0s" {
+		return 0
+	}
+	
+	// Parse format like "12345/24000s"
+	if strings.HasSuffix(duration, "/24000s") {
+		framesStr := strings.TrimSuffix(duration, "/24000s")
+		if frames, err := strconv.Atoi(framesStr); err == nil {
+			return frames
+		}
+	}
+	
+	return 0
 }
 
 type AssetClip struct {
@@ -151,6 +236,18 @@ type AssetClip struct {
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
 	Titles          []Title          `xml:"title,omitempty"`
 	Videos          []Video          `xml:"video,omitempty"`
+}
+
+// GetOffset implements TimelineElement interface
+func (ac AssetClip) GetOffset() string {
+	return ac.Offset
+}
+
+// GetEndOffset implements TimelineElement interface
+func (ac AssetClip) GetEndOffset() string {
+	// This would require parsing offset and duration to calculate end time
+	// For now, return offset (implementation can be added later if needed)
+	return ac.Offset
 }
 
 type Gap struct {
@@ -189,6 +286,18 @@ type Video struct {
 	NestedVideos     []Video     `xml:"video,omitempty"`      // Support nested video elements with lanes
 	NestedAssetClips []AssetClip `xml:"asset-clip,omitempty"` // Support nested asset-clip elements with lanes
 	NestedTitles     []Title     `xml:"title,omitempty"`      // Support nested title elements with lanes
+}
+
+// GetOffset implements TimelineElement interface
+func (v Video) GetOffset() string {
+	return v.Offset
+}
+
+// GetEndOffset implements TimelineElement interface
+func (v Video) GetEndOffset() string {
+	// This would require parsing offset and duration to calculate end time
+	// For now, return offset (implementation can be added later if needed)
+	return v.Offset
 }
 
 type AdjustTransform struct {
