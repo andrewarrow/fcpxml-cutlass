@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat720p30" frameDuration="100/3000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="speech1" uid="F28FB35E378EA4AD6CE9F2A16F4F538C" start="0s" duration="27183/600s" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="44100">
+            <media-rep kind="original-media" sig="F28FB35E378EA4AD6CE9F2A16F4F538C" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9vazwDAAAAAAQQMAAAAOUsbOiCriFAEdRZwEMGizUNn/6T2plb/0LstYWaF7RwFAIAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAACAAAAAQEAAGNzAAAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAB1CAAAAAAAACAAAAAQDAADHUgQAAAAAAAgAAAAEAwAAIdEGBAAAAAAIAAAABAMAAB3VCAQAAAAACAAAAAQDAADVUxAEAAAAAAgAAAAEAwAA09M4BAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQcb84i+7NGoYAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAAEAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAVBAAAEQBAAAAAAAAVRAAAFABAAAAAAAAVhAAADwBAAAAAAAAAiAAAAgCAAAAAAAABSAAAHgBAAAAAAAAECAAAIgBAAAAAAAAESAAALwBAAAAAAAAEiAAAJwBAAAAAAAAEyAAAKwBAAAAAAAAICAAAOgBAAAAAAAAMCAAADwBAAAAAAAAAcAAAFwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAGwBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemCodecs">
+                    <array>
+                        <string>H.264</string>
+                        <string>MPEG-4 AAC</string>
+                    </array>
+                </md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-14 19:55:08 -0700"/>
+            </metadata>
+        </asset>
+        <format id="r3" frameDuration="20/600s" width="1620" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="86F38399-34D3-4E93-B396-42105806C734">
+            <project name="Untitled Project 1" uid="5481F213-3A15-489B-8B16-0CA36B4B2E4A" modDate="2025-06-14 19:55:23 -0700">
+                <sequence format="r1" duration="27180/600s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="speech1" duration="27180/600s" format="r3" tcFormat="NDF" audioRole="dialogue"/>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
