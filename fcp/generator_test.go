@@ -1,10 +1,10 @@
 // Package fcp provides tests for FCPXML generation.
 //
 // 🚨 CRITICAL: Tests MUST validate CLAUDE.md compliance:
-// - After ANY changes, run: xmllint --dtdvalid FCPXMLv1_13.dtd test_file.fcpxml  
-// - All generated XML must pass DTD validation
-// - Tests should verify NO string template usage in XML generation
-// - Duration values must be frame-aligned (see ConvertSecondsToFCPDuration)
+// - AFTER changes → RUN: xmllint --dtdvalid FCPXMLv1_13.dtd test_file.fcpxml  
+// - BEFORE commits → RUN: ValidateClaudeCompliance() function
+// - FOR durations → USE: ConvertSecondsToFCPDuration() function  
+// - VERIFY: No fmt.Sprintf() with XML content in any test
 package fcp
 
 import (

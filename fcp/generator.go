@@ -3,9 +3,9 @@
 // 🚨 CRITICAL: All XML generation MUST follow CLAUDE.md rules:
 // - NEVER use string templates with %s placeholders (see CLAUDE.md "NO XML STRING TEMPLATES")
 // - ALWAYS use structs and xml.MarshalIndent for XML generation
-// - ALL durations MUST be frame-aligned (see CLAUDE.md "Frame Boundary Alignment")
-// - ALL IDs MUST be unique (see CLAUDE.md "Unique ID Requirements")
-// - ALWAYS test with DTD validation: xmllint --dtdvalid FCPXMLv1_13.dtd output.fcpxml
+// - ALL durations MUST be frame-aligned → USE ConvertSecondsToFCPDuration() function
+// - ALL IDs MUST be unique → COUNT existing resources: len(Assets)+len(Formats)+len(Effects)+len(Media)  
+// - BEFORE commits → RUN ValidateClaudeCompliance() + xmllint --dtdvalid FCPXMLv1_13.dtd
 package fcp
 
 import (
@@ -242,10 +242,9 @@ func GenerateEmpty(filename string) (*FCPXML, error) {
 
 // WriteToFile marshals the FCPXML struct to a file.
 //
-// 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES
-// - Uses xml.MarshalIndent ONLY - never manual XML construction
-// - After writing, ALWAYS test with: xmllint --dtdvalid FCPXMLv1_13.dtd filename
-// - This is the ONLY approved way to generate XML output
+// 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES → USE xml.MarshalIndent() function
+// - After writing, VALIDATE with: xmllint --dtdvalid FCPXMLv1_13.dtd filename  
+// - Before commits, CHECK with: ValidateClaudeCompliance() function
 func WriteToFile(fcpxml *FCPXML, filename string) error {
 	// Marshal to XML with proper formatting
 	output, err := xml.MarshalIndent(fcpxml, "", "    ")
@@ -272,13 +271,13 @@ func WriteToFile(fcpxml *FCPXML, filename string) error {
 // AddVideo adds a video asset and asset-clip to the FCPXML structure.
 //
 // 🚨 CLAUDE.md Rules Applied Here:
-// - Uses STRUCTS ONLY - no string templates (see "NO XML STRING TEMPLATES")
-// - Generates UNIQUE IDs by counting existing resources (see "Unique ID Requirements") 
-// - Uses frame-aligned durations via ConvertSecondsToFCPDuration (see "Frame Boundary Alignment")
-// - Must maintain UID consistency for same files (see "UID Consistency Requirements")
+// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets, sequence.Spine.AssetClips
+// - Generates UNIQUE IDs → resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media) 
+// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
+// - Maintains UID consistency → generateUID() function for deterministic UIDs
 //
-// ❌ NEVER do: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
-// ✅ ALWAYS do: append to fcpxml.Resources.Assets, sequence.Spine.AssetClips
+// ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use provided functions and struct field assignment
 func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	// Get absolute path
 	absPath, err := filepath.Abs(videoPath)
@@ -296,10 +295,9 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	uid := generateUID(videoName)
 	
 	// Count existing resources to generate unique IDs
-	// 🚨 CLAUDE.md Rule: Unique ID Requirements
-	// - ALL IDs must be unique within document 
-	// - Count ALL resource types consistently (assets+formats+effects+media)
-	// - Use sequence generation to avoid collisions in same transaction
+	// 🚨 CLAUDE.md Rule: Unique ID Requirements → THIS pattern prevents ID collisions:
+	// resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media)
+	// nextID = fmt.Sprintf("r%d", resourceCount+1)
 	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
 	assetID := fmt.Sprintf("r%d", resourceCount+1)
 	formatID := fmt.Sprintf("r%d", resourceCount+2)

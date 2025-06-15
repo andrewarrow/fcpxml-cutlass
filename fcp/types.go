@@ -1,10 +1,10 @@
 // Package fcp defines the struct types for FCPXML generation.
 //
 // 🚨 CRITICAL: These structs are the ONLY way to generate XML (see CLAUDE.md)
-// - NEVER use string templates or manual XML construction
-// - NEVER set .Content or .InnerXML fields with formatted strings  
-// - ALWAYS populate struct fields and let xml.Marshal handle XML generation
-// - ALL XML output MUST be generated via xml.MarshalIndent of these structs
+// - NEVER use string templates → USE xml.MarshalIndent() function only
+// - NEVER set .Content or .InnerXML → APPEND to struct slices (e.g., spine.AssetClips)  
+// - VALIDATE output → RUN ValidateClaudeCompliance() + xmllint DTD validation
+// - FOR frame alignment → USE ConvertSecondsToFCPDuration() function
 package fcp
 
 import (
@@ -20,10 +20,10 @@ type FCPXML struct {
 
 // Resources contains all assets, formats, effects, and media definitions.
 //
-// 🚨 CLAUDE.md Rule: Unique ID Requirements  
-// - ALL IDs across Assets, Formats, Effects, Media MUST be unique
-// - Use consistent counting: len(Assets)+len(Formats)+len(Effects)+len(Media)
-// - Never hardcode IDs like "r1", "r2" - always generate based on existing count
+// 🚨 CLAUDE.md Rule: Unique ID Requirements → USE this counting pattern:
+// resourceCount := len(Assets)+len(Formats)+len(Effects)+len(Media)
+// nextID := fmt.Sprintf("r%d", resourceCount+1)
+// NEVER hardcode IDs like "r1", "r2" - ALWAYS count existing resources
 type Resources struct {
 	Assets     []Asset     `xml:"asset,omitempty"`
 	Formats    []Format    `xml:"format"`
@@ -50,11 +50,10 @@ type Format struct {
 
 // Asset represents a media asset (video, audio, image) in FCPXML.
 //
-// 🚨 CLAUDE.md Rule: UID Consistency Requirements
-// - UID MUST be deterministic based on file content/name, not file path  
-// - Once FCP imports with a UID, that UID is permanent for that file
-// - Different UID for same file = "cannot be imported again with different unique identifier"
-// - Use generateUID() function for consistent UID generation
+// 🚨 CLAUDE.md Rule: UID Consistency Requirements → USE generateUID() function
+// - UID = generateUID(filename) for deterministic UIDs based on filename  
+// - NEVER base UID on file path (causes "cannot be imported again" errors)
+// - FOR durations → USE ConvertSecondsToFCPDuration() function
 type Asset struct {
 	ID            string   `xml:"id,attr"`
 	Name          string   `xml:"name,attr"`
@@ -126,11 +125,10 @@ type Sequence struct {
 
 // Spine represents the main timeline container in FCPXML.
 //
-// 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES
-// - NEVER set spine content via string templates or .Content fields
-// - ALWAYS append to AssetClips, Gaps, Titles, Videos slices
-// - Example violation: spine.Content = fmt.Sprintf("<asset-clip...") ❌
-// - Correct usage: spine.AssetClips = append(spine.AssetClips, assetClip) ✅
+// 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES → USE struct slices:
+// spine.AssetClips = append(spine.AssetClips, assetClip) ✅
+// spine.Content = fmt.Sprintf("<asset-clip...") ❌ CRITICAL VIOLATION!
+// FOR durations → USE ConvertSecondsToFCPDuration() function
 type Spine struct {
 	XMLName    xml.Name    `xml:"spine"`
 	AssetClips []AssetClip `xml:"asset-clip,omitempty"`
