@@ -1111,3 +1111,97 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 	return nil
 }
 
+// AddSlideToVideoAtOffset finds a video at the specified offset and adds slide animation to it.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses frame-aligned timing → ConvertSecondsToFCPDuration() function for offset calculation
+// - Uses STRUCTS ONLY - no string templates → modifies Video.AdjustTransform in spine
+// - Maintains existing video properties while adding slide animation keyframes
+// - Proper FCP timing with video start time as base for animation keyframes
+//
+// ❌ NEVER: fmt.Sprintf("<adjust-transform...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use structs to modify Video.AdjustTransform with keyframe animation
+func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
+	// Find the sequence
+	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
+		return fmt.Errorf("no sequence found in FCPXML")
+	}
+	
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	
+	// Convert offset to frame-aligned format
+	offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(offsetSeconds))
+	
+	// Find the video at the specified offset
+	var targetVideo *Video = nil
+	
+	// Search through Video elements first
+	for i := range sequence.Spine.Videos {
+		video := &sequence.Spine.Videos[i]
+		videoOffsetFrames := parseFCPDuration(video.Offset)
+		videoDurationFrames := parseFCPDuration(video.Duration)
+		videoEndFrames := videoOffsetFrames + videoDurationFrames
+		
+		// Check if the offset falls within this video's timeline
+		if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
+			targetVideo = video
+			break
+		}
+	}
+	
+	// If no Video element found, check AssetClip elements and convert to Video
+	if targetVideo == nil {
+		for i := range sequence.Spine.AssetClips {
+			clip := &sequence.Spine.AssetClips[i]
+			clipOffsetFrames := parseFCPDuration(clip.Offset)
+			clipDurationFrames := parseFCPDuration(clip.Duration)
+			clipEndFrames := clipOffsetFrames + clipDurationFrames
+			
+			// Check if the offset falls within this video's timeline
+			if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
+				// Convert AssetClip to Video element for slide animation
+				video := &Video{
+					Ref:      clip.Ref,
+					Offset:   clip.Offset,
+					Name:     clip.Name,
+					Duration: clip.Duration,
+					Start:    clip.Start,
+				}
+				
+				// Remove the AssetClip and replace with Video
+				sequence.Spine.AssetClips = append(sequence.Spine.AssetClips[:i], sequence.Spine.AssetClips[i+1:]...)
+				sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
+				targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+				break
+			}
+		}
+	}
+	
+	if targetVideo == nil {
+		return fmt.Errorf("no video found at offset %.1f seconds", offsetSeconds)
+	}
+	
+	// Check if video already has slide animation
+	if targetVideo.AdjustTransform != nil {
+		// Check if position parameter already exists with keyframes
+		for _, param := range targetVideo.AdjustTransform.Params {
+			if param.Name == "position" && param.KeyframeAnimation != nil {
+				return fmt.Errorf("video '%s' at offset %.1f seconds already has slide animation", targetVideo.Name, offsetSeconds)
+			}
+		}
+	}
+	
+	// Calculate slide animation duration (1 second from video start)
+	videoStartFrames := parseFCPDuration(targetVideo.Start)
+	if videoStartFrames == 0 {
+		// If no start time, use standard FCP start time for videos
+		videoStartFrames = 86399313
+		targetVideo.Start = "86399313/24000s"
+	}
+	
+	// Add slide animation to the video
+	targetVideo.AdjustTransform = createSlideAnimation(targetVideo.Offset, 1.0)
+	
+	return nil
+}
+

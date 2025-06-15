@@ -264,6 +264,68 @@ Otherwise, a new FCPXML file is created.`,
 	},
 }
 
+var addSlideCmd = &cobra.Command{
+	Use:   "add-slide [offset]",
+	Short: "Add slide animation to video at specified offset",
+	Long:  `Add slide animation to the video found at the specified offset time.
+The video will slide from left to right over 1 second starting from its beginning.
+If the video at the offset is an AssetClip, it will be converted to a Video element to support animation.
+Requires an existing FCPXML file with video content.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		offsetStr := args[0]
+		
+		// Parse offset
+		offset, err := strconv.ParseFloat(offsetStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing offset '%s': %v\n", offsetStr, err)
+			return
+		}
+		
+		// Get input and output filenames from flags
+		input, _ := cmd.Flags().GetString("input")
+		output, _ := cmd.Flags().GetString("output")
+		
+		if input == "" {
+			fmt.Printf("Error: --input is required for add-slide command\n")
+			return
+		}
+		
+		var filename string
+		if output != "" {
+			filename = output
+		} else {
+			// Generate default filename with unix timestamp
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
+		}
+		
+		// Load existing FCPXML
+		fcpxml, err := fcp.ReadFromFile(input)
+		if err != nil {
+			fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+			return
+		}
+		fmt.Printf("Loaded existing FCPXML: %s\n", input)
+		
+		// Add slide animation to video at offset
+		err = fcp.AddSlideToVideoAtOffset(fcpxml, offset)
+		if err != nil {
+			fmt.Printf("Error adding slide animation: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Added slide animation to video at offset %.1fs and saved to: %s\n", offset, filename)
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -283,8 +345,13 @@ func init() {
 	addTextCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addTextCmd.Flags().StringP("offset", "t", "1", "Start time offset in seconds (default 1)")
 	
+	// Add flags to add-slide subcommand
+	addSlideCmd.Flags().StringP("input", "i", "", "Input FCPXML file to read from (required)")
+	addSlideCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
 	fcpCmd.AddCommand(addTextCmd)
+	fcpCmd.AddCommand(addSlideCmd)
 }
