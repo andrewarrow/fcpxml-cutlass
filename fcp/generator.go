@@ -265,93 +265,86 @@ func WriteToFile(fcpxml *FCPXML, filename string) error {
 // AddVideo adds a video asset and asset-clip to the FCPXML structure.
 //
 // 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
 // - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets, sequence.Spine.AssetClips
-// - Generates UNIQUE IDs → resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media) 
+// - Atomic ID reservation prevents race conditions and ID collisions
 // - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
 // - Maintains UID consistency → generateUID() function for deterministic UIDs
 //
 // ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
-// ✅ ALWAYS: Use provided functions and struct field assignment
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
 func AddVideo(fcpxml *FCPXML, videoPath string) error {
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Check if asset already exists for this file
+	if asset, exists := registry.GetOrCreateAsset(videoPath); exists {
+		// Asset already exists, just add asset-clip to spine
+		return addAssetClipToSpine(fcpxml, asset, 10.0)
+	}
+
+	// Create transaction for atomic resource creation
+	tx := NewTransaction(registry)
+
 	// Get absolute path
 	absPath, err := filepath.Abs(videoPath)
 	if err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
 	// Check if file exists
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		tx.Rollback()
 		return fmt.Errorf("video file does not exist: %s", absPath)
 	}
 
-	// Generate unique IDs
+	// Reserve ID atomically to prevent collisions
+	ids := tx.ReserveIDs(1)
+	assetID := ids[0]
+
+	// Generate unique asset name
 	videoName := strings.TrimSuffix(filepath.Base(videoPath), filepath.Ext(videoPath))
-	uid := generateUID(videoName)
-
-	// Count existing resources to generate unique IDs
-	// 🚨 CLAUDE.md Rule: Unique ID Requirements → THIS pattern prevents ID collisions:
-	// resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media)
-	// nextID = fmt.Sprintf("r%d", resourceCount+1)
-	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
-	assetID := fmt.Sprintf("r%d", resourceCount+1)
-
-	// Generate bookmark (fallback to empty string if Swift unavailable)
-	bookmark, _ := generateBookmark(absPath)
-
-	// 🚨 CLAUDE.md Rule: Format Consistency - Videos use 720p sequence format (r1)
-	// Note: No separate format needed since we always use 720p sequence format
 
 	// Use a default duration of 10 seconds, properly frame-aligned
 	defaultDurationSeconds := 10.0
 	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
 
-	// Create asset
-	// 🚨 CLAUDE.md Rule: Format Consistency - Videos use 720p sequence format (r1)
-	asset := Asset{
-		ID:            assetID,
-		Name:          videoName,
-		UID:           uid,
-		Start:         "0s",
-		Duration:      frameDuration,
-		HasVideo:      "1",
-		Format:        "r1", // Always use 720p sequence format
-		HasAudio:      "1",
-		VideoSources:  "1",
-		AudioSources:  "1",
-		AudioChannels: "1",
-		AudioRate:     "44100",
-		MediaRep: MediaRep{
-			Kind: "original-media",
-			Sig:  uid,
-			Src:  "file://" + absPath,
-		},
+	// Create asset using transaction
+	asset, err := tx.CreateAsset(assetID, absPath, videoName, frameDuration, "r1")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create asset: %v", err)
 	}
 
-	// Add bookmark if available
-	if bookmark != "" {
-		// Note: The MediaRep struct doesn't include Bookmark field yet
-		// This would need to be added to the types.go if bookmark support is needed
+	// Commit transaction - adds resources to registry and FCPXML
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	// Add resources - only add asset, no separate format needed
-	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+	// Add asset-clip to spine
+	return addAssetClipToSpine(fcpxml, asset, defaultDurationSeconds)
+}
 
+// addAssetClipToSpine adds an asset-clip to the sequence spine
+func addAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) error {
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 
 		// Create asset-clip with frame-aligned duration
-		clipDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
+		clipDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
 		// 🚨 CLAUDE.md Rule: Asset-Clip Format Consistency
 		// - Asset-clips MUST use the ASSET's format, not hardcoded sequence format
 		// - This matches the pattern in working FCPXML files
 		assetClip := AssetClip{
-			Ref:       assetID,
+			Ref:       asset.ID,
 			Offset:    "0s",
-			Name:      videoName,
+			Name:      asset.Name,
 			Duration:  clipDuration,
-			Format:    "r1", // Use asset's format (which is r1 for videos)
+			Format:    asset.Format, // Use asset's format
 			TCFormat:  "NDF",
 			AudioRole: "dialogue",
 		}
@@ -482,93 +475,83 @@ func isImageFile(filePath string) bool {
 // AddImage adds an image asset and asset-clip to the FCPXML structure.
 //
 // 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
 // - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets, sequence.Spine.AssetClips
-// - Generates UNIQUE IDs → resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media) 
+// - Atomic ID reservation prevents race conditions and ID collisions
 // - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
 // - Maintains UID consistency → generateUID() function for deterministic UIDs
 // - Image-specific properties → VideoSources="1", NO audio properties (HasAudio, AudioSources, AudioChannels)
 //
 // ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
-// ✅ ALWAYS: Use provided functions and struct field assignment
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
 func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 	// Validate that this is actually an image file
 	if !isImageFile(imagePath) {
 		return fmt.Errorf("file is not a supported image format (PNG, JPG, JPEG): %s", imagePath)
 	}
 
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Check if asset already exists for this file
+	if asset, exists := registry.GetOrCreateAsset(imagePath); exists {
+		// Asset already exists, just add asset-clip to spine
+		return addImageAssetClipToSpine(fcpxml, asset, durationSeconds)
+	}
+
+	// Create transaction for atomic resource creation
+	tx := NewTransaction(registry)
+
 	// Get absolute path
 	absPath, err := filepath.Abs(imagePath)
 	if err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
 	// Check if file exists
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		tx.Rollback()
 		return fmt.Errorf("image file does not exist: %s", absPath)
 	}
 
-	// Generate unique IDs
+	// Reserve IDs atomically to prevent collisions (need 2: asset + format)
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Generate unique asset name
 	imageName := strings.TrimSuffix(filepath.Base(imagePath), filepath.Ext(imagePath))
-	uid := generateUID(imageName)
-
-	// Count existing resources to generate unique IDs
-	// 🚨 CLAUDE.md Rule: Unique ID Requirements → THIS pattern prevents ID collisions:
-	// resourceCount = len(Assets)+len(Formats)+len(Effects)+len(Media)
-	// nextID = fmt.Sprintf("r%d", resourceCount+1)
-	resourceCount := len(fcpxml.Resources.Assets) + len(fcpxml.Resources.Formats) + len(fcpxml.Resources.Effects) + len(fcpxml.Resources.Media)
-	assetID := fmt.Sprintf("r%d", resourceCount+1)
-	formatID := fmt.Sprintf("r%d", resourceCount+2)
-
-	// Generate bookmark (fallback to empty string if Swift unavailable)
-	bookmark, _ := generateBookmark(absPath)
 
 	// Convert duration to frame-aligned format
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
-	// Create image-specific format (based on old code pattern)
-	// 🚨 CLAUDE.md Rule: Image Assets Need Separate Format Definitions
-	// - FCP expects image assets to have format with name="FFVideoFormatRateUndefined"
-	// - This prevents crashes during import
-	imageFormat := Format{
-		ID:         formatID,
-		Name:       "FFVideoFormatRateUndefined", // Critical for image compatibility
-		Width:      "1280",
-		Height:     "720",
-		ColorSpace: "1-13-1", // Different color space for images
+	// Create image-specific format using transaction
+	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create image format: %v", err)
 	}
 
-	// Create asset with image-specific properties
-	// 🚨 CLAUDE.md Rule: Image vs Video Asset Properties
-	// - Image files should NOT have audio properties (HasAudio, AudioSources, AudioChannels)
-	// - Image files MUST have VideoSources = "1"
-	// - Images use their own format definition, not sequence format
-	asset := Asset{
-		ID:           assetID,
-		Name:         imageName,
-		UID:          uid,
-		Start:        "0s",
-		Duration:     frameDuration,
-		HasVideo:     "1",
-		Format:       formatID, // Use image-specific format
-		VideoSources: "1",      // Required for image assets
-		// Note: NO audio properties for image files
-		MediaRep: MediaRep{
-			Kind: "original-media",
-			Sig:  uid,
-			Src:  "file://" + absPath,
-		},
+	// Create asset using transaction (CreateAsset handles image-specific properties)
+	asset, err := tx.CreateAsset(assetID, absPath, imageName, frameDuration, formatID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create asset: %v", err)
 	}
 
-	// Add bookmark if available
-	if bookmark != "" {
-		// Note: The MediaRep struct doesn't include Bookmark field yet
-		// This would need to be added to the types.go if bookmark support is needed
+	// Commit transaction - adds resources to registry and FCPXML
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	// Add resources - both asset and its format
-	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
-	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, imageFormat)
+	// Add asset-clip to spine
+	return addImageAssetClipToSpine(fcpxml, asset, durationSeconds)
+}
 
+// addImageAssetClipToSpine adds an image asset-clip to the sequence spine
+func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) error {
 	// Add asset-clip to the spine if there's a sequence
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
@@ -582,11 +565,11 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 		// - Asset has its own format, clip inherits that format
 
 		assetClip := AssetClip{
-			Ref:      assetID,
+			Ref:      asset.ID,
 			Offset:   "0s",
-			Name:     imageName,
+			Name:     asset.Name,
 			Duration: clipDuration,
-			Format:   formatID, // CRITICAL: Use asset's format, not sequence format
+			Format:   asset.Format, // CRITICAL: Use asset's format, not sequence format
 			TCFormat: "NDF",
 			// Note: NO AudioRole for image clips
 		}
