@@ -1107,19 +1107,19 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 
 		// Extend the video duration to accommodate all text elements
 		if len(textLines) > 0 {
-			// Calculate the end time of the last text element
+			// Calculate the end time of the last text element on the timeline
 			lastTextOffsetSeconds := offsetSeconds + float64(len(textLines)-1)
-			videoStartFrames := parseFCPDuration(targetVideo.Start)
-			lastTextOffsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(lastTextOffsetSeconds))
-			textDurationFrames := parseFCPDuration(textDuration)
+			lastTextEndSeconds := lastTextOffsetSeconds + textDurationSeconds
 			
-			// Total frames needed: video start + last text offset + text duration
-			totalNeededFrames := videoStartFrames + lastTextOffsetFrames + textDurationFrames
+			// Convert to frame-aligned duration
+			lastTextEndFrames := parseFCPDuration(ConvertSecondsToFCPDuration(lastTextEndSeconds))
 			
-			// Update video duration if needed
+			// Current video duration in frames
 			currentVideoFrames := parseFCPDuration(targetVideo.Duration)
-			if totalNeededFrames > currentVideoFrames {
-				targetVideo.Duration = fmt.Sprintf("%d/24000s", totalNeededFrames)
+			
+			// Only extend if the text goes beyond the current video duration
+			if lastTextEndFrames > currentVideoFrames {
+				targetVideo.Duration = fmt.Sprintf("%d/24000s", lastTextEndFrames)
 				
 				// Also update the sequence duration
 				sequence.Duration = targetVideo.Duration
