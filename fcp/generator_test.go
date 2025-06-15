@@ -153,3 +153,48 @@ var movxml = `<?xml version="1.0" encoding="UTF-8"?>
         </smart-collection>
     </library>
 </fcpxml>`
+
+var appendpngxml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="cs.pitt.edu" uid="51A2F5B2B155DD154B8B874520FD94F6" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="51A2F5B2B155DD154B8B874520FD94F6" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
+        </asset>
+        <asset id="r4" name="cutlass_logo_t" uid="3089EE16-61BD-C2D6-5F56-DDFBAC6DB0B1" start="0s" hasVideo="1" format="r5" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="3089EE16-61BD-C2D6-5F56-DDFBAC6DB0B1" src="file:///Users/aa/cs/cutlass/assets/cutlass_logo_t.png"></media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1280" height="800" colorSpace="1-13-1"></format>
+        <format id="r5" name="FFVideoFormatRateUndefined" width="1280" height="720" colorSpace="1-13-1"></format>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="86F38399-34D3-4E93-B396-42105806C734">
+            <project name="png" uid="BDA8DD14-C5E7-4448-B75D-D59F3B16DFB2" modDate="2025-06-15 04:41:50 -0700">
+                <sequence format="r1" duration="457457/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="cs.pitt.edu" duration="241241/24000s" start="86399313/24000s"></video>
+                        <video ref="r4" offset="241241/24000s" name="cutlass_logo_t" duration="216216/24000s" start="86399313/24000s"></video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>`
