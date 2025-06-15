@@ -11,6 +11,19 @@ import (
 
 var fcpCmd = &cobra.Command{
 	Use:   "fcp",
+	Short: "FCPXML generation tools",
+	Long: `FCPXML generation tools for creating Final Cut Pro XML files.
+
+This command provides various subcommands for generating and working with FCPXML files.
+Use 'cutlass fcp --help' to see all available subcommands.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		// Show help when called without subcommands
+		cmd.Help()
+	},
+}
+
+var createEmptyCmd = &cobra.Command{
+	Use:   "create-empty [filename]",
 	Short: "Generate an empty FCPXML file from structs",
 	Long:  `Generate a basic empty FCPXML file structure using the fcp package structs.`,
 	Args:  cobra.RangeArgs(0, 1),
@@ -137,8 +150,8 @@ var addImageCmd = &cobra.Command{
 }
 
 func init() {
-	// Add output flag to main fcp command
-	fcpCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
+	// Add output flag to create-empty subcommand
+	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	
 	// Add output flag to add-video subcommand
 	addVideoCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -147,6 +160,7 @@ func init() {
 	addImageCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addImageCmd.Flags().StringP("duration", "d", "9", "Duration in seconds (default 9)")
 	
+	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
 }
